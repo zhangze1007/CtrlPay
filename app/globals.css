@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -70,7 +70,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Plus Jakarta Sans', theme('fontFamily.sans');
+    font-family: 'Space Mono', 'JetBrains Mono', monospace;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
@@ -145,8 +145,16 @@
 
   .duo-phone {
     position: relative;
-    background:
-      radial-gradient(120% 65% at 50% 0%, #F2F8FE 0%, #E3F0FC 38%, #D2E6FA 72%, #C2DCF7 100%);
+    background-color: #FDFEFE;
+    background-image:
+      radial-gradient(at 10% 12%, rgba(254, 240, 138, 0.4) 0px, transparent 50%),
+      radial-gradient(at 15% 35%, rgba(251, 113, 133, 0.3) 0px, transparent 55%),
+      radial-gradient(at 85% 75%, rgba(56, 189, 248, 0.35) 0px, transparent 55%),
+      radial-gradient(at 30% 70%, rgba(192, 132, 252, 0.25) 0px, transparent 60%),
+      url('/app-bg-mesh.png');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
     color: #0B1E3F;
     box-shadow:
       0 0 0 11px #0B1E3F,
@@ -843,82 +851,100 @@
     border-radius: 16px;
   }
 
-  /* ---------------- Bottom dock — floating glass capsule ---------------- */
+  /* ---------------- Bottom dock — frosted glass capsule with subtle gradient ---------------- */
   .ct-dock {
     position: absolute;
-    left: 18px;
-    right: 18px;
+    left: 0;
+    right: 0;
     bottom: 18px;
-    height: 66px;
+    margin-left: auto;
+    margin-right: auto;
+    width: calc(100% - 48px);
+    max-width: 318px;
+    height: 60px;
     z-index: 30;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 14px;
-    border-radius: 36px;
-    /* Ultra-luxurious floating frosted glassmorphism */
-    background: rgba(255, 255, 255, 0.68);
-    backdrop-filter: blur(28px) saturate(200%);
-    -webkit-backdrop-filter: blur(28px) saturate(200%);
-    border: 1px solid rgba(255, 255, 255, 0.85);
+    padding: 0 10px;
+    border-radius: 9999px;
+    /* Frosted glass with subtle luxurious mint-cyan gradient */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(226, 244, 240, 0.82) 48%, rgba(240, 249, 255, 0.92) 100%);
+    backdrop-filter: blur(28px) saturate(220%);
+    -webkit-backdrop-filter: blur(28px) saturate(220%);
+    border: 1.5px solid rgba(255, 255, 255, 0.92);
     box-shadow:
-      0 20px 48px -10px rgba(11, 30, 63, 0.20),
-      0 8px 24px -4px rgba(11, 30, 63, 0.10),
-      inset 0 1px 2px 0 rgba(255, 255, 255, 0.95);
+      0 18px 40px -6px rgba(4, 34, 43, 0.16),
+      0 6px 18px -2px rgba(29, 139, 148, 0.12),
+      inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.95);
   }
   .ct-dock-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    flex: 1;
-    padding: 6px 0;
-    color: #64748B;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    transition: color 0.18s ease;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    color: #94A3B8;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .ct-dock-btn:hover {
+    color: #04222B;
+    background: linear-gradient(135deg, rgba(29, 139, 148, 0.14), rgba(79, 184, 180, 0.08));
   }
   .ct-dock-btn[aria-current='page'] {
-    color: #0B1E3F;
+    color: #04222B;
+    background: linear-gradient(135deg, rgba(226, 244, 240, 0.9), rgba(255, 255, 255, 0.6));
+    box-shadow: 0 2px 8px rgba(4, 34, 43, 0.06);
   }
   .ct-dock-btn[aria-current='page'] .ct-dock-dot {
     opacity: 1;
     transform: scale(1);
   }
   .ct-dock-dot {
-    height: 3px;
-    width: 3px;
+    position: absolute;
+    bottom: 3.5px;
+    height: 3.5px;
+    width: 3.5px;
     border-radius: 999px;
-    background: #1C7EC8;
-    box-shadow: 0 0 8px rgba(28, 126, 200, 0.9);
+    background: linear-gradient(135deg, #10606F, #1D8B94);
+    box-shadow: 0 0 6px rgba(29, 139, 148, 0.9);
     opacity: 0;
     transform: scale(0.4);
-    transition: opacity 0.18s ease, transform 0.18s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
-  /* Centre elevated circular button — deep navy with cyan micro-glow */
+  /* Centre elevated circular button — deep Holst dark navy (#04222B) with crisp white + */
   .ct-orb {
     position: relative;
-    height: 52px;
-    width: 52px;
-    align-self: flex-start;
-    margin-top: -6px;
+    height: 50px;
+    width: 50px;
+    margin-top: -18px;
     border-radius: 999px;
-    display: grid;
-    place-items: center;
-    color: #fff;
-    background: linear-gradient(135deg, #1C7EC8 0%, #0E3566 45%, #0B1E3F 100%);
-    border: 3px solid #ffffff;
-    box-shadow: 0 8px 24px -4px rgba(11, 30, 63, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    background: linear-gradient(145deg, #10606F 0%, #0A3D4A 45%, #04222B 100%);
+    border: 3.5px solid #ffffff;
+    box-shadow:
+      0 12px 28px -4px rgba(4, 34, 43, 0.42),
+      0 0 16px -2px rgba(29, 139, 148, 0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
+  .ct-orb:hover {
+    transform: scale(1.06);
+    box-shadow:
+      0 16px 34px -4px rgba(4, 34, 43, 0.5),
+      0 0 20px -2px rgba(29, 139, 148, 0.45);
+  }
   .ct-orb:active {
-    transform: scale(0.94);
+    transform: scale(0.93);
   }
   .ct-orb[data-listening='true'] {
-    box-shadow: 0 0 0 6px rgba(28, 126, 200, 0.35), 0 14px 34px -8px rgba(11, 30, 63, 0.8);
+    box-shadow: 0 0 0 6px rgba(29, 139, 148, 0.35), 0 14px 34px -8px rgba(4, 34, 43, 0.8);
   }
   .ct-wave {
     position: absolute;
@@ -1268,4 +1294,13 @@
 
 .animate-liquid-glow {
   animation: liquid-pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes arc-flowing-stream {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -360;
+  }
 }

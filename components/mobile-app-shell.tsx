@@ -11,7 +11,9 @@ import {
   BarChart2,
   BatteryFull,
   Bell,
+  Bot,
   Bus,
+  BarChart3,
   CalendarDays,
   CalendarRange,
   Camera,
@@ -38,6 +40,7 @@ import {
   Receipt,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   SlidersHorizontal,
@@ -85,6 +88,9 @@ import { QuarantineCards } from '@/components/quarantine-cards';
 import { SimulationToolbar } from '@/components/simulation-toolbar';
 import { SpendingBars } from '@/components/spending-bars';
 import { SpendingStatisticChart } from '@/components/spending-statistic-chart';
+import { ExpensesCircleGraph } from '@/components/expenses-circle-graph';
+import { ActivitySection } from '@/components/activity-section';
+import { CentroHeroCard } from '@/components/centro-hero-card';
 import { SubscriptionTab } from '@/components/subscription-tab';
 import { RemindersTimeline } from '@/components/reminders-timeline';
 import { ArcRing } from '@/components/arc-ring';
@@ -218,11 +224,27 @@ function SignalIcon() {
  * Bottom dock + multimodal AI orb
  * ------------------------------------------------------------------ */
 
+function SparkleStarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 2.5L14.4 9.6L21.5 12L14.4 14.4L12 21.5L9.6 14.4L2.5 12L9.6 9.6L12 2.5Z" />
+    </svg>
+  );
+}
+
 const DOCK_ITEMS: Array<{ id: MobileTab; label: string; icon: React.ElementType }> = [
   { id: 'home', label: 'Home', icon: HomeIcon },
-  { id: 'timeline', label: 'Timeline', icon: CalendarRange },
-  { id: 'radar', label: 'Radar', icon: Radar },
-  { id: 'vault', label: 'Vault', icon: ShieldCheck },
+  { id: 'timeline', label: 'Timeline', icon: CalendarDays },
+  { id: 'subscription', label: 'Subscription', icon: CreditCard },
+  { id: 'agent', label: 'Agent', icon: Bot },
 ];
 
 function DockButton({
@@ -240,10 +262,10 @@ function DockButton({
       type="button"
       className="ct-dock-btn"
       aria-current={active ? 'page' : undefined}
+      aria-label={item.label}
       onClick={() => onSelect(item.id)}
     >
-      <Icon className="h-[18px] w-[18px]" />
-      <span>{item.label}</span>
+      <Icon className="h-5 w-5" />
       <span className="ct-dock-dot" />
     </button>
   );
@@ -594,191 +616,29 @@ function HomeTab({
 
   return (
     <div className="animate-fade-in -mx-1 pb-4">
-      {/* 1. Top Bar matching Image 1: Profile on left, Bell on right */}
-      <header className="flex items-center justify-between pt-1">
-        {/* Profile Avatar + "Welcome Back 👋" + Name */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('profile')}
-          className="flex items-center gap-2.5 text-left transition-transform active:scale-98 group"
-          aria-label="Edit Profile"
-        >
-          <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white shadow-sm bg-[#0B1E3F] shrink-0">
-            <Image
-              src={profile.avatar || '/avatar.jpg'}
-              alt={profile.fullName}
-              width={44}
-              height={44}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-              unoptimized
-            />
-          </div>
-          <div>
-            <p className="text-[11px] font-medium text-[#64748B] leading-none">Welcome Back 👋</p>
-            <h2 className="mt-1 text-[15.5px] font-extrabold text-[#0B1E3F] tracking-tight leading-none group-hover:text-[#1C7EC8] transition-colors">
-              {profile.fullName}
-            </h2>
-          </div>
-        </button>
+      {/* 1. Centro Vibrant Hero Card + 3 Category Progress Cards (Image 1) */}
+      <CentroHeroCard
+        userName={profile.fullName?.split(' ')[0] || 'Ashley'}
+        avatarUrl={profile.avatar || '/avatar.jpg'}
+        balance={150850}
+        onAddIncome={() => onOpenSheet('sandbox')}
+        onAddExpense={() => onOpenSheet('expense')}
+        onOpenPortfolio={() => onOpenSheet('payments')}
+        onOpenGoal={() => onGoTab('timeline')}
+        onOpenNotifications={() => onOpenSheet('notifications')}
+      />
 
-        {/* Bell notification button */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('notifications')}
-          className="relative grid h-10 w-10 place-items-center rounded-full bg-white/95 border border-white/80 shadow-[0_4px_16px_rgba(11,30,63,0.06)] text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#1C7EC8] ring-2 ring-white" />
-        </button>
-      </header>
-
-      {/* 2. Available Balance Card matching Image 1 with subtle ambient gradient glow behind */}
+      {/* 3. Middle Section: Expenses Glowing Segmented Circle Graph with Fluid Flowing Hover matching user reference image */}
       <div className="relative mt-4">
-        <div className="pointer-events-none absolute -inset-1.5 rounded-[34px] bg-gradient-to-tr from-[#93C5FD]/40 via-[#C7D2FE]/25 to-[#67E8F9]/35 blur-xl opacity-75 -z-10" />
-        <section className="rounded-[28px] bg-white/95 p-5 shadow-[0_12px_36px_rgba(11,30,63,0.06)] border border-white/90 relative overflow-hidden backdrop-blur-md">
-          {/* Top row: Icon + Available Balance on left, circle arrow up-right on right */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded-lg bg-[#EBF4FF] text-[#1C7EC8]">
-                <CreditCard className="h-4 w-4" />
-              </div>
-              <span className="text-[13px] font-semibold text-[#0B1E3F]/75">Available Balance</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenSheet('expense')}
-              className="grid h-8 w-8 place-items-center rounded-full bg-[#0B1E3F] text-white shadow-sm transition-transform active:scale-95 hover:bg-[#122A54]"
-              aria-label="Add transaction"
-            >
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Big Bold Balance matching Image 1: $56,750.00 */}
-          <div className="mt-3.5">
-            <p className="text-[34px] sm:text-[38px] font-black tracking-[-0.03em] text-[#0B1E3F] leading-none">
-              ${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-          </div>
-
-          {/* Bottom Pill: Trend indicator */}
-          <div className="mt-3.5 flex items-center">
-            <button
-              type="button"
-              onClick={() => onOpenSheet('summary')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F8FC] px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F]/75 hover:bg-[#EBF3FA] transition-colors"
-            >
-              <TrendingUp className="h-3.5 w-3.5 text-[#10B981]" />
-              <span>See last week tread</span>
-            </button>
-          </div>
-        </section>
+        <ExpensesCircleGraph onOpenAnalytics={() => onOpenSheet('summary')} />
       </div>
 
-      {/* 3. Middle Section: Total Spending Graph with ambient flowing gradient behind */}
+      {/* 4. Activity Section matching user reference image */}
       <div className="relative mt-4">
-        <div className="pointer-events-none absolute -inset-2 rounded-[38px] bg-gradient-to-b from-[#38BDF8]/25 via-[#818CF8]/15 to-[#1C7EC8]/20 blur-xl opacity-70 -z-10" />
-        <SpendingStatisticChart
-          incomeAmount={2400}
-          expenseAmount={spentThisMonth}
-          floor={floor}
+        <ActivitySection
+          onOpenAnalytics={() => onOpenSheet('payments')}
+          onOpenItem={() => onOpenSheet('notifications')}
         />
-      </div>
-
-      {/* 4. Striking Deep Navy Blue Floating Bottom Container Block (#0B1E3F) */}
-      <div className="relative mt-5 -mx-3">
-        <div className="pointer-events-none absolute -inset-x-2 -top-4 h-12 bg-gradient-to-b from-[#1C7EC8]/25 via-[#2563EB]/15 to-transparent blur-md -z-10" />
-        <section className="relative rounded-t-[34px] bg-gradient-to-b from-[#0B1E3F] to-[#07152D] px-5 pt-3.5 pb-8 text-white shadow-[0_-16px_40px_rgba(11,30,63,0.35)] ring-1 ring-inset ring-white/10">
-        {/* Subtle center chevron / peak indicator */}
-        <div className="flex justify-center -mt-1 mb-2">
-          <button
-            type="button"
-            onClick={() => onOpenSheet('payments')}
-            className="h-1 w-9 rounded-full bg-white/20 hover:bg-white/40 transition-colors"
-            aria-label="Expand transactions"
-          />
-        </div>
-
-        {/* Header: Recent transactions on left, See All on right */}
-        <div className="flex items-center justify-between mb-3.5">
-          <h3 className="text-[17px] font-extrabold tracking-tight text-white">Recent transactions</h3>
-          <button
-            type="button"
-            onClick={() => onOpenSheet('payments')}
-            className="text-[12px] font-bold text-[#62AEED] hover:text-white transition-colors"
-          >
-            See All
-          </button>
-        </div>
-
-        {/* Minimalist Transaction Items from Image 1 */}
-        <div className="space-y-2.5">
-          {/* 1. Paypal */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#0070BA] text-white shadow-sm shrink-0">
-                <span className="font-sans font-black text-[18px] italic">P</span>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Paypal</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Today, 5:32 PM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-[#34D399]">+$80.89</span>
-          </div>
-
-          {/* 2. Google one */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#0B1E3F] shadow-sm shrink-0 p-2.5">
-                <svg className="h-full w-full" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.44 0 4.67-.88 6.42-2.34l-2.07-2.07C14.98 18.37 13.56 19 12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7c1.93 0 3.68.79 4.95 2.05l2.12-2.12C17.29 3.2 14.79 2 12 2z"/>
-                  <path fill="#EA4335" d="M12 5c1.93 0 3.68.79 4.95 2.05l2.12-2.12C17.29 3.2 14.79 2 12 2v3z"/>
-                  <path fill="#FBBC05" d="M19.07 4.93l-2.12 2.12C18.21 8.32 19 10.07 19 12h3c0-2.79-1.2-5.29-2.93-7.07z"/>
-                  <path fill="#34A853" d="M19 12c0 1.93-.79 3.68-2.05 4.95l2.12 2.12C20.8 17.29 22 14.79 22 12h-3z"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Google one</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Today, 2:40 PM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-white">-$10.99</span>
-          </div>
-
-          {/* 3. Apple */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#1C1C1E] text-white shadow-sm shrink-0">
-                <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.16.65-2.84 1.44-.59.69-1.11 1.76-.97 2.81 1.07.08 2.2-.62 2.8-1.38z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Apple</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Yesterday, 11:20 AM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-white">-$15.00</span>
-          </div>
-        </div>
-      </section>
       </div>
     </div>
   );
@@ -1576,6 +1436,94 @@ function AiDrawer({
   );
 }
 
+function AgentTab({
+  copilot,
+  onOpenSheet,
+}: {
+  copilot?: React.ReactNode;
+  onOpenSheet: (s: SheetId) => void;
+}) {
+  const [segment, setSegment] = React.useState<AiSegment>('COPILOT');
+  const [listening, setListening] = React.useState(false);
+  const masterAutonomy = useCtrlPayStore((s) => s.masterAutonomyEnabled);
+
+  return (
+    <div className="animate-fade-in -mx-1 pb-4">
+      {/* Header */}
+      <header className="flex items-center justify-between pt-1 mb-3">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#10B981]">
+              Autonomous Agent Active
+            </span>
+          </div>
+          <h2 className="text-[20px] font-black tracking-tight text-[#04222B]">Copilot AI</h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onOpenSheet('sandbox')}
+          className="flex items-center gap-1.5 rounded-full bg-[#0B1E3F] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm transition-transform active:scale-95"
+        >
+          <Sparkles className="h-3 w-3 text-cyan-300" />
+          <span>{masterAutonomy ? 'T3 Autonomy' : 'Advisory Mode'}</span>
+        </button>
+      </header>
+
+      {/* Segment Selector: Copilot / Voice / OCR */}
+      <div className="ct-seg w-full justify-between mb-3">
+        <button
+          type="button"
+          data-on={segment === 'COPILOT'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => setSegment('COPILOT')}
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Copilot
+        </button>
+        <button
+          type="button"
+          data-on={segment === 'VOICE'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => {
+            setSegment('VOICE');
+            setListening(true);
+          }}
+        >
+          <Mic className="h-3.5 w-3.5" /> Voice
+        </button>
+        <button
+          type="button"
+          data-on={segment === 'OCR'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => setSegment('OCR')}
+        >
+          <Camera className="h-3.5 w-3.5" /> OCR Scan
+        </button>
+      </div>
+
+      {/* Content Area */}
+      {segment === 'COPILOT' && (
+        <div className="rounded-[28px] bg-white/90 p-3.5 shadow-sm border border-white/80 backdrop-blur-md min-h-[66vh] flex flex-col">
+          {copilot ?? <AgentChat withBookkeeping={true} />}
+        </div>
+      )}
+
+      {segment === 'VOICE' && (
+        <div className="rounded-[28px] bg-white/90 p-4 shadow-sm border border-white/80 backdrop-blur-md">
+          <MultimodalBookkeeping defaultOpen defaultMode="VOICE" autoStartVoice={listening} />
+        </div>
+      )}
+
+      {segment === 'OCR' && (
+        <div className="rounded-[28px] bg-white/90 p-4 shadow-sm border border-white/80 backdrop-blur-md">
+          <MultimodalBookkeeping defaultOpen defaultMode="RECEIPT" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ *
  * Shell
  * ------------------------------------------------------------------ */
@@ -1629,13 +1577,16 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         <div className="h-full overflow-y-auto no-scrollbar px-4 pb-[104px] pt-1">
           {tab === 'home' && <HomeTab onOpenSheet={openSheet} onGoTab={setTab} />}
           {tab === 'timeline' && (
-            <RemindersTimeline onBack={() => setTab('home')} onOpenSheet={openSheet} />
+            <RemindersTimeline onBack={() => setTab('home')} onOpenSheet={(s) => openSheet(s as SheetId)} />
           )}
           {tab === 'subscription' && (
             <SubscriptionTab
               onOpenSheet={openSheet}
               onVerifyStudent={() => setDowngradeId('spotify_my')}
             />
+          )}
+          {tab === 'agent' && (
+            <AgentTab copilot={copilot} onOpenSheet={openSheet} />
           )}
           {tab === 'radar' && (
             <RadarTab
@@ -1647,37 +1598,52 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         </div>
       </div>
 
-      {/* Floating glass dock + center elevated button matching Image 1 */}
+      {/* Floating white capsule dock: home timeline (+) subscription agent */}
       <nav className="ct-dock" aria-label="Primary">
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'home' ? 'page' : undefined}
+          aria-label="Home"
           onClick={() => setTab('home')}
         >
-          <HomeIcon className="h-[18px] w-[18px]" />
-          <span>Home</span>
+          <HomeIcon className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'timeline' ? 'page' : undefined}
+          aria-label="Timeline"
           onClick={() => setTab('timeline')}
         >
-          <CalendarDays className="h-[18px] w-[18px]" />
-          <span>Timeline</span>
+          <CalendarDays className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
-        <AiOrb listening={listeningActive} onTap={() => openSheet('expense')} onHold={openVoice} onRelease={releaseVoice} />
+        <AiOrb
+          listening={listeningActive}
+          onTap={() => openSheet('expense')}
+          onHold={openVoice}
+          onRelease={releaseVoice}
+        />
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'subscription' ? 'page' : undefined}
+          aria-label="Subscription"
           onClick={() => setTab('subscription')}
         >
-          <CalendarRange className="h-[18px] w-[18px]" />
-          <span>Subscriptions</span>
+          <CreditCard className="h-5 w-5" />
+          <span className="ct-dock-dot" />
+        </button>
+        <button
+          type="button"
+          className="ct-dock-btn"
+          aria-current={tab === 'agent' ? 'page' : undefined}
+          aria-label="Agent"
+          onClick={() => setTab('agent')}
+        >
+          <Bot className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
       </nav>

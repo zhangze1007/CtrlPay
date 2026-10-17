@@ -4,7 +4,6 @@ import * as React from 'react';
 import {
   ArrowUpRight,
   BarChart2,
-  Bell,
   CheckCircle2,
   Clapperboard,
   Sparkles,
@@ -72,16 +71,6 @@ export function SubscriptionTab({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Bell Icon Button */}
-          <button
-            type="button"
-            onClick={() => onOpenSheet('notifications')}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/80 border border-white/90 shadow-sm text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" />
-          </button>
-
           {/* Unequal Menu Icon Button */}
           <button
             type="button"
