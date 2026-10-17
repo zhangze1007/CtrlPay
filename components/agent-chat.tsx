@@ -80,7 +80,13 @@ function ToolSummary({ inv }: { inv: LooseToolInvocation }) {
   );
 }
 
-export function AgentChat({ withBookkeeping = true }: { withBookkeeping?: boolean } = {}) {
+export function AgentChat({
+  withBookkeeping = true,
+  initialPrompt,
+}: {
+  withBookkeeping?: boolean;
+  initialPrompt?: string;
+} = {}) {
   const roastTone = useCtrlPayStore((s) => s.roastTone);
   const setRoastTone = useCtrlPayStore((s) => s.setRoastTone);
   const QUICK_CHIPS = React.useMemo(() => buildQuickChips(roastTone), [roastTone]);
@@ -118,6 +124,14 @@ export function AgentChat({ withBookkeeping = true }: { withBookkeeping?: boolea
     maxSteps: 5,
     body,
   });
+
+  const sentInitialRef = React.useRef(false);
+  React.useEffect(() => {
+    if (initialPrompt && !sentInitialRef.current && messages.length === 0) {
+      sentInitialRef.current = true;
+      void append({ role: 'user', content: initialPrompt });
+    }
+  }, [initialPrompt, append, messages.length]);
 
   const endRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {

@@ -19,6 +19,7 @@ export interface CentroHeroCardProps {
   onOpenPortfolio?: () => void;
   onOpenGoal?: () => void;
   onOpenNotifications?: () => void;
+  onOpenProfile?: () => void;
   className?: string;
 }
 
@@ -31,6 +32,7 @@ export function CentroHeroCard({
   onOpenPortfolio,
   onOpenGoal,
   onOpenNotifications,
+  onOpenProfile,
   className,
 }: CentroHeroCardProps) {
   return (
@@ -49,8 +51,13 @@ export function CentroHeroCard({
 
         {/* Top Header: Avatar + "Hello, Ashley" + Right Button */}
         <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/70 shadow-md bg-white/20 shrink-0">
+          <button
+            type="button"
+            onClick={onOpenProfile}
+            className="flex items-center gap-3 text-left group transition-transform active:scale-95 cursor-pointer"
+            aria-label="Edit Profile"
+          >
+            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/70 shadow-md bg-white/20 shrink-0 group-hover:ring-white">
               <Image
                 src={avatarUrl}
                 alt={userName}
@@ -61,14 +68,19 @@ export function CentroHeroCard({
               />
             </div>
             <div className="text-left">
-              <h3 className="text-[17px] font-black tracking-tight text-white leading-tight">
-                Hello, {userName}
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-[17px] font-black tracking-tight text-white leading-tight">
+                  Hello, {userName}
+                </h3>
+                <span className="text-[10px] font-bold bg-white/20 text-white/90 px-1.5 py-0.5 rounded-full border border-white/30 opacity-80 group-hover:opacity-100">
+                  Edit ✎
+                </span>
+              </div>
               <p className="text-[11px] font-medium text-white/80 leading-tight mt-0.5">
                 Welcome back to Centro
               </p>
             </div>
-          </div>
+          </button>
 
           {/* Right Frosted Minimal Button matching Image 1 */}
           <button

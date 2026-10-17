@@ -88,7 +88,8 @@ import { QuarantineCards } from '@/components/quarantine-cards';
 import { SimulationToolbar } from '@/components/simulation-toolbar';
 import { SpendingBars } from '@/components/spending-bars';
 import { SpendingStatisticChart } from '@/components/spending-statistic-chart';
-import { ExpensesCircleGraph } from '@/components/expenses-circle-graph';
+import { CircularExpenseDonut } from '@/components/circular-expense-donut';
+import { ClinicalProfileView } from '@/components/clinical-profile-view';
 import { ActivitySection } from '@/components/activity-section';
 import { CentroHeroCard } from '@/components/centro-hero-card';
 import { SubscriptionTab } from '@/components/subscription-tab';
@@ -103,6 +104,7 @@ import { ExpenseOverviewCard } from '@/components/corridor-chart';
 import { SteppedLogo, UnequalMenuIcon } from '@/components/ui/design-icons';
 import { ProfileSheet } from '@/components/profile-sheet';
 import { NotificationsSheet } from '@/components/notifications-sheet';
+import { CopilotTab } from '@/components/copilot-tab';
 
 export type MobileTab = 'home' | 'timeline' | 'subscription' | 'agent' | 'radar' | 'vault';
 
@@ -626,11 +628,12 @@ function HomeTab({
         onOpenPortfolio={() => onOpenSheet('payments')}
         onOpenGoal={() => onGoTab('timeline')}
         onOpenNotifications={() => onOpenSheet('notifications')}
+        onOpenProfile={() => onOpenSheet('profile')}
       />
 
-      {/* 3. Middle Section: Expenses Glowing Segmented Circle Graph with Fluid Flowing Hover matching user reference image */}
+      {/* 3. Middle Section: Expenses Segmented Sausage Donut Chart matching Image 3 with dynamic hover animation */}
       <div className="relative mt-4">
-        <ExpensesCircleGraph onOpenAnalytics={() => onOpenSheet('summary')} />
+        <CircularExpenseDonut onAddExpense={() => onOpenSheet('expense')} />
       </div>
 
       {/* 4. Activity Section matching user reference image */}
@@ -1586,7 +1589,10 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
             />
           )}
           {tab === 'agent' && (
-            <AgentTab copilot={copilot} onOpenSheet={openSheet} />
+            <CopilotTab
+              onOpenSheet={(s) => openSheet(s as SheetId)}
+              onOpenWhatIf={() => openSheet('sandbox')}
+            />
           )}
           {tab === 'radar' && (
             <RadarTab
@@ -1673,14 +1679,21 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         <PaymentsSheet onClose={closeSheet} />
       </PhoneSheet>
 
-      <PhoneSheet
-        open={sheet === 'profile'}
-        onClose={closeSheet}
-        title="Edit Profile"
-        subtitle="Neo-Banking Personal Settings"
-      >
-        <ProfileSheet onClose={closeSheet} />
-      </PhoneSheet>
+      <AnimatePresence>
+        {sheet === 'profile' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-gradient-to-b from-[#F0F5FF] via-[#E8F1FD] to-[#FCE7F3] overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+              <ClinicalProfileView onClose={closeSheet} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <PhoneSheet
         open={sheet === 'notifications'}

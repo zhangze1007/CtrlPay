@@ -1304,3 +1304,32 @@
     stroke-dashoffset: -360;
   }
 }
+
+@keyframes orb-levitate {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+
+@keyframes orb-shadow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(0.85);
+    opacity: 0.15;
+  }
+}
+
+@keyframes eye-blink {
+  0%, 90%, 100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}

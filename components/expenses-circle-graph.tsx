@@ -242,12 +242,12 @@ export function ExpensesCircleGraph({
       </div>
 
       {/* 2. Side-by-Side Layout: Graph on Left, Categories on Right ("expenses graph可以在左边 然后category在右边") */}
-      <div className="relative z-10 grid grid-cols-[152px_1fr] sm:grid-cols-[164px_1fr] items-center gap-3">
+      <div className="relative z-10 grid grid-cols-[136px_1fr] items-center gap-2.5">
         {/* Left Column: Enlarged Glowing Segmented Circle Graph with Fluid Flowing Hover */}
         <div className="relative flex items-center justify-center">
           <svg
             viewBox={`0 0 ${size} ${size}`}
-            className="w-[152px] sm:w-[164px] h-auto overflow-visible select-none drop-shadow-sm"
+            className="w-[136px] h-auto overflow-visible select-none drop-shadow-sm"
           >
             <defs>
               {/* Vibrant neon linear gradients for the segments */}
@@ -445,10 +445,10 @@ export function ExpensesCircleGraph({
                   }}
                   className="w-full flex items-center justify-between py-2 px-2.5 text-left transition-colors"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     {/* Glowing Gradient Pill */}
                     <div
-                      className="h-3.5 w-5 rounded-full shrink-0 transition-all duration-300"
+                      className="h-3 w-4 rounded-full shrink-0 transition-all duration-300"
                       style={{
                         background: `linear-gradient(135deg, ${category.colorStart}, ${category.colorEnd})`,
                         boxShadow: isActive
@@ -456,16 +456,16 @@ export function ExpensesCircleGraph({
                           : `0 0 5px ${category.glowColor}`,
                       }}
                     />
-                    <span className="text-[13px] font-bold text-[#0B1E3F] tracking-tight">
+                    <span className="text-[12.5px] font-bold text-[#0B1E3F] tracking-tight truncate">
                       {category.name}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-right">
-                    <span className="text-[11px] font-semibold text-slate-400">
+                  <div className="flex items-center gap-1 text-right shrink-0">
+                    <span className="text-[10.5px] font-semibold text-slate-400">
                       {category.percentage}%
                     </span>
-                    <span className="text-[13px] font-black text-[#0B1E3F]">
+                    <span className="text-[12.5px] font-black text-[#0B1E3F] whitespace-nowrap">
                       {category.formattedAmount}
                     </span>
                   </div>
