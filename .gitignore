@@ -11,6 +11,9 @@ next-env.d.ts
 # production
 /build
 
+# vercel (local project link — never commit)
+.vercel
+
 # misc
 .DS_Store
 *.pem
