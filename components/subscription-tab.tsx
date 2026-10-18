@@ -53,7 +53,7 @@ export function SubscriptionTab({
   ];
 
   return (
-    <div className="animate-fade-in -mx-1 pb-10 space-y-3.5">
+    <div className="animate-fade-in -mx-1 pb-10 space-y-2">
       {/* 1. Header: Stepped Logo + "Subscription" on left, Bell & Menu on right */}
       <header className="flex items-center justify-between pt-1 px-1">
         <div className="flex items-center gap-2.5">

@@ -28,10 +28,12 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          'Space Mono',
-          'JetBrains Mono',
           'Outfit',
-          'monospace',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'Segoe UI',
+          'Roboto',
+          'sans-serif',
         ],
         mono: [
           'Space Mono',

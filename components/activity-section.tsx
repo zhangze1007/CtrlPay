@@ -1,13 +1,17 @@
 'use client';
 
 import * as React from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  ArrowLeft,
   ArrowUpRight,
   Bell,
   CheckCircle2,
   ChevronRight,
   Copy,
+  Filter,
   Receipt,
+  Search,
   Share2,
   Sparkles,
   Smartphone,
@@ -22,7 +26,7 @@ export interface ActivityItem {
   id: string;
   title: string;
   subtitle: string;
-  amount: string; // Formatted with flanking dashes e.g. "- $30.00 -"
+  amount: string; // Formatted with flanking dashes e.g. "- RM 30.00 -"
   rawAmount: number;
   category: string;
   categoryType: 'food' | 'shopping' | 'subscription' | 'transfer' | 'entertainment' | 'bills';
@@ -42,7 +46,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: 'act-1',
     title: 'Apple service subscription',
     subtitle: 'App Store, Tinder, and 2+',
-    amount: '- $30.00 -',
+    amount: '- RM 30.00 -',
     rawAmount: 30.0,
     category: 'Subscription',
     categoryType: 'subscription',
@@ -58,7 +62,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: 'act-2',
     title: 'Have a lunch with Mike',
     subtitle: 'Bigmac, Chicken Wings',
-    amount: '- $30.00 -',
+    amount: '- RM 30.00 -',
     rawAmount: 30.0,
     category: 'Food & Dining',
     categoryType: 'food',
@@ -76,7 +80,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: 'act-3',
     title: 'Spotify Family Plan',
     subtitle: 'Spotify Monthly Subscription',
-    amount: '- $12.00 -',
+    amount: '- RM 12.00 -',
     rawAmount: 12.0,
     category: 'Streaming',
     categoryType: 'subscription',
@@ -92,7 +96,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: 'act-4',
     title: 'Nasi Bebek Guling',
     subtitle: 'Bebek Guling Surabaya',
-    amount: '- $5.00 -',
+    amount: '- RM 5.00 -',
     rawAmount: 5.0,
     category: 'Local Eats',
     categoryType: 'food',
@@ -110,7 +114,7 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
     id: 'act-5',
     title: 'Instagram Ads',
     subtitle: 'Sponsored Boost Campaign',
-    amount: '- $24.00 -',
+    amount: '- RM 24.00 -',
     rawAmount: 24.0,
     category: 'Marketing',
     categoryType: 'bills',
@@ -124,7 +128,176 @@ const INITIAL_ACTIVITIES: ActivityItem[] = [
   },
 ];
 
-function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
+// Extended list of transactions for "View more" slide view
+const EXTENDED_ACTIVITIES: ActivityItem[] = [
+  ...INITIAL_ACTIVITIES,
+  {
+    id: 'act-6',
+    title: 'Zus Coffee Mid Valley',
+    subtitle: 'Iced Spanish Latte x2',
+    amount: '- RM 15.50 -',
+    rawAmount: 15.5,
+    category: 'Food & Drinks',
+    categoryType: 'food',
+    iconBg: '#0055B8',
+    iconType: 'tng',
+    timestamp: '15 Oct, 3:15 PM',
+    paymentMethod: "Touch 'n Go eWallet",
+    referenceId: 'TNG-77402-ZUS',
+    isExtractedFromNotification: true,
+    rawNotificationText: "Touch 'n Go eWallet: Payment of RM 15.50 to Zus Coffee successful.",
+    aiCategorizationNote: 'Extracted from TNG push notification. AI categorized as Food & Drinks.',
+    aiConfidence: 99,
+  },
+  {
+    id: 'act-7',
+    title: 'Dinner Steamboat Split',
+    subtitle: 'Mike Wong (DuitNow)',
+    amount: '- RM 45.00 -',
+    rawAmount: 45.0,
+    category: 'Food & Dining',
+    categoryType: 'food',
+    iconBg: '#FFCE00',
+    iconType: 'maybank',
+    timestamp: '14 Oct, 8:45 PM',
+    paymentMethod: 'Maybank MAE',
+    referenceId: 'MAE-55102-SBT',
+    isExtractedFromNotification: true,
+    rawNotificationText: 'Maybank MAE: DuitNow Transfer RM 45.00 to Mike Wong. Ref: Dinner steamboat split.',
+    aiCategorizationNote: 'Extracted from Maybank MAE notification. Peer transfer tagged to Dining.',
+    aiConfidence: 98,
+  },
+  {
+    id: 'act-8',
+    title: 'Campus Bookstore',
+    subtitle: 'Semester Textbooks & Stationery',
+    amount: '- RM 120.00 -',
+    rawAmount: 120.0,
+    category: 'Education & Supplies',
+    categoryType: 'shopping',
+    iconBg: '#EEF2FF',
+    iconType: 'custom',
+    timestamp: '12 Oct, 10:30 AM',
+    paymentMethod: 'Mastercard *4829',
+    referenceId: 'BOK-33910-EDU',
+    aiCategorizationNote: 'Matched to semester textbook allocation in CFaR student budget.',
+    aiConfidence: 95,
+  },
+  {
+    id: 'act-9',
+    title: 'GrabCar to Sunway Uni',
+    subtitle: 'Morning Ride · Sunway Velocity',
+    amount: '- RM 14.00 -',
+    rawAmount: 14.0,
+    category: 'Transport',
+    categoryType: 'bills',
+    iconBg: '#ECFDF5',
+    iconType: 'grab',
+    timestamp: '11 Oct, 8:20 AM',
+    paymentMethod: 'GrabPay Balance',
+    referenceId: 'GP-99210-RIDE',
+    aiCategorizationNote: 'Tagged under Campus Transport.',
+    aiConfidence: 96,
+  },
+  {
+    id: 'act-10',
+    title: 'FamilyMart SS15',
+    subtitle: 'Matcha Softserve & Oden',
+    amount: '- RM 18.20 -',
+    rawAmount: 18.2,
+    category: 'Food & Snacks',
+    categoryType: 'food',
+    iconBg: '#0055B8',
+    iconType: 'tng',
+    timestamp: '10 Oct, 9:15 PM',
+    paymentMethod: "Touch 'n Go eWallet",
+    referenceId: 'TNG-22910-FM',
+    aiCategorizationNote: 'Auto-categorized under Food & Snacks.',
+    aiConfidence: 97,
+  },
+  {
+    id: 'act-11',
+    title: 'Netflix Premium 4K',
+    subtitle: 'Monthly Family Entertainment',
+    amount: '- RM 25.86 -',
+    rawAmount: 25.86,
+    category: 'Streaming',
+    categoryType: 'subscription',
+    iconBg: '#1C1C1E',
+    iconType: 'apple',
+    timestamp: '08 Oct, 9:00 AM',
+    paymentMethod: 'Apple Pay · Mastercard *4829',
+    referenceId: 'NFLX-88190-SUB',
+    aiCategorizationNote: 'Recurring digital subscription. Verified active.',
+    aiConfidence: 99,
+  },
+  {
+    id: 'act-12',
+    title: 'Allowance from Mom',
+    subtitle: 'DuitNow Instant Transfer',
+    amount: '+ RM 300.00 +',
+    rawAmount: 300.0,
+    category: 'Income / Allowance',
+    categoryType: 'transfer',
+    iconBg: '#FFCE00',
+    iconType: 'maybank',
+    timestamp: '05 Oct, 11:00 AM',
+    paymentMethod: 'Maybank MAE Account',
+    referenceId: 'MAE-11029-INC',
+    aiCategorizationNote: 'Inbound family allowance. Added to monthly survival liquidity.',
+    aiConfidence: 99,
+  },
+  {
+    id: 'act-13',
+    title: 'Unifi Home Fiber 100Mbps',
+    subtitle: 'Monthly Internet Utility',
+    amount: '- RM 89.00 -',
+    rawAmount: 89.0,
+    category: 'Utilities',
+    categoryType: 'bills',
+    iconBg: '#CC0000',
+    iconType: 'publicbank',
+    timestamp: '03 Oct, 2:10 PM',
+    paymentMethod: 'Public Bank Auto-Debit',
+    referenceId: 'PB-44019-UNIFI',
+    aiCategorizationNote: 'Fixed commitment utility bill. Cleared.',
+    aiConfidence: 98,
+  },
+  {
+    id: 'act-14',
+    title: 'Watsons Pharmacy',
+    subtitle: 'Personal Care & Vitamins',
+    amount: '- RM 22.50 -',
+    rawAmount: 22.5,
+    category: 'Health & Care',
+    categoryType: 'shopping',
+    iconBg: '#ECFDF5',
+    iconType: 'grab',
+    timestamp: '01 Oct, 5:40 PM',
+    paymentMethod: 'GrabPay Balance',
+    referenceId: 'GP-10294-WAT',
+    aiCategorizationNote: 'Categorized as Health & Personal Care.',
+    aiConfidence: 94,
+  },
+  {
+    id: 'act-15',
+    title: 'Steam Summer Game',
+    subtitle: 'Indie Game Bundle',
+    amount: '- RM 42.00 -',
+    rawAmount: 42.0,
+    category: 'Entertainment',
+    categoryType: 'entertainment',
+    iconBg: '#1C1C1E',
+    iconType: 'custom',
+    timestamp: '28 Sep, 10:15 PM',
+    paymentMethod: 'Mastercard *4829',
+    referenceId: 'STM-77301-GAM',
+    aiCategorizationNote: 'Discretionary gaming expenditure.',
+    aiConfidence: 96,
+  },
+];
+
+export function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
   switch (type) {
     case 'apple':
       return (
@@ -140,8 +313,8 @@ function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
       );
     case 'spotify':
       return (
-        <svg className="h-5 w-5 fill-[#1DB954]" viewBox="0 0 24 24">
-          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.434-5.308-1.758-8.793-.963-.335.077-.67-.133-.746-.469-.077-.334.132-.67.467-.747 3.808-.87 7.076-.506 9.722 1.116.294.18.386.563.207.856zm1.224-2.72c-.226.367-.706.482-1.072.257-2.687-1.652-6.785-2.131-9.965-1.166-.413.127-.848-.106-.973-.517-.125-.413.108-.848.52-.973 3.632-1.102 8.147-.568 11.233 1.328.366.226.481.707.257 1.071zm.104-2.828c-3.223-1.914-8.54-2.09-11.618-1.156-.496.149-1.015-.129-1.166-.624-.149-.495.13-1.015.625-1.165 3.532-1.072 9.404-.866 13.115 1.337.445.264.59.838.327 1.282-.264.443-.838.59-1.283.326z" />
+        <svg className="h-5 w-5 fill-[#22C55E]" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 5.524 4.477 10 10 10 5.524 0 10-4.476 10-10 0-5.523-4.476-10-10-10zm4.587 14.428c-.18.295-.562.387-.857.207-2.348-1.435-5.304-1.76-8.785-.964-.334.076-.666-.134-.742-.468-.077-.334.133-.666.468-.743 3.81-.87 7.076-.502 9.71 1.112.294.18.386.562.206.856zm1.223-2.72c-.226.368-.71.484-1.078.258-2.688-1.652-6.784-2.131-9.963-1.166-.413.126-.855-.108-.98-.52-.127-.414.107-.856.52-.981 3.633-1.103 8.147-.568 11.243 1.33.368.226.484.71.258 1.079zm.105-2.836C14.693 8.94 8.57 8.74 5.013 9.82c-.495.15-1.02-.132-1.17-.626-.15-.494.13-1.02.626-1.17 4.095-1.243 10.866-1.012 14.73 1.282.446.265.592.842.327 1.288-.266.446-.843.592-1.29.327z" />
         </svg>
       );
     case 'grab':
@@ -166,7 +339,7 @@ function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
       );
     case 'maybank':
       return (
-        <div className="grid h-full w-full place-items-center rounded-full bg-[#FFCE00] text-[#111827] font-black text-[11px] tracking-tighter">
+        <div className="grid h-full w-full place-items-center rounded-full bg-[#FFCE00] text-[#111827] font-black text-[9px] tracking-tighter">
           MAE
         </div>
       );
@@ -184,12 +357,24 @@ function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
 export interface ActivitySectionProps {
   onOpenAnalytics?: () => void;
   onOpenItem?: (item: ActivityItem) => void;
+  onViewMore?: () => void;
   className?: string;
+  title?: string;
 }
 
-export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: ActivitySectionProps) {
+export function ActivitySection({
+  onOpenAnalytics,
+  onOpenItem,
+  onViewMore,
+  className,
+  title = 'Latest Transaction',
+}: ActivitySectionProps) {
   const [activities, setActivities] = React.useState<ActivityItem[]>(INITIAL_ACTIVITIES);
   const [selectedItem, setSelectedItem] = React.useState<ActivityItem | null>(null);
+  const [isViewMoreOpen, setIsViewMoreOpen] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>('all');
+
   const [incomingNotification, setIncomingNotification] = React.useState<{
     bank: string;
     text: string;
@@ -204,7 +389,6 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
 
   const bookExpense = useCtrlPayStore((s) => s.bookExpense);
 
-  // Bank & E-Wallet simulation scenarios based on user audio prompt
   const SIMULATION_PRESETS = [
     {
       bank: "Touch 'n Go eWallet",
@@ -228,104 +412,107 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
       iconType: 'maybank' as const,
       iconBg: '#FFCE00',
       text: 'Maybank MAE: DuitNow Transfer RM 45.00 to Mike Wong. Ref: Dinner steamboat split.',
-      note: 'DuitNow transfer intercepted. AI parsed reference text "Dinner" -> Food & Dining.',
+      note: 'Auto-extracted from Maybank MAE push notification. Peer split recorded.',
     },
     {
-      bank: 'Public Bank (PB engage)',
-      merchant: 'Uniqlo Mid Valley',
-      subtitle: 'AIRism Oversized Tee',
-      amount: 79.9,
-      category: 'Shopping',
+      bank: 'Public Bank Berhad',
+      merchant: 'Popular Bookstore SS15',
+      subtitle: 'Campus Stationery & Notebooks',
+      amount: 28.0,
+      category: 'Education & Supplies',
       categoryType: 'shopping' as const,
       iconType: 'publicbank' as const,
       iconBg: '#CC0000',
-      text: 'PB engage: RM 79.90 debited from Account *4512 for UNIQLO MID VALLEY.',
-      note: 'Public Bank debit alert intercepted. AI categorized under Shopping & Apparel.',
-    },
-    {
-      bank: "Touch 'n Go eWallet",
-      merchant: 'Tealive Nu Sentral',
-      subtitle: 'Roasted Milk Tea w/ Pearls',
-      amount: 9.9,
-      category: 'Food & Drinks',
-      categoryType: 'food' as const,
-      iconType: 'tng' as const,
-      iconBg: '#0055B8',
-      text: "Touch 'n Go eWallet: Payment of RM 9.90 to Tealive Nu Sentral via DuitNow QR.",
-      note: 'Auto-extracted. Within daily coffee & treats quota.',
+      text: 'PB Card Alert: RM 28.00 charged at Popular Bookstore SS15 on card ending *3319.',
+      note: 'Auto-extracted from Public Bank SMS push. Tagged to Education & Supplies.',
     },
   ];
 
-  function triggerSimulateNotification(presetIndex: number) {
-    const preset = SIMULATION_PRESETS[presetIndex % SIMULATION_PRESETS.length];
+  const triggerSimulateNotification = (presetIndex: number) => {
+    if (isSimulating) return;
     setIsSimulating(true);
-    setIncomingNotification(preset);
+    const p = SIMULATION_PRESETS[presetIndex];
 
-    // After 1.6s, add to Activity list and book to store
+    setIncomingNotification({
+      bank: p.bank,
+      text: p.text,
+      category: p.category,
+      amount: p.amount,
+      merchant: p.merchant,
+      iconType: p.iconType,
+      iconBg: p.iconBg,
+    });
+
     setTimeout(() => {
-      const newAct: ActivityItem = {
-        id: `act-${Date.now()}`,
-        title: preset.merchant,
-        subtitle: preset.subtitle,
-        amount: `- RM ${preset.amount.toFixed(2)} -`,
-        rawAmount: preset.amount,
-        category: preset.category,
-        categoryType: preset.categoryType,
-        iconBg: preset.iconBg,
-        iconType: preset.iconType,
+      const newTxn: ActivityItem = {
+        id: `act-live-${Date.now()}`,
+        title: p.merchant,
+        subtitle: p.subtitle,
+        amount: `- RM ${p.amount.toFixed(2)} -`,
+        rawAmount: p.amount,
+        category: p.category,
+        categoryType: p.categoryType,
+        iconBg: p.iconBg,
+        iconType: p.iconType,
         timestamp: 'Just now',
-        paymentMethod: preset.bank,
-        referenceId: `NTF-${Math.floor(10000 + Math.random() * 90000)}`,
+        paymentMethod: `${p.bank} · DuitNow`,
+        referenceId: `AUT-${Math.floor(10000 + Math.random() * 90000)}-LIVE`,
         isExtractedFromNotification: true,
-        rawNotificationText: preset.text,
-        aiCategorizationNote: preset.note,
+        rawNotificationText: p.text,
+        aiCategorizationNote: p.note,
         aiConfidence: 99,
       };
 
-      setActivities((prev) => [newAct, ...prev]);
-
-      // Book to store
+      setActivities((prev) => [newTxn, ...prev]);
       bookExpense({
-        merchant: preset.merchant,
-        amount: preset.amount,
-        category: preset.category as any,
-        isNeed: false,
-        source: 'VOICE',
+        merchant: p.merchant,
+        amount: p.amount,
+        category: 'Bubble_Tea_Dining',
+        isNeed: true,
+        source: 'SANDBOX',
       });
 
-      // Clear push banner after 4.5s
+      setIsSimulating(false);
       setTimeout(() => {
         setIncomingNotification(null);
-        setIsSimulating(false);
-      }, 3500);
-    }, 1200);
-  }
+      }, 5000);
+    }, 1800);
+  };
+
+  const copyRefId = (ref: string) => {
+    navigator.clipboard?.writeText(ref);
+    setCopiedTxn(true);
+    setTimeout(() => setCopiedTxn(false), 2000);
+  };
+
+  // Filter extended transactions for "View more"
+  const filteredExtended = EXTENDED_ACTIVITIES.filter((item) => {
+    const matchesCategory =
+      activeCategoryFilter === 'all' || item.categoryType === activeCategoryFilter;
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
-    <section className={cn('relative', className)}>
-      {/* Floating Incoming Push Notification Banner (User's audio feature!) */}
+    <div className={cn('relative font-sans', className)}>
+      {/* Live Incoming Bank Notification Banner */}
       {incomingNotification && (
-        <div className="fixed top-3 left-4 right-4 z-50 animate-bounce-subtle pointer-events-auto">
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              const latest = activities[0];
-              if (latest) setSelectedItem(latest);
-            }}
-            className="rounded-[22px] bg-[#04222B]/95 text-white p-3.5 shadow-[0_16px_40px_rgba(4,34,43,0.45)] border border-white/20 backdrop-blur-xl flex items-center gap-3 cursor-pointer"
-          >
-            <div className="h-9 w-9 rounded-full shrink-0 grid place-items-center bg-white/10 text-white border border-white/15">
-              <Bell className="h-4 w-4 text-[#4FB8B4] animate-pulse" />
+        <div className="mb-3 rounded-[24px] bg-[#04222B] text-white p-3.5 shadow-[0_12px_36px_rgba(4,34,43,0.35)] border border-[#10606F]/50 animate-bounce-gentle">
+          <div className="flex items-start gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-2xl bg-[#10606F] text-white shrink-0 mt-0.5 shadow-sm">
+              <Bell className="h-4 w-4 animate-ring" />
             </div>
-            <div className="flex-1 text-left min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#4FB8B4]">
-                  {incomingNotification.bank} · Just now
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#38BDF8]">
+                  {incomingNotification.bank} · Push Detected
                 </span>
-                <span className="text-[9px] font-bold text-white/50">Auto-Extracting</span>
+                <span className="text-[9px] text-[#94A3B8]">Auto-Extracting</span>
               </div>
-              <p className="text-[12px] font-bold text-white leading-tight truncate mt-0.5">
+              <p className="text-[12px] font-bold text-white leading-tight mt-0.5">
                 {incomingNotification.text}
               </p>
               <div className="flex items-center gap-1.5 mt-1">
@@ -339,22 +526,20 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
         </div>
       )}
 
-      {/* Header: Activity + View Analytics */}
+      {/* Header: Title ("Latest Transaction") + View more button (Live Extractor removed as requested) */}
       <div className="flex items-center justify-between mb-2.5 px-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-[17px] font-black tracking-tight text-[#04222B]">Activity</h3>
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2 py-0.5 text-[9.5px] font-extrabold text-[#10606F]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
-            Live Extractor
-          </span>
-        </div>
+        <h3 className="text-[17px] font-black tracking-tight text-[#04222B]">{title}</h3>
+
         <button
           type="button"
-          onClick={onOpenAnalytics}
-          className="inline-flex items-center gap-1 text-[11.5px] font-bold text-[#1D8B94] hover:text-[#10606F] transition-colors group"
+          onClick={() => {
+            if (onViewMore) onViewMore();
+            else setIsViewMoreOpen(true);
+          }}
+          className="inline-flex items-center gap-1 text-[12px] font-bold text-[#1D8B94] hover:text-[#10606F] transition-colors group"
         >
-          <span>View Analytics</span>
-          <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <span>View more</span>
+          <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
 
@@ -407,7 +592,7 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
         </div>
       </div>
 
-      {/* Activity List: Clean white cards matching Image 1 left screen */}
+      {/* Activity List: Clean white cards */}
       <div className="space-y-2">
         {activities.map((item) => (
           <div
@@ -415,8 +600,11 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
             role="button"
             tabIndex={0}
             onClick={() => {
-              setSelectedItem(item);
-              onOpenItem?.(item);
+              if (onOpenItem) {
+                onOpenItem(item);
+              } else {
+                setSelectedItem(item);
+              }
             }}
             className="flex items-center justify-between rounded-[22px] bg-white/95 hover:bg-white border border-white/90 p-3.5 shadow-[0_2px_14px_rgba(4,34,43,0.03)] hover:shadow-[0_6px_20px_rgba(4,34,43,0.07)] backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer group"
           >
@@ -445,7 +633,7 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
               </div>
             </div>
 
-            {/* Right: Amount with flanking dashes: - $30.00 - */}
+            {/* Right: Amount with flanking dashes: - RM 30.00 - */}
             <div className="flex items-center gap-1 shrink-0 ml-2">
               <span className="font-sans text-[13px] font-extrabold text-[#04222B] tracking-tight tabular-nums">
                 {item.amount}
@@ -456,14 +644,170 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
         ))}
       </div>
 
-      {/* Activity Detail Modal / Sheet (User's direct request: "activity其中一个我点进去会direct去那个activity的detail") */}
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+      {/* Slide-in View More Modal: Rich list of transactions with exact same design */}
+      <AnimatePresence>
+        {isViewMoreOpen && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F8FAF8] overflow-hidden"
+          >
+            {/* Top Navigation */}
+            <div className="sticky top-0 z-20 flex items-center justify-between px-5 pt-3 pb-3 bg-[#F8FAF8]/95 backdrop-blur-md border-b border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsViewMoreOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#1E293B] shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:bg-gray-50 active:scale-95 transition-all"
+                aria-label="Back"
+              >
+                <ArrowLeft className="h-4 w-4 stroke-[2.5]" />
+              </button>
+
+              <div className="text-center">
+                <h1 className="text-[17px] font-bold text-[#0F172A] tracking-tight">
+                  All Transactions
+                </h1>
+                <p className="text-[11px] text-[#64748B]">
+                  {filteredExtended.length} records found
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsViewMoreOpen(false)}
+                className="grid h-10 w-10 place-items-center rounded-full bg-white text-[#1E293B] shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:bg-gray-50 active:scale-95 transition-all"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4 stroke-[2.5]" />
+              </button>
+            </div>
+
+            {/* Search Input & Category Filter Chips */}
+            <div className="px-4 pt-3 pb-2 space-y-2.5 bg-[#F8FAF8]">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
+                <input
+                  type="text"
+                  placeholder="Search merchant, amount or note..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-full bg-white pl-10 pr-4 py-2 text-[12.5px] text-[#0F172A] border border-gray-200/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#10606F]/30"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'food', label: 'Food & Dining' },
+                  { id: 'subscription', label: 'Subscriptions' },
+                  { id: 'shopping', label: 'Shopping' },
+                  { id: 'bills', label: 'Bills & Utilities' },
+                  { id: 'transfer', label: 'Transfers' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setActiveCategoryFilter(c.id)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all shadow-sm',
+                      activeCategoryFilter === c.id
+                        ? 'bg-[#04222B] text-white'
+                        : 'bg-white text-[#64748B] hover:text-[#0F172A] border border-gray-100'
+                    )}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Scrollable List of All Transactions */}
+            <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-24 space-y-2">
+              {filteredExtended.length === 0 ? (
+                <div className="text-center py-12 text-[#94A3B8] text-[13px]">
+                  No matching transactions found.
+                </div>
+              ) : (
+                filteredExtended.map((item) => (
+                  <div
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (onOpenItem) onOpenItem(item);
+                      else setSelectedItem(item);
+                    }}
+                    className="flex items-center justify-between rounded-[22px] bg-white hover:bg-gray-50/80 border border-white p-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all active:scale-[0.99] cursor-pointer group"
+                  >
+                    {/* Left: Brand Icon + Title & Subtitle */}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className="grid h-11 w-11 place-items-center rounded-full shadow-sm shrink-0 transition-transform group-hover:scale-105"
+                        style={{ backgroundColor: item.iconBg }}
+                      >
+                        <BrandIcon type={item.iconType} />
+                      </div>
+                      <div className="text-left min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-[13.5px] font-bold text-[#04222B] leading-tight truncate">
+                            {item.title}
+                          </p>
+                          {item.isExtractedFromNotification && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-[#E2F4F0] px-1.5 py-0.2 text-[8.5px] font-extrabold text-[#10606F]">
+                              <Sparkles className="h-2 w-2" /> AI
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-[#64748B] leading-tight mt-0.5 truncate">
+                          {item.subtitle} · {item.timestamp}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Right: Amount */}
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <span
+                        className={cn(
+                          'font-sans text-[13px] font-extrabold tracking-tight tabular-nums',
+                          item.amount.startsWith('+') ? 'text-[#10B981]' : 'text-[#04222B]'
+                        )}
+                      >
+                        {item.amount}
+                      </span>
+                      <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Activity Detail Modal / Receipt (Fallback when no parent handler) */}
+      {!onOpenItem && selectedItem && (
+        <div
+          className="absolute inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs animate-fade-in"
+          onClick={() => setSelectedItem(null)}
+        >
           <div
             className="w-full max-w-[390px] rounded-t-[32px] sm:rounded-[32px] bg-white p-5 shadow-[0_20px_60px_rgba(4,34,43,0.3)] border border-white/90 animate-rise-in max-h-[85vh] overflow-y-auto no-scrollbar"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header / Dismiss */}
+            {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div
@@ -477,122 +821,88 @@ export function ActivitySection({ onOpenAnalytics, onOpenItem, className }: Acti
               <button
                 type="button"
                 onClick={() => setSelectedItem(null)}
-                className="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+                className="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-[#04222B] hover:bg-slate-200 transition-colors"
+                aria-label="Close"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Amount Hero */}
-            <div className="py-4 text-center">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">Total Amount</p>
-              <h2 className="text-[32px] font-black tracking-tight text-[#04222B] mt-0.5">
-                {selectedItem.amount.replace(/-/g, '').trim()}
-              </h2>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF5] px-2.5 py-0.5 text-[10.5px] font-extrabold text-[#059669]">
-                  <CheckCircle2 className="h-3 w-3" /> Settled & Verified
-                </span>
-                {selectedItem.isExtractedFromNotification && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-extrabold text-[#10606F]">
-                    <Sparkles className="h-3 w-3" /> AI Intercepted
-                  </span>
-                )}
+            {/* Receipt Amount Hero */}
+            <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                TOTAL AMOUNT PAID
+              </span>
+              <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
+                {selectedItem.amount}
               </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
+                <CheckCircle2 className="h-3 w-3 text-[#10B981]" />
+                Successful · {selectedItem.timestamp}
+              </span>
             </div>
 
-            {/* AI Auto-Categorization & Intelligence Box */}
-            <div className="rounded-[20px] bg-gradient-to-br from-[#E2F4F0]/60 via-white to-[#E0F2FE]/50 p-3.5 border border-[#98D8D0]/50 mb-3.5 shadow-sm">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5 text-[#10606F]" />
-                  <span className="text-[11.5px] font-black text-[#04222B]">AI Smart Categorization</span>
-                </div>
-                <span className="text-[10px] font-extrabold text-[#10606F] bg-white px-2 py-0.5 rounded-full border border-[#98D8D0]/40">
-                  {selectedItem.aiConfidence ?? 98}% match
-                </span>
+            {/* Meta Table */}
+            <div className="space-y-2.5 text-[12px]">
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-[#64748B]">Merchant</span>
+                <span className="font-bold text-[#04222B]">{selectedItem.title}</span>
               </div>
-              <p className="text-[11.5px] text-[#0A3D4A] leading-relaxed">
-                {selectedItem.aiCategorizationNote ||
-                  `Classified under ${selectedItem.category} based on recipient history and spending limits.`}
-              </p>
-            </div>
-
-            {/* If Extracted from Bank Notification: Show Raw Captured Push */}
-            {selectedItem.isExtractedFromNotification && selectedItem.rawNotificationText && (
-              <div className="rounded-[18px] bg-slate-50 p-3 border border-slate-200/80 mb-3.5">
-                <div className="flex items-center gap-1.5 mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#64748B]">
-                  <Bell className="h-3 w-3 text-[#1D8B94]" />
-                  <span>Original Push Notification</span>
-                </div>
-                <p className="text-[11.5px] font-mono text-slate-700 leading-snug bg-white p-2 rounded-lg border border-slate-200/60">
-                  &ldquo;{selectedItem.rawNotificationText}&rdquo;
-                </p>
-              </div>
-            )}
-
-            {/* Transaction Data Fields */}
-            <div className="space-y-2.5 text-[12px] bg-slate-50/70 p-3.5 rounded-[20px] border border-slate-100 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[#64748B] font-semibold">Recipient / Merchant</span>
-                <span className="font-extrabold text-[#04222B]">{selectedItem.title}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#64748B] font-semibold">Payment Rail</span>
-                <span className="font-bold text-[#04222B]">{selectedItem.paymentMethod}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#64748B] font-semibold">Category</span>
-                <span className="font-extrabold text-[#10606F] inline-flex items-center gap-1">
-                  <Tag className="h-3 w-3" />
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-[#64748B]">Category</span>
+                <span className="font-bold text-[#04222B] flex items-center gap-1">
+                  <Tag className="h-3 w-3 text-[#1D8B94]" />
                   {selectedItem.category}
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#64748B] font-semibold">Date & Time</span>
-                <span className="font-bold text-[#04222B]">{selectedItem.timestamp}</span>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-[#64748B]">Payment Method</span>
+                <span className="font-bold text-[#04222B]">{selectedItem.paymentMethod}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[#64748B] font-semibold">Reference ID</span>
+              <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                <span className="text-[#64748B]">Reference ID</span>
                 <button
                   type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(selectedItem.referenceId);
-                    setCopiedTxn(true);
-                    setTimeout(() => setCopiedTxn(false), 2000);
-                  }}
-                  className="font-mono text-[11px] font-bold text-[#1D8B94] inline-flex items-center gap-1 hover:underline"
+                  onClick={() => copyRefId(selectedItem.referenceId)}
+                  className="font-mono font-bold text-[#10606F] flex items-center gap-1 hover:underline"
                 >
                   <span>{selectedItem.referenceId}</span>
                   <Copy className="h-3 w-3" />
-                  {copiedTxn && <span className="text-[9px] text-[#10B981]">Copied</span>}
                 </button>
               </div>
+              {copiedTxn && (
+                <p className="text-[10px] text-right text-[#10B981] font-bold">Copied to clipboard!</p>
+              )}
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  alert(`Receipt for ${selectedItem.title} exported!`);
-                }}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[#04222B] text-[12px] font-extrabold transition-colors active:scale-98"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-                <span>Split Bill</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedItem(null)}
-                className="flex-1 py-2.5 rounded-full bg-[#04222B] hover:bg-[#0A3D4A] text-white text-[12px] font-extrabold shadow-sm transition-colors active:scale-98"
-              >
-                Done
-              </button>
+            {/* AI Auto-Categorization Insight Box */}
+            <div className="mt-3.5 rounded-2xl bg-[#E2F4F0]/60 p-3 border border-[#98D8D0]/40">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles className="h-3.5 w-3.5 text-[#10B981]" />
+                <span className="text-[11px] font-black text-[#04222B]">
+                  AI Auto-Extractor Note
+                </span>
+                <span className="text-[9.5px] font-bold text-[#10606F] ml-auto">
+                  {selectedItem.aiConfidence ?? 98}% Confidence
+                </span>
+              </div>
+              <p className="text-[11px] text-[#0A3D4A] leading-relaxed">
+                {selectedItem.aiCategorizationNote ??
+                  'Parsed automatically from background system notifications. Categorized according to the Campus CFaR student framework.'}
+              </p>
             </div>
+
+            {/* Dismiss Button */}
+            <button
+              type="button"
+              onClick={() => setSelectedItem(null)}
+              className="mt-4 w-full py-2.5 rounded-xl bg-[#04222B] text-white text-[12px] font-bold hover:bg-[#0A3D4A] active:scale-[0.98] transition-all"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

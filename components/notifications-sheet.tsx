@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bell, CheckCheck, ShieldCheck, Sparkles, AlertCircle, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Bell, CheckCheck, ShieldCheck, Sparkles, AlertCircle, ArrowDownLeft, ArrowUpRight, Bot, ArrowRight } from 'lucide-react';
 
 interface NotificationItem {
   id: string;
@@ -63,7 +63,13 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
-export function NotificationsSheet({ onClose }: { onClose: () => void }) {
+export interface NotificationsSheetProps {
+  onClose: () => void;
+  onSelectProposal?: (proposal: { merchant: string; amount: number; category: string }) => void;
+  aiNotification?: { merchant: string; amount: number; category: string } | null;
+}
+
+export function NotificationsSheet({ onClose, onSelectProposal, aiNotification }: NotificationsSheetProps) {
   const [items, setItems] = React.useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   const markAllAsRead = () => {
@@ -76,6 +82,45 @@ export function NotificationsSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-3 pt-1">
+      {/* AI Proactive Budget Notification Card */}
+      {aiNotification && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            onSelectProposal?.(aiNotification);
+            onClose();
+          }}
+          className="rounded-2xl p-3.5 bg-gradient-to-br from-[#04222B] to-[#0A3D4A] text-white shadow-md border border-[#10606F]/50 cursor-pointer active:scale-98 transition-all group"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#10606F] text-white shadow-xs">
+                <Bot className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13.5px] font-black text-white leading-snug">
+                    AI Copilot · Budget Analysis Ready
+                  </p>
+                  <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+                </div>
+                <p className="text-[11.5px] text-gray-300 mt-1 leading-relaxed">
+                  RM {aiNotification.amount.toFixed(2)} recorded for{' '}
+                  <span className="font-bold text-white">{aiNotification.merchant}</span>. Tap to review
+                  interactive budget proposal &amp; visual charts.
+                </p>
+                <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-[#10606F] text-cyan-200 px-2.5 py-0.5 text-[10.5px] font-bold group-hover:bg-[#1D8B94] group-hover:text-white transition-colors">
+                  <span>Open Proposal in Copilot</span>
+                  <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] font-medium text-cyan-300 whitespace-nowrap">Just now</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between pb-1">
         <span className="text-[11.5px] font-bold text-[#64748B]">
           {items.filter((i) => !i.read).length} unread alerts
