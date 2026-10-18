@@ -4,7 +4,7 @@
   "private": true,
   "description": "CtrlPay — proactive defensive personal-finance agent sandbox (2026 Shenzhen FinTechathon, Topic A)",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --max-old-space-size=4096 node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
