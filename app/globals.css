@@ -234,6 +234,18 @@
     box-shadow: 0 24px 54px -34px rgba(4, 34, 43, 0.95);
   }
 
+  /* Ultra-luxe Frosted Glass Sticky Header */
+  .ct-header-glass {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0.46) 100%);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: 
+      0 12px 32px -12px rgba(11, 30, 63, 0.08),
+      0 1px 2px 0 rgba(0, 0, 0, 0.03),
+      inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.95);
+  }
+
   /* Folder-tab cutout card (Nexora Invested / Withdraw). */
   .ct-folder {
     position: relative;

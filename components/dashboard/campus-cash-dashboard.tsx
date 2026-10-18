@@ -114,8 +114,8 @@ export function CampusCashDashboard({
     }
   };
 
-  // SVG Donut calculation for Expenses Graph
-  const donutSize = 120;
+  // SVG Donut calculation for Expenses Graph (Enlarged with Golden Ratio proportions)
+  const donutSize = 138;
   const strokeWidth = 14;
   const radius = (donutSize - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -411,16 +411,19 @@ export function CampusCashDashboard({
               </div>
             </div>
 
-            {/* Expenses Donut Chart & Category Breakdown Card */}
-            <div className="rounded-[20px] bg-white/50 backdrop-blur-[20px] p-3.5 shadow-[0_16px_36px_-6px_rgba(0,0,0,0.035)] border border-white/60 mt-1">
-              <div className="flex items-center justify-between gap-3">
-                {/* SVG Donut */}
+            {/* Expenses Donut Chart & Category Breakdown Card (Golden Ratio Proportion: W:H ≈ 1.618, aligned with Slide 1) */}
+            <div className="rounded-[26px] bg-white/65 backdrop-blur-[26px] p-4 sm:p-4.5 shadow-[0_20px_44px_-8px_rgba(0,0,0,0.045)] border border-white/80 mt-3.5 min-h-[258px] flex flex-col justify-between relative overflow-hidden">
+              {/* Soft ambient rose/purple glow in corner matching Slide 1 */}
+              <div className="absolute -bottom-6 -right-4 w-44 h-40 rounded-full bg-gradient-to-tl from-rose-300/20 via-pink-200/15 to-transparent pointer-events-none" />
+
+              <div className="flex items-center justify-between gap-3.5 z-10">
+                {/* SVG Donut (Widened & Enlarged with Golden Ratio proportions) */}
                 <div className="relative shrink-0 flex items-center justify-center">
                   <svg
                     width={donutSize}
                     height={donutSize}
                     viewBox={`0 0 ${donutSize} ${donutSize}`}
-                    className="transform -rotate-90"
+                    className="transform -rotate-90 drop-shadow-xs"
                   >
                     <circle
                       cx={donutSize / 2}
@@ -453,16 +456,19 @@ export function CampusCashDashboard({
                   </svg>
 
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-[13.5px] font-bold tracking-tight text-[#0F172A] leading-none">
-                      {currency === 'USD' ? '$ 654' : 'RM 2.9k'}
+                    <span className="text-[9.5px] font-semibold text-[#94A3B8] uppercase tracking-wider">
+                      Total Spent
                     </span>
-                    <span className="text-[9.5px] font-normal text-[#94A3B8] mt-0.5">
-                      This Month
+                    <span className="text-[15.5px] font-black tracking-tight text-[#0F172A] leading-tight mt-0.5">
+                      {currency === 'USD' ? '$ 654' : 'RM 2,910'}
+                    </span>
+                    <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-200/60 mt-0.5">
+                      6 Categories
                     </span>
                   </div>
                 </div>
 
-                {/* Categories */}
+                {/* Categories (Widened with horizontal mini progress tracks) */}
                 <div className="flex-1 space-y-1 pl-1 min-w-0">
                   {EXPENSE_CATEGORIES.map((cat) => {
                     const isSelected = activeCategory === cat.name;
@@ -474,66 +480,81 @@ export function CampusCashDashboard({
                           setActiveCategory(activeCategory === cat.name ? null : cat.name)
                         }
                         className={cn(
-                          'flex items-center justify-between w-full text-left py-0.5 px-1.5 rounded-lg transition-all',
-                          isSelected ? 'bg-rose-50/80 scale-[1.02]' : 'hover:bg-gray-50/70'
+                          'flex items-center justify-between w-full text-left py-0.5 px-2 rounded-xl transition-all',
+                          isSelected ? 'bg-rose-50/90 shadow-2xs scale-[1.02]' : 'hover:bg-gray-50/80'
                         )}
                       >
-                        <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1 pr-1">
                           <span
-                            className="h-2 w-2 rounded-full shrink-0"
+                            className="h-2 w-2 rounded-full shrink-0 shadow-2xs"
                             style={{ backgroundColor: cat.color }}
                           />
                           <span
                             className={cn(
-                              'text-[11.5px] truncate font-medium',
-                              isSelected ? 'text-[#0F172A] font-bold' : 'text-[#475569]'
+                              'text-[11px] truncate font-semibold',
+                              isSelected ? 'text-[#0F172A]' : 'text-[#334155]'
                             )}
                           >
                             {cat.name}
                           </span>
                           {cat.isHigh && (
-                            <span className="text-[8.5px] font-bold text-rose-600 bg-rose-50 px-1 rounded">
+                            <span className="text-[8px] font-extrabold text-rose-600 bg-rose-100/80 px-1 rounded shrink-0">
                               High
                             </span>
                           )}
                         </div>
 
-                        <span className="text-[11px] font-bold text-[#64748B] shrink-0">
-                          {cat.percentage}%
-                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Mini visual track */}
+                          <div className="w-8 h-1 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{ width: `${cat.percentage}%`, backgroundColor: cat.color }}
+                            />
+                          </div>
+                          <span className="text-[10.5px] font-bold text-[#64748B] tabular-nums text-right">
+                            {cat.percentage}%
+                          </span>
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Selected category detail banner */}
-              {activeCategory ? (
-                <div className="mt-2.5 pt-2 border-t border-gray-100 flex items-center justify-between text-[11.5px] text-[#475569] animate-fade-in">
-                  <span>
-                    Selected: <strong className="text-[#0F172A]">{activeCategory}</strong>
-                  </span>
-                  <span className="font-bold text-[#0F172A]">
-                    {currency}{' '}
-                    {EXPENSE_CATEGORIES.find((c) => c.name === activeCategory)?.amount.toFixed(2)}
-                  </span>
-                </div>
-              ) : (
-                <div className="mt-2 pt-1.5 border-t border-gray-100 flex items-center justify-between text-[10.5px] text-[#94A3B8]">
-                  <span>Tap any segment to inspect</span>
-                  <button
-                    type="button"
-                    onClick={onOpenAnalytics}
-                    className="text-indigo-600 font-bold hover:underline"
-                  >
-                    Deep Analytics →
-                  </button>
-                </div>
-              )}
+              {/* Selected category detail banner / Deep Analytics Link */}
+              <div className="mt-2.5 pt-2 border-t border-gray-100/90 flex items-center justify-between text-[11px] z-10">
+                {activeCategory ? (
+                  <div className="flex items-center justify-between w-full animate-fade-in">
+                    <span className="text-[#475569]">
+                      Selected: <strong className="text-[#0F172A]">{activeCategory}</strong>
+                    </span>
+                    <span className="font-extrabold text-[#0F172A]">
+                      {currency}{' '}
+                      {EXPENSE_CATEGORIES.find((c) => c.name === activeCategory)?.amount.toFixed(2)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between w-full text-[10.5px]">
+                    <span className="text-[#64748B] flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
+                      <span>Highest: Dining &amp; Food (34%)</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onOpenAnalytics}
+                      className="text-indigo-600 font-bold hover:underline flex items-center gap-0.5"
+                    >
+                      <span>Deep Analytics</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Bottom Swipe Right Prompt (Manual swipe indicator) */}
-            <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#64748B] py-0.5">
+            <div className="flex items-center justify-center gap-1 text-[11px] font-semibold text-[#64748B] pt-1.5 pb-0.5">
               <span>👉 Swipe right to return to Overview</span>
             </div>
           </div>

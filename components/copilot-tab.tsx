@@ -294,8 +294,8 @@ export function CopilotTab({
   if (isCfarSimulating) {
     return (
       <div className="animate-fade-in -mx-1 pb-16 space-y-3 select-none">
-        {/* Chat Header matching Copilot / CtrlPay */}
-        <header className="flex items-center justify-between pt-1 px-1">
+        {/* Chat Header matching Copilot / CtrlPay - Sticky Frosted Glass Top Navigation */}
+        <header className="sticky -top-1 z-30 -mx-3 px-4 pt-2.5 pb-2.5 ct-header-glass flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -303,7 +303,7 @@ export function CopilotTab({
                 setIsCfarSimulating(false);
                 onClearCfar?.();
               }}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white/80 border border-white/90 text-slate-700 shadow-xs hover:bg-white active:scale-95 transition-all"
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/60 hover:bg-white/90 border border-white/80 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
               aria-label="Back"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -331,7 +331,7 @@ export function CopilotTab({
               setIsCfarSimulating(false);
               onClearCfar?.();
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-white/90 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-xs hover:bg-white active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-white/80 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>New Chat</span>
@@ -355,19 +355,20 @@ export function CopilotTab({
   if (proposal) {
     return (
       <div className="animate-fade-in -mx-1 pb-16 space-y-3 select-none">
-        {/* Chat Header (Original design) */}
-        <header className="flex items-center justify-between pt-1 px-1">
+        {/* Chat Header (Original design) - Sticky Frosted Glass Top Navigation */}
+        <header className="sticky -top-1 z-30 -mx-3 px-4 pt-2.5 pb-2.5 ct-header-glass flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
-            {onBack && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="grid h-8 w-8 place-items-center rounded-full bg-white/80 border border-white/90 text-slate-700 shadow-xs hover:bg-white active:scale-95 transition-all"
-                aria-label="Back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                handleCloseProposal();
+                onBack?.();
+              }}
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/60 hover:bg-white/90 border border-white/80 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
             <div className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white shadow-xs">
               <Bot className="h-4 w-4" />
             </div>
@@ -382,7 +383,7 @@ export function CopilotTab({
           <button
             type="button"
             onClick={handleCloseProposal}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-white/90 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-xs hover:bg-white active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-white/80 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>New Chat</span>
@@ -769,13 +770,13 @@ export function CopilotTab({
   if (activeQuery) {
     return (
       <div className="animate-fade-in -mx-1 pb-16 space-y-3">
-        {/* Chat Header */}
-        <header className="flex items-center justify-between pt-1 px-1">
+        {/* Chat Header - Sticky Frosted Glass Top Navigation */}
+        <header className="sticky -top-1 z-30 -mx-3 px-4 pt-2.5 pb-2.5 ct-header-glass flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveQuery(null)}
-              className="grid h-8 w-8 place-items-center rounded-full bg-white/80 border border-white/90 text-slate-700 shadow-xs hover:bg-white active:scale-95 transition-all"
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/60 hover:bg-white/90 border border-white/80 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
               aria-label="Back"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -800,7 +801,7 @@ export function CopilotTab({
           <button
             type="button"
             onClick={() => setActiveQuery(null)}
-            className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-white/90 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-xs hover:bg-white active:scale-95 transition-all"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-white/80 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>New Chat</span>
@@ -827,7 +828,7 @@ export function CopilotTab({
   if (isVoiceActive) {
     return (
       <div className="animate-fade-in -mx-1 pb-16 space-y-3">
-        <header className="flex items-center justify-between pt-1 px-1">
+        <header className="sticky -top-1 z-30 -mx-3 px-4 pt-2.5 pb-2.5 ct-header-glass flex items-center justify-between transition-all">
           <div className="flex items-center gap-2">
             <Volume2 className="h-5 w-5 text-[#6366F1] animate-pulse" />
             <h2 className="text-[17px] font-black text-[#0B1E3F]">Voice Copilot</h2>
