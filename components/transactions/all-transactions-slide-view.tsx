@@ -28,7 +28,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 30.0,
     category: 'Subscription',
     categoryType: 'subscription',
-    iconBg: '#1C1C1E',
+    iconBg: '#000000',
     iconType: 'apple',
     timestamp: 'Today, 2:45 PM',
     paymentMethod: 'Apple Pay · Mastercard *4829',
@@ -44,7 +44,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 30.0,
     category: 'Food & Dining',
     categoryType: 'food',
-    iconBg: '#FFFBEB',
+    iconBg: '#DA291C',
     iconType: 'mcdonalds',
     timestamp: 'Today, 12:30 PM',
     paymentMethod: "Touch 'n Go eWallet (DuitNow QR)",
@@ -62,7 +62,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 12.0,
     category: 'Streaming',
     categoryType: 'subscription',
-    iconBg: '#0F172A',
+    iconBg: '#1DB954',
     iconType: 'spotify',
     timestamp: 'Yesterday, 8:00 AM',
     paymentMethod: 'Maybank MAE · Visa *1042',
@@ -78,7 +78,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 5.0,
     category: 'Local Eats',
     categoryType: 'food',
-    iconBg: '#ECFDF5',
+    iconBg: '#00B14F',
     iconType: 'grab',
     timestamp: 'Yesterday, 7:15 PM',
     paymentMethod: 'GrabPay Balance',
@@ -96,7 +96,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 24.0,
     category: 'Marketing',
     categoryType: 'bills',
-    iconBg: '#FDF2F8',
+    iconBg: '#E1306C',
     iconType: 'instagram',
     timestamp: '16 Oct, 11:20 AM',
     paymentMethod: 'Public Bank Visa *3319',
@@ -148,7 +148,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 120.0,
     category: 'Education & Supplies',
     categoryType: 'shopping',
-    iconBg: '#EEF2FF',
+    iconBg: '#4F46E5',
     iconType: 'custom',
     timestamp: '12 Oct, 10:30 AM',
     paymentMethod: 'Mastercard *4829',
@@ -164,7 +164,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 14.0,
     category: 'Transport',
     categoryType: 'bills',
-    iconBg: '#ECFDF5',
+    iconBg: '#00B14F',
     iconType: 'grab',
     timestamp: '11 Oct, 8:20 AM',
     paymentMethod: 'GrabPay Balance',
@@ -196,7 +196,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 25.86,
     category: 'Streaming',
     categoryType: 'subscription',
-    iconBg: '#1C1C1E',
+    iconBg: '#000000',
     iconType: 'apple',
     timestamp: '08 Oct, 9:00 AM',
     paymentMethod: 'Apple Pay · Mastercard *4829',
@@ -244,7 +244,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 22.5,
     category: 'Health & Care',
     categoryType: 'shopping',
-    iconBg: '#ECFDF5',
+    iconBg: '#00A099',
     iconType: 'grab',
     timestamp: '01 Oct, 5:40 PM',
     paymentMethod: 'GrabPay Balance',
@@ -260,7 +260,7 @@ const EXTENDED_ACTIVITIES: ActivityItem[] = [
     rawAmount: 42.0,
     category: 'Entertainment',
     categoryType: 'entertainment',
-    iconBg: '#1C1C1E',
+    iconBg: '#171A21',
     iconType: 'custom',
     timestamp: '28 Sep, 10:15 PM',
     paymentMethod: 'Mastercard *4829',
@@ -280,50 +280,52 @@ function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
       );
     case 'mcdonalds':
       return (
-        <span className="font-sans font-black text-[18px] text-[#F59E0B] leading-none select-none">
-          M
-        </span>
+        <svg viewBox="0 0 24 24" className="h-5.5 w-5.5 fill-[#FFC72C]">
+          <path d="M2.5 19.5h2.2c.4-5.3 2.1-9.5 4.3-9.5 1.8 0 3.3 3.1 3.9 7.4.6-4.3 2.1-7.4 3.9-7.4 2.2 0 3.9 4.2 4.3 9.5h2.2C22.8 12.9 20.3 8 16.8 8c-2.4 0-4.4 2.3-5.3 5.8C10.6 10.3 8.6 8 6.2 8 2.7 8 .2 12.9 2.5 19.5z" />
+        </svg>
       );
     case 'spotify':
       return (
-        <svg className="h-5 w-5 fill-[#22C55E]" viewBox="0 0 24 24">
-          <path d="M12 2C6.477 2 2 6.477 2 12c0 5.524 4.477 10 10 10 5.524 0 10-4.476 10-10 0-5.523-4.476-10-10-10zm4.587 14.428c-.18.295-.562.387-.857.207-2.348-1.435-5.304-1.76-8.785-.964-.334.076-.666-.134-.742-.468-.077-.334.133-.666.468-.743 3.81-.87 7.076-.502 9.71 1.112.294.18.386.562.206.856zm1.223-2.72c-.226.368-.71.484-1.078.258-2.688-1.652-6.784-2.131-9.963-1.166-.413.126-.855-.108-.98-.52-.127-.414.107-.856.52-.981 3.633-1.103 8.147-.568 11.243 1.33.368.226.484.71.258 1.079zm.105-2.836C14.693 8.94 8.57 8.74 5.013 9.82c-.495.15-1.02-.132-1.17-.626-.15-.494.13-1.02.626-1.17 4.095-1.243 10.866-1.012 14.73 1.282.446.265.592.842.327 1.288-.266.446-.843.592-1.29.327z" />
+        <svg className="h-5 w-5 fill-white" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424c-.18.295-.563.387-.857.207-2.35-1.435-5.308-1.76-8.792-.963-.335.077-.67-.133-.746-.468-.077-.334.132-.67.467-.746 3.808-.87 7.076-.496 9.72 1.115.295.18.388.563.208.855zm1.225-2.724c-.226.367-.71.482-1.077.256-2.69-1.653-6.79-2.134-9.97-1.168-.413.125-.85-.11-.975-.522-.125-.413.11-.85.522-.975 3.633-1.102 8.147-.568 11.244 1.332.367.226.482.71.256 1.077zm.105-2.836C14.692 8.95 9.375 8.775 6.297 9.71c-.494.15-1.016-.13-1.166-.624-.15-.494.13-1.016.624-1.166 3.532-1.072 9.404-.87 13.115 1.333.444.263.59.84.327 1.284-.264.444-.84.59-1.284.327z" />
         </svg>
       );
     case 'grab':
       return (
-        <span className="font-sans font-black text-[12px] text-[#059669] tracking-tighter leading-none select-none">
+        <span className="font-sans font-black text-[12.5px] text-white tracking-tight leading-none select-none">
           Grab
         </span>
       );
     case 'instagram':
       return (
-        <div className="h-5 w-5 rounded-md flex items-center justify-center bg-gradient-to-tr from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] p-[2px]">
-          <div className="h-full w-full rounded-[4px] border-[1.5px] border-white flex items-center justify-center">
-            <div className="h-1.5 w-1.5 rounded-full border-[1.2px] border-white" />
-          </div>
-        </div>
+        <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+        </svg>
       );
     case 'tng':
       return (
-        <div className="grid h-full w-full place-items-center rounded-full bg-[#0055B8] text-white font-black text-[10px] tracking-tighter">
+        <span className="font-sans font-black text-[11px] text-white tracking-tighter leading-none select-none">
           TnG
-        </div>
+        </span>
       );
     case 'maybank':
       return (
-        <div className="grid h-full w-full place-items-center rounded-full bg-[#FFCE00] text-[#111827] font-black text-[9px] tracking-tighter">
+        <span className="font-sans font-black text-[11px] text-[#111827] tracking-tighter leading-none select-none">
           MAE
-        </div>
+        </span>
       );
     case 'publicbank':
       return (
-        <div className="grid h-full w-full place-items-center rounded-full bg-[#CC0000] text-white font-black text-[10px] tracking-tighter">
+        <span className="font-sans font-black text-[11px] text-white tracking-tight leading-none select-none">
           PB
-        </div>
+        </span>
       );
     default:
-      return <div className="h-2.5 w-2.5 rounded-full bg-[#04222B]" />;
+      return (
+        <span className="font-sans font-black text-[11px] text-white tracking-tight leading-none select-none">
+          $
+        </span>
+      );
   }
 }
 
