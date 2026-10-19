@@ -29,11 +29,12 @@ interface PiggyDefenseVaultTabProps {
 export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps) {
   const defenseVault = useCtrlPayStore((s) => s.defenseVault);
   const rewardPool = useCtrlPayStore((s) => s.rewardPool);
+  const authSession = useCtrlPayStore((s) => s.authSession);
 
-  // Dynamic or fallback values to match 2ndpic
-  const displayVerified = defenseVault > 0 ? defenseVault : 18.5;
-  const displayReward = rewardPool > 0 ? rewardPool : 3.0;
-  const displayPending = 6.8;
+  // Dynamic values: in Demo mode fallback to seeded 18.5, in User mode zero out
+  const displayVerified = authSession?.isDemo ? (defenseVault > 0 ? defenseVault : 18.5) : defenseVault;
+  const displayReward = authSession?.isDemo ? (rewardPool > 0 ? rewardPool : 3.0) : rewardPool;
+  const displayPending = authSession?.isDemo ? 6.8 : 0;
 
   // Mascot state for 1stpic cute animation
   const [mascotMood, setMascotMood] = React.useState<'hearts' | 'waving' | 'excited'>('hearts');

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Image from 'next/image';
-import { Camera, Check, ShieldCheck, Sparkles, User, CreditCard } from 'lucide-react';
+import { Camera, Check, ShieldCheck, Sparkles, User, CreditCard, LogOut } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { Slider } from '@/components/ui/slider';
 
@@ -12,6 +12,10 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
   const userLimits = useCtrlPayStore((s) => s.userLimits);
   const aiMandate = useCtrlPayStore((s) => s.aiMandate);
   const setAiMandate = useCtrlPayStore((s) => s.setAiMandate);
+  const authSession = useCtrlPayStore((s) => s.authSession);
+  const loginAsDemo = useCtrlPayStore((s) => s.loginAsDemo);
+  const resetToZeroData = useCtrlPayStore((s) => s.resetToZeroData);
+  const logout = useCtrlPayStore((s) => s.logout);
 
   const [name, setName] = React.useState(profile.fullName);
   const [email, setEmail] = React.useState(profile.studentEmail);
@@ -180,6 +184,42 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
           </>
         )}
       </button>
+
+      {/* Account Switching & Log Out */}
+      <div className="pt-2 border-t border-slate-100 space-y-2">
+        <button
+          type="button"
+          onClick={() => {
+            if (authSession?.isDemo) {
+              resetToZeroData();
+            } else {
+              loginAsDemo();
+            }
+            onClose();
+          }}
+          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-[12.5px] font-bold text-slate-700 transition-all active:scale-98"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[#10606F]" />
+            <span>{authSession?.isDemo ? 'Switch to Zero-Data User Mode' : 'Switch to Demo Account'}</span>
+          </span>
+          <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-white text-slate-600 shadow-2xs">
+            {authSession?.isDemo ? 'Zero Mode' : 'Demo'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            logout();
+            onClose();
+          }}
+          className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-[12.5px] font-bold transition-all active:scale-98"
+        >
+          <LogOut className="h-4 w-4" />
+          <span>Log Out to Sign In Screen</span>
+        </button>
+      </div>
     </form>
   );
 }

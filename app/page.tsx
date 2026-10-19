@@ -3,10 +3,9 @@ import { MobileAppShell } from '@/components/mobile-app-shell';
 /**
  * CtrlPay sandbox.
  *
- * The ONLY thing on screen is the phone App. There is deliberately no outer
- * dashboard, no side console, no external tables — the judge-facing sandbox
- * controls live inside the phone's `⚡ Sandbox` bottom sheet so the product
- * reads as a real consumer App.
+ * The ONLY thing on screen is the phone App. The Sign In / Sign Up flow,
+ * Demo Account switcher, and full student defensive financial engine
+ * all live seamlessly inside the phone container.
  */
 export default function Page() {
   return (

@@ -309,9 +309,20 @@ export function ActivitySection({
         </div>
       </div>
 
-      {/* Activity List: Clean white cards */}
+      {/* Activity List: Clean white cards or Empty State */}
       <div className="space-y-2">
-        {activities.map((item) => (
+        {activities.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-7 rounded-[24px] bg-white/70 backdrop-blur-md border border-dashed border-slate-200 text-center shadow-xs">
+            <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-[#E2F4F0] to-[#E0F2FE] flex items-center justify-center text-[#10606F] mb-2.5 shadow-2xs">
+              <Receipt className="h-6 w-6 stroke-[1.8]" />
+            </div>
+            <h4 className="text-[14px] font-extrabold text-[#04222B]">No transactions yet</h4>
+            <p className="text-[11.5px] text-[#64748B] mt-1 max-w-[240px] leading-relaxed">
+              Your ledger is completely clean. Tap <span className="font-bold text-[#10606F]">+</span> to scan a receipt or simulate an incoming payment.
+            </p>
+          </div>
+        ) : (
+          activities.map((item) => (
           <div
             key={item.id}
             role="button"
@@ -358,7 +369,7 @@ export function ActivitySection({
               <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Slide-in View More Modal: Rich list of transactions with exact same design */}

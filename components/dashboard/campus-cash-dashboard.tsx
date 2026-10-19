@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Bell,
   CreditCard,
+  LogOut,
   PiggyBank,
   Search,
   Sparkles,
@@ -50,6 +51,11 @@ export function CampusCashDashboard({
   const currentBalance = useCtrlPayStore((s) => s.currentBalance);
   const totalExpenses = useCtrlPayStore((s) => s.totalExpenses);
   const categoryExpenses = useCtrlPayStore((s) => s.categoryExpenses);
+  const profile = useCtrlPayStore((s) => s.profile);
+  const authSession = useCtrlPayStore((s) => s.authSession);
+  const logout = useCtrlPayStore((s) => s.logout);
+  const loginAsDemo = useCtrlPayStore((s) => s.loginAsDemo);
+  const resetToZeroData = useCtrlPayStore((s) => s.resetToZeroData);
 
   // Slide state: 'main' is the photo replica, 'expenses' is the expenses graph
   const [activeSlide, setActiveSlide] = React.useState<'main' | 'expenses'>('main');
@@ -76,6 +82,16 @@ export function CampusCashDashboard({
 
   // Dynamic reactive categories computed from store category expenses & total
   const categories: ExpenseCategory[] = React.useMemo(() => {
+    if (totalExpenses === 0) {
+      return [
+        { name: 'Dining & Food', amount: 0, percentage: 0, color: '#F43F5E' },
+        { name: 'Living & Home', amount: 0, percentage: 0, color: '#8B5CF6' },
+        { name: 'Bills & Utilities', amount: 0, percentage: 0, color: '#3B82F6' },
+        { name: 'Transport', amount: 0, percentage: 0, color: '#0EA5E9' },
+        { name: 'Entertainment', amount: 0, percentage: 0, color: '#EC4899' },
+        { name: 'Other', amount: 0, percentage: 0, color: '#10B981' },
+      ];
+    }
     const safeTotal = totalExpenses > 0 ? totalExpenses : 2910;
     const catMap = categoryExpenses ?? {};
     const raw = [
@@ -104,9 +120,9 @@ export function CampusCashDashboard({
   }, [categoryExpenses, totalExpenses]);
 
   // Entrance and reactive transition animation for balance
-  const [animatedBalance, setAnimatedBalance] = React.useState(currentBalance || 7540);
+  const [animatedBalance, setAnimatedBalance] = React.useState(currentBalance ?? 0);
   const [chartProgress, setChartProgress] = React.useState(1);
-  const prevBalanceRef = React.useRef(currentBalance || 7540);
+  const prevBalanceRef = React.useRef(currentBalance ?? 0);
   const isInitialMount = React.useRef(true);
 
   React.useEffect(() => {
@@ -172,35 +188,46 @@ export function CampusCashDashboard({
        * 1. FIXED TOP PROFILE & GREETING HEADER (Stationary when sliding)
        * ============================================================== */}
       <div className="flex items-center justify-between pt-1 px-1">
-        {/* Profile Info: Avatar + Welcome Alex Smith */}
+        {/* Profile Info: Avatar + Welcome Alex Smith / User */}
         <div
           role="button"
           tabIndex={0}
           onClick={onOpenProfile}
-          className="flex items-center gap-3 cursor-pointer group active:scale-95 transition-all"
+          className="flex items-center gap-2.5 cursor-pointer group active:scale-95 transition-all min-w-0"
         >
-          <div className="relative h-11 w-11 rounded-full overflow-hidden ring-2 ring-white/90 shadow-xs shrink-0 group-hover:ring-emerald-400 transition-all">
-            <Image
-              src="/alex-smith.jpg"
-              alt="Alex Smith"
-              fill
-              className="object-cover"
-              sizes="44px"
-              priority
-            />
+          <div className="relative h-11 w-11 rounded-full overflow-hidden ring-2 ring-white/90 shadow-xs shrink-0 group-hover:ring-emerald-400 transition-all flex items-center justify-center bg-gradient-to-tr from-[#10606F] to-[#1D8B94] text-white">
+            {profile.avatar ? (
+              <Image
+                src={profile.avatar}
+                alt={profile.fullName || 'User'}
+                fill
+                className="object-cover"
+                sizes="44px"
+                priority
+              />
+            ) : (
+              <span className="font-extrabold text-[13px] tracking-wide">
+                {(profile.fullName || 'User')
+                  .split(' ')
+                  .map((w) => w[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase()}
+              </span>
+            )}
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="text-[11px] font-normal text-[#94A3B8] leading-none">
               Welcome
             </span>
-            <h1 className="text-[16px] font-semibold tracking-normal text-[#0F172A] leading-snug mt-0.5 group-hover:text-emerald-700 transition-colors">
-              Alex Smith
+            <h1 className="text-[16px] font-semibold tracking-normal text-[#0F172A] leading-snug mt-0.5 group-hover:text-emerald-700 transition-colors truncate">
+              {profile.fullName || 'User'}
             </h1>
           </div>
         </div>
 
         {/* Right Action Buttons: RM/USD Toggle, Search & Bell */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* RM / USD Currency Capsule Toggle */}
           <div className="inline-flex items-center rounded-full bg-white/70 backdrop-blur-md p-0.5 border border-white/70 shadow-xs mr-0.5">
             <button
@@ -229,14 +256,15 @@ export function CampusCashDashboard({
             </button>
           </div>
 
-          {/* Search Button */}
+          {/* Log Out Button (Takes back to Sign In screen) */}
           <button
             type="button"
-            onClick={onOpenBudgetDetails}
-            className="grid h-9 w-9 place-items-center rounded-full bg-white/70 backdrop-blur-md text-[#0F172A] shadow-xs border border-white/70 hover:bg-white active:scale-95 transition-all"
-            aria-label="Search"
+            onClick={logout}
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/70 backdrop-blur-md text-[#0F172A] shadow-xs border border-white/70 hover:bg-rose-50 hover:text-rose-600 active:scale-95 transition-all"
+            aria-label="Log Out"
+            title="Log Out to Sign In screen"
           >
-            <Search className="h-4 w-4 text-[#1E293B] stroke-[1.8]" />
+            <LogOut className="h-4 w-4 stroke-[1.8]" />
           </button>
 
           {/* Bell Notification Button */}
@@ -346,7 +374,7 @@ export function CampusCashDashboard({
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Savings</p>
                   <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
-                    {formatCapsuleCurrency(Math.max(0, 1940 - (totalExpenses - 2910)))}
+                    {formatCapsuleCurrency(authSession?.isDemo ? Math.max(0, 1940 - (totalExpenses - 2910)) : 0)}
                   </p>
                 </div>
               </div>

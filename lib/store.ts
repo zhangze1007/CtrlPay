@@ -123,6 +123,15 @@ export interface PaymentIntent {
   isNeed: boolean;
 }
 
+export interface AuthSession {
+  isAuthenticated: boolean;
+  isDemo: boolean;
+  user: {
+    fullName: string;
+    email: string;
+  };
+}
+
 export interface CtrlPayState {
   userId: string;
   sandboxClock: number; // ms epoch, controlled ONLY by the Simulation Toolbar
@@ -148,6 +157,7 @@ export interface CtrlPayState {
   pendingSweeps: PendingSweep[];
   zombieTags: Record<string, ZombieTag>;
   events: SandboxEvent[];
+  authSession: AuthSession;
   profile: {
     fullName: string;
     memberId: string;
@@ -156,6 +166,10 @@ export interface CtrlPayState {
   };
 
   // actions
+  loginAsDemo(): void;
+  loginAsUser(params?: { fullName?: string; email?: string }): void;
+  logout(): void;
+  resetToZeroData(): void;
   setProfile(next: Partial<{ fullName: string; memberId: string; studentEmail: string; avatar: string }>): void;
   advanceClock(hours: number): void;
   jumpToMonthEnd(): void;
@@ -244,11 +258,110 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
   pendingSweeps: [],
   zombieTags: initialZombieTags,
   events: [],
+  authSession: {
+    isAuthenticated: false,
+    isDemo: false,
+    user: {
+      fullName: '',
+      email: '',
+    },
+  },
   profile: {
     fullName: PROFILE.fullName,
     memberId: PROFILE.memberId,
     studentEmail: PROFILE.studentEmail,
     avatar: PROFILE.avatar,
+  },
+
+  loginAsDemo() {
+    set({
+      authSession: {
+        isAuthenticated: true,
+        isDemo: true,
+        user: {
+          fullName: PROFILE.fullName,
+          email: PROFILE.studentEmail,
+        },
+      },
+      currentBalance: INITIAL_BALANCE,
+      defenseVault: INITIAL_DEFENSE_VAULT,
+      rewardPool: INITIAL_REWARD_POOL,
+      spentThisWeek: SPENT_THIS_WEEK,
+      spentThisMonth: SPENT_THIS_MONTH,
+      totalExpenses: INITIAL_TOTAL_EXPENSES,
+      categoryExpenses: { ...INITIAL_CATEGORY_EXPENSES },
+      activities: [...EXTENDED_ACTIVITIES],
+      profile: {
+        fullName: PROFILE.fullName,
+        memberId: PROFILE.memberId,
+        studentEmail: PROFILE.studentEmail,
+        avatar: PROFILE.avatar,
+      },
+    });
+    console.info('[SANDBOX] loginAsDemo Alex Smith');
+  },
+
+  loginAsUser(params) {
+    const fullName = params?.fullName?.trim() || 'Mary Olhson';
+    const email = params?.email?.trim() || 'mary.olhson@gmail.com';
+    const cleanCategories: Record<string, number> = {
+      'Dining & Food': 0,
+      'Living & Home': 0,
+      'Bills & Utilities': 0,
+      'Transport': 0,
+      'Entertainment': 0,
+      'Other': 0,
+    };
+    set({
+      authSession: {
+        isAuthenticated: true,
+        isDemo: false,
+        user: {
+          fullName,
+          email,
+        },
+      },
+      currentBalance: 0,
+      defenseVault: 0,
+      rewardPool: 0,
+      spentThisWeek: 0,
+      spentThisMonth: 0,
+      totalExpenses: 0,
+      categoryExpenses: cleanCategories,
+      activities: [],
+      quarantines: [],
+      escrows: [],
+      pendingSweeps: [],
+      profile: {
+        fullName,
+        memberId: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
+        studentEmail: email,
+        avatar: '',
+      },
+    });
+    console.info('[SANDBOX] loginAsUser (zero-data mode)', fullName, email);
+  },
+
+  logout() {
+    set({
+      authSession: {
+        isAuthenticated: false,
+        isDemo: false,
+        user: {
+          fullName: '',
+          email: '',
+        },
+      },
+    });
+    console.info('[SANDBOX] logout');
+  },
+
+  resetToZeroData() {
+    const s = get();
+    s.loginAsUser({
+      fullName: s.profile.fullName || 'Mary Olhson',
+      email: s.profile.studentEmail || 'mary.olhson@gmail.com',
+    });
   },
 
   setProfile(next) {

@@ -117,6 +117,7 @@ import { NotificationsSheet } from '@/components/notifications-sheet';
 import { CopilotTab } from '@/components/copilot-tab';
 import { ReceiptAiFlowModal } from '@/components/ocr/receipt-ai-flow-modal';
 import { PiggyDefenseVaultTab } from '@/components/vault/piggy-defense-vault-tab';
+import { SignInView } from '@/components/auth/sign-in-view';
 
 export type MobileTab = 'home' | 'timeline' | 'subscription' | 'agent' | 'radar' | 'vault';
 
@@ -201,24 +202,24 @@ function formatDay(iso: string): string {
  * Status bar
  * ------------------------------------------------------------------ */
 
-function StatusBar({ onOpenSandbox }: { onOpenSandbox: () => void }) {
+function StatusBar({ onOpenSandbox, dark = false }: { onOpenSandbox: () => void; dark?: boolean }) {
   const clock = useCtrlPayStore((s) => s.sandboxClock);
   const time = new Date(clock).toISOString().slice(11, 16);
   return (
-    <div className="relative z-10 flex shrink-0 items-center justify-between px-6 pb-1 pt-3 text-holst-950">
+    <div className={cn('relative z-10 flex shrink-0 items-center justify-between px-6 pb-1 pt-3', dark ? 'text-white' : 'text-holst-950')}>
       <span className="duo-num text-[12px] font-bold">{time}</span>
       <span className="ct-island absolute left-1/2 top-1.5 h-6 w-[92px] -translate-x-1/2 rounded-full" />
       <span className="flex items-center gap-2">
         <button
           type="button"
-          className="ct-sandbox-pill"
+          className={cn('ct-sandbox-pill', dark && 'bg-white/10 text-white border-white/20 hover:bg-white/20')}
           onClick={onOpenSandbox}
           aria-label="Open the judge sandbox drawer"
         >
           <Zap className="h-3 w-3" /> Sandbox
         </button>
         <span className="flex items-center gap-1.5">
-          <SignalIcon />
+          <SignalIcon dark={dark} />
           <BatteryFull className="h-4 w-4" />
         </span>
       </span>
@@ -226,11 +227,11 @@ function StatusBar({ onOpenSandbox }: { onOpenSandbox: () => void }) {
   );
 }
 
-function SignalIcon() {
+function SignalIcon({ dark = false }: { dark?: boolean }) {
   return (
     <span className="flex items-end gap-[2px]" aria-hidden>
       {[3, 5, 7, 9].map((h) => (
-        <span key={h} className="w-[3px] rounded-sm bg-holst-950" style={{ height: h }} />
+        <span key={h} className={cn('w-[3px] rounded-sm', dark ? 'bg-white' : 'bg-holst-950')} style={{ height: h }} />
       ))}
     </span>
   );
@@ -1739,6 +1740,36 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
 
   const aiOpen = sheet === 'ai';
   const listeningActive = aiOpen && segment === 'VOICE' && listening;
+
+  const authSession = useCtrlPayStore((s) => s.authSession);
+
+  if (!authSession?.isAuthenticated) {
+    return (
+      <div
+        className={cn(
+          // Explicit iPhone-class viewport. On narrow devices it becomes the whole screen.
+          'duo-phone relative flex h-[932px] max-h-[calc(100svh-64px)] w-[430px] max-w-[calc(100vw-48px)] flex-col overflow-hidden rounded-phone',
+          'max-[500px]:h-[100dvh] max-[500px]:max-h-none max-[500px]:w-full max-[500px]:max-w-none max-[500px]:rounded-none',
+          className,
+        )}
+      >
+        <StatusBar onOpenSandbox={() => openSheet('sandbox')} />
+        <div className="relative flex-1 overflow-hidden">
+          <SignInView />
+        </div>
+
+        {/* Sandbox Judge Sheet (accessible from top pill anytime) */}
+        <PhoneSheet
+          open={sheet === 'sandbox'}
+          onClose={closeSheet}
+          title="Judge sandbox controls"
+          subtitle="Time machine · autonomy · stress test"
+        >
+          <SimulationToolbar />
+        </PhoneSheet>
+      </div>
+    );
+  }
 
   return (
     <div
