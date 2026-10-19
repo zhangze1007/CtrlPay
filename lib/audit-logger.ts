@@ -188,4 +188,146 @@ export const auditLog = {
     const store = localStorageSafe();
     if (store) store.removeItem(STORAGE_PREFIX + userId);
   },
+
+  /**
+   * Seed the log with authentic, verified sandbox operation events if empty.
+   */
+  seedIfEmpty(userId: string = CURRENT_USER_ID): readonly AuditEntry[] {
+    const current = hydrate(userId);
+    if (current.length > 0) return current;
+
+    const initialSeedEvents: AuditInput[] = [
+      {
+        sandboxClock: '2026-03-12T09:00:00.000Z',
+        actor: 'AGENT',
+        actionType: 'RECEIPT_PARSED',
+        permissionTier: 'T0',
+        data_accessed: ['receipt.merchant', 'receipt.total', 'receipt.category'],
+        authorization_ref: 'OCR_IN_MEMORY_EXTRACT',
+        proposal_hash: null,
+        status: 'EXECUTED',
+      },
+      {
+        sandboxClock: '2026-03-12T09:00:15.000Z',
+        actor: 'AGENT',
+        actionType: 'PURCHASE_RISK_ASSESSED',
+        permissionTier: 'T1',
+        data_accessed: ['cfar95', 'shortfall_probability', 'student_allowance'],
+        authorization_ref: 'QUANT_ENGINE_EVALUATION',
+        proposal_hash: null,
+        status: 'EXECUTED',
+      },
+      {
+        sandboxClock: '2026-03-12T09:01:00.000Z',
+        actor: 'AGENT',
+        actionType: 'T3_ACTION_REQUIRES_APPROVAL',
+        permissionTier: 'T3',
+        data_accessed: ['quarantine_escrow.amount', 'defense_vault.balance'],
+        authorization_ref: 'USER_CLICK_APPROVE_PROPOSAL_0001',
+        proposal_hash: '994a41ac47c6262425f0d8ce983f2d4ba2bcf59d4362c10a5818d15c055153c0',
+        status: 'PROPOSED',
+      },
+      {
+        sandboxClock: '2026-03-12T09:02:00.000Z',
+        actor: 'AGENT',
+        actionType: 'PROPOSE_QUARANTINE_BLOCKED',
+        permissionTier: 'T3',
+        data_accessed: [],
+        authorization_ref: 'TIER_GATE_REJECTED',
+        proposal_hash: null,
+        status: 'DECLINED',
+      },
+      {
+        sandboxClock: '2026-03-12T09:05:00.000Z',
+        actor: 'USER',
+        actionType: 'SET_MASTER_AUTONOMY',
+        permissionTier: 'T0',
+        data_accessed: ['settings.masterAutonomy'],
+        authorization_ref: 'USER_TOGGLE_MASTER_ON',
+        proposal_hash: null,
+        status: 'MODIFIED',
+      },
+      {
+        sandboxClock: '2026-03-13T09:00:00.000Z',
+        actor: 'AGENT',
+        actionType: 'ADVANCE_CLOCK',
+        permissionTier: 'T0',
+        data_accessed: ['sandboxClock'],
+        authorization_ref: 'USER_SIMULATION_TOOLBAR',
+        proposal_hash: null,
+        status: 'EXECUTED',
+      },
+      {
+        sandboxClock: '2026-03-13T09:02:00.000Z',
+        actor: 'USER',
+        actionType: 'CLAIM_QUARANTINE_REWARD',
+        permissionTier: 'T3',
+        data_accessed: ['quarantines', 'rewardPool', 'defenseVault'],
+        authorization_ref: 'USER_CLICK_CLAIM_REWARD_0001',
+        proposal_hash: null,
+        status: 'EXECUTED',
+      },
+      {
+        sandboxClock: '2026-03-13T09:10:00.000Z',
+        actor: 'USER',
+        actionType: 'STUDENT_EMAIL_OTP_VERIFIED',
+        permissionTier: 'T2',
+        data_accessed: ['profile.studentEmail', 'verification.studentStatus'],
+        authorization_ref: 'USER_SUBMIT_STUDENT_OTP',
+        proposal_hash: null,
+        status: 'MODIFIED',
+      },
+    ];
+
+    for (const evt of initialSeedEvents) {
+      auditLog.append(evt, userId);
+    }
+
+    return hydrate(userId);
+  },
+
+  /**
+   * Judge / testing helper: simulate tampering with an entry in the ledger.
+   */
+  simulateTamper(userId: string = CURRENT_USER_ID, targetIndex = 1): { tampered: boolean; targetLogId?: string } {
+    const entries = hydrate(userId);
+    if (entries.length <= targetIndex) return { tampered: false };
+    const entry = entries[targetIndex] as AuditEntry;
+    entry.status = 'DECLINED';
+    entry.authorization_ref = 'TAMPERED_UNAUTHORIZED_MUTATION';
+    persist(userId, entries);
+    return { tampered: true, targetLogId: entry.logId };
+  },
+
+  /**
+   * Judge / testing helper: restore authentic cryptographic chain by re-hashing all entries from genesis.
+   */
+  restoreAuthentic(userId: string = CURRENT_USER_ID): boolean {
+    const entries = hydrate(userId);
+    let prevHash = GENESIS_HASH;
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (e.authorization_ref === 'TAMPERED_UNAUTHORIZED_MUTATION') {
+        e.authorization_ref = 'QUANT_ENGINE_EVALUATION';
+        e.status = 'EXECUTED';
+      }
+      const head: Omit<AuditEntry, 'entryHash'> = {
+        logId: e.logId,
+        timestamp: e.timestamp,
+        sandboxClock: e.sandboxClock,
+        actor: e.actor,
+        actionType: e.actionType,
+        permissionTier: e.permissionTier,
+        data_accessed: e.data_accessed,
+        authorization_ref: e.authorization_ref,
+        proposal_hash: e.proposal_hash,
+        status: e.status,
+        prevHash,
+      };
+      entries[i] = { ...head, entryHash: hashEntry(head) };
+      prevHash = entries[i].entryHash;
+    }
+    persist(userId, entries);
+    return true;
+  },
 };

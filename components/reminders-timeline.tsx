@@ -4,7 +4,6 @@ import * as React from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  Plus,
   Bell,
   CalendarDays,
   Sparkles,
@@ -69,7 +68,7 @@ const DEFAULT_REMINDERS: ReminderItem[] = [
     dayNum: 15,
     ringColor: '#6366F1',
     category: 'AI & Developer · Anthropic',
-    billingCycle: 'Monthly · Since Feb, 2025',
+    billingCycle: 'Monthly · Since Feb, 2026',
   },
   {
     id: 'figma',
@@ -138,8 +137,6 @@ const DEFAULT_REMINDERS: ReminderItem[] = [
   },
 ];
 
-// Days in May 2026: 1 to 31.
-// Starts on Friday (index 5 of SUN=0, MON=1, TUE=2, WED=3, THU=4, FRI=5, SAT=6).
 const DAYS_OF_WEEK = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 export function RemindersTimeline({
@@ -151,8 +148,132 @@ export function RemindersTimeline({
 }) {
   const goals = useGoals();
   const [viewMode, setViewMode] = React.useState<'timeline' | 'ascent'>('timeline');
+
+  // Dynamic month & date state for swiping and navigating between months
+  const [currentDate, setCurrentDate] = React.useState<Date>(new Date(2026, 4, 12)); // May 12, 2026
   const [selectedDay, setSelectedDay] = React.useState<number>(12);
   const [activeItem, setActiveItem] = React.useState<ReminderItem | null>(null);
+
+  // Month slide transition state
+  const [slideDirection, setSlideDirection] = React.useState<'left' | 'right' | null>(null);
+  const [isAnimating, setIsAnimating] = React.useState(false);
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const monthName = currentDate.toLocaleString('en-US', { month: 'long' });
+
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    setSlideDirection('right');
+    setIsAnimating(true);
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setTimeout(() => {
+      setIsAnimating(false);
+      setSlideDirection(null);
+    }, 250);
+  };
+
+  const handleNextMonth = () => {
+    setSlideDirection('left');
+    setIsAnimating(true);
+    setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setTimeout(() => {
+      setIsAnimating(false);
+      setSlideDirection(null);
+    }, 250);
+  };
+
+  // Touch Swipe Gesture Handlers ("可以滑动别的month这样子")
+  const touchStartX = React.useRef<number | null>(null);
+  const touchStartY = React.useRef<number | null>(null);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - (touchStartY.current || 0);
+
+    // If horizontal swipe distance > 40px and dominant over vertical scroll
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+      if (deltaX < 0) {
+        handleNextMonth(); // Swipe left -> next month
+      } else {
+        handlePrevMonth(); // Swipe right -> prev month
+      }
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  // Mouse Drag gesture for desktop interaction
+  const mouseStartX = React.useRef<number | null>(null);
+  const onMouseDown = (e: React.MouseEvent) => {
+    mouseStartX.current = e.clientX;
+  };
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (mouseStartX.current === null) return;
+    const deltaX = e.clientX - mouseStartX.current;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX < 0) handleNextMonth();
+      else handlePrevMonth();
+    }
+    mouseStartX.current = null;
+  };
+
+  // Calendar cells generation (6 rows x 7 cols = 42 cells) matching screenshot
+  const calendarCells = React.useMemo(() => {
+    const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayWeekday = new Date(year, month, 1).getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri for May 2026
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const cells: Array<{
+      day: number;
+      isCurrentMonth: boolean;
+      dots?: string[];
+    }> = [];
+
+    // 1. Leading ghost days from previous month (or empty space)
+    for (let i = firstDayWeekday - 1; i >= 0; i--) {
+      cells.push({
+        day: daysInPrevMonth - i,
+        isCurrentMonth: false,
+      });
+    }
+
+    // 2. Days of current month with authentic reminder dots
+    for (let d = 1; d <= daysInCurrentMonth; d++) {
+      let dots: string[] | undefined;
+      // Exact dots matching the reference screenshot:
+      if (d === 3 || d === 5) dots = ['#22C55E'];
+      else if (d === 15) dots = ['#F59E0B', '#F59E0B'];
+      else if (d === 18) dots = ['#6366F1'];
+      else if (d === 23) dots = ['#4F46E5'];
+      else if (d === 25) dots = ['#3B82F6'];
+      else if (d === 28) dots = ['#F59E0B'];
+
+      cells.push({
+        day: d,
+        isCurrentMonth: true,
+        dots,
+      });
+    }
+
+    // 3. Trailing ghost days from next month to complete exactly 42 cells
+    // (As shown in screenshot: 1, 2, 3, 4, 5, 6 on the 6th row)
+    let nextMonthDay = 1;
+    while (cells.length < 42) {
+      cells.push({
+        day: nextMonthDay++,
+        isCurrentMonth: false,
+      });
+    }
+
+    return cells;
+  }, [year, month]);
 
   // Group reminders by date string
   const groupedReminders = React.useMemo(() => {
@@ -163,21 +284,6 @@ export function RemindersTimeline({
       map.set(r.dateStr, list);
     }
     return Array.from(map.entries());
-  }, []);
-
-  // Calendar dates layout: 5 leading empties for May 2026 (starts on Friday)
-  const calendarCells = React.useMemo(() => {
-    const cells: Array<{ day: number | null; dots?: string[] }> = [];
-    for (let i = 0; i < 5; i++) cells.push({ day: null });
-    for (let d = 1; d <= 31; d++) {
-      let dots: string[] | undefined;
-      if (d === 3 || d === 5) dots = ['#10B981'];
-      else if (d === 15) dots = ['#F59E0B', '#F59E0B'];
-      else if (d === 18 || d === 23 || d === 25) dots = ['#3B82F6'];
-      else if (d === 28) dots = ['#F59E0B'];
-      cells.push({ day: d, dots });
-    }
-    return cells;
   }, []);
 
   if (viewMode === 'ascent') {
@@ -219,70 +325,87 @@ export function RemindersTimeline({
   }
 
   return (
-    <div className="animate-fade-in -mx-1 pb-16 space-y-4">
-      {/* 1. Header matching Image 3: Back arrow, Reminders, Prev/Next buttons */}
+    <div className="animate-fade-in -mx-1 pb-16 space-y-3.5">
+      {/* 1. Header matching Reference UI: Back button, Reminders title, and Month Nav chevrons */}
       <header className="flex items-center justify-between pt-1 px-1">
-        <button
-          type="button"
-          onClick={onBack}
-          className="grid h-9 w-9 place-items-center rounded-full bg-white/80 border border-white/90 shadow-sm text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
-          aria-label="Back"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-
-        <div className="flex items-center rounded-full bg-white/80 p-0.5 border border-white/90 shadow-xs">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => setViewMode('timeline')}
-            className="rounded-full bg-[#0B1E3F] px-3 py-1 text-[11px] font-black text-white shadow-xs"
+            onClick={onBack}
+            className="grid h-9 w-9 place-items-center rounded-full bg-black/5 hover:bg-black/10 text-[#0B1E3F] active:scale-95 transition-all shadow-xs"
+            aria-label="Back"
           >
-            Reminders
+            <ChevronLeft className="h-5 w-5" />
           </button>
+          <h1 className="text-[21px] font-bold tracking-tight text-[#0B1E3F] font-sans">
+            Reminders
+          </h1>
+        </div>
+
+        {/* Right side: Goals toggle + Month navigation chevron buttons */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setViewMode('ascent')}
-            className="rounded-full px-3 py-1 text-[11px] font-black text-[#64748B] hover:text-[#0B1E3F]"
+            className="rounded-full bg-white/70 hover:bg-white border border-white/80 px-2.5 py-1 text-[11px] font-bold text-[#64748B] hover:text-[#0B1E3F] shadow-xs transition-all"
           >
             Goals 🏔️
           </button>
-        </div>
 
-        <div className="flex items-center rounded-full bg-white/80 border border-white/90 p-0.5 shadow-sm">
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-full text-[#64748B] hover:text-[#0B1E3F] hover:bg-white/60 transition-colors"
-            aria-label="Previous month"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            className="grid h-8 w-8 place-items-center rounded-full text-[#64748B] hover:text-[#0B1E3F] hover:bg-white/60 transition-colors"
-            aria-label="Next month"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handlePrevMonth}
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/80 border border-white/90 shadow-sm text-[#0B1E3F] hover:bg-white active:scale-90 transition-all"
+              aria-label="Previous month"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/80 border border-white/90 shadow-sm text-[#0B1E3F] hover:bg-white active:scale-90 transition-all"
+              aria-label="Next month"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* 2. Subheader: May 12, 2026 & 8 active subscriptions */}
-      <div className="flex items-baseline justify-between px-2 pt-1">
-        <h2 className="text-[20px] font-black tracking-tight text-[#0B1E3F]">
-          May {selectedDay}, 2026
+      {/* 2. Subheader: May 12, 2026 & Stacked "8 active subscriptions" */}
+      <div className="flex items-baseline justify-between px-2 pt-0.5">
+        <h2 className="text-[18px] font-black tracking-tight text-[#0B1E3F] font-sans">
+          {monthName} {selectedDay}, {year}
         </h2>
-        <span className="text-[12px] font-semibold text-[#64748B]">
-          8 active subscriptions
-        </span>
+        <div className="text-right">
+          <span className="text-[11px] font-semibold text-[#64748B] block leading-tight">
+            8 active
+          </span>
+          <span className="text-[11px] font-semibold text-[#64748B] block leading-tight">
+            subscriptions
+          </span>
+        </div>
       </div>
 
-      {/* 3. Frosted Translucent Calendar Widget */}
-      <section className="relative rounded-[30px] bg-gradient-to-b from-white/95 via-white/85 to-white/90 p-4 shadow-[0_12px_36px_rgba(11,30,63,0.06)] border border-white/90 backdrop-blur-xl">
-        {/* Subtle background ambient glow behind calendar */}
-        <div className="pointer-events-none absolute inset-0 -z-10 rounded-[30px] bg-gradient-to-tr from-[#93C5FD]/20 via-[#DDD6FE]/15 to-transparent blur-xl" />
+      {/* 3. Frosted Translucent Calendar Card with Touch/Mouse Swipe support ("可以滑动别的month这样子") */}
+      <section
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        className={cn(
+          'relative rounded-[28px] p-4 sm:p-5 select-none transition-all duration-300',
+          'backdrop-blur-2xl bg-white/60 border border-white/80',
+          'shadow-[0_12px_36px_rgba(11,30,63,0.06),inset_0_1px_1px_rgba(255,255,255,0.95)]',
+          'overflow-hidden cursor-grab active:cursor-grabbing'
+        )}
+      >
+        {/* Subtle background ambient pastel glow */}
+        <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-gradient-to-tr from-[#DDD6FE]/30 to-[#BAE6FD]/25 blur-2xl" />
 
-        {/* Weekday headers */}
-        <div className="grid grid-cols-7 text-center text-[10.5px] font-extrabold tracking-wider text-[#94A3B8]">
+        {/* Weekday headers: SUN MON TUE WED THU FRI SAT */}
+        <div className="grid grid-cols-7 text-center text-[10.5px] font-bold tracking-wider text-[#94A3B8]">
           {DAYS_OF_WEEK.map((w) => (
             <div key={w} className="py-1">
               {w}
@@ -290,45 +413,61 @@ export function RemindersTimeline({
           ))}
         </div>
 
-        {/* Days grid */}
-        <div className="mt-1 grid grid-cols-7 gap-y-1 text-center">
+        {/* Days grid with slide animation on month change */}
+        <div
+          className={cn(
+            'mt-1.5 grid grid-cols-7 gap-y-1.5 text-center transition-transform duration-250 ease-out',
+            isAnimating && slideDirection === 'left' && '-translate-x-3 opacity-80',
+            isAnimating && slideDirection === 'right' && 'translate-x-3 opacity-80'
+          )}
+        >
           {calendarCells.map((c, idx) => {
-            if (!c.day) {
-              return <div key={`empty-${idx}`} className="h-9 w-9" />;
-            }
+            const isSelected = c.isCurrentMonth && c.day === selectedDay;
 
-            const isSelected = c.day === selectedDay;
-            const hasBills = Boolean(c.dots && c.dots.length > 0);
+            // Trailing / leading ghost days from adjacent months (as in screenshot)
+            if (!c.isCurrentMonth) {
+              return (
+                <div
+                  key={`adjacent-${idx}`}
+                  className="flex flex-col items-center justify-center py-1 opacity-45 pointer-events-none"
+                >
+                  <span className="text-[13px] font-semibold text-[#94A3B8]">
+                    {c.day}
+                  </span>
+                </div>
+              );
+            }
 
             return (
               <button
-                key={`day-${c.day}`}
+                key={`current-${c.day}`}
                 type="button"
-                onClick={() => setSelectedDay(c.day!)}
-                className="group relative flex flex-col items-center justify-center py-1 transition-transform active:scale-90"
+                onClick={() => setSelectedDay(c.day)}
+                className="group relative flex flex-col items-center justify-center py-0.5 transition-transform active:scale-90"
               >
+                {/* Day circle */}
                 <div
                   className={cn(
-                    'grid h-8 w-8 place-items-center rounded-full text-[13px] font-bold transition-all duration-150',
+                    'grid h-7.5 w-7.5 place-items-center rounded-full text-[13px] font-bold transition-all duration-150',
                     isSelected
-                      ? 'bg-[#2563EB] text-white shadow-md shadow-[#2563EB]/40 scale-105'
+                      ? 'bg-[#3730A3] text-white shadow-md shadow-[#3730A3]/40 scale-105 font-black'
                       : 'text-[#1E293B] hover:bg-black/5'
                   )}
                 >
                   {c.day}
                 </div>
 
-                {/* Sub-badge / Dots */}
+                {/* Sub-badge / Dots underneath */}
                 {isSelected ? (
-                  <div className="mt-0.5 flex items-center justify-center">
-                    <span className="h-1 w-3 rounded-full bg-[#2563EB]" />
+                  <div className="mt-1 flex items-center justify-center">
+                    <span className="h-1 w-2.5 rounded-full bg-[#3730A3]" />
                   </div>
                 ) : (
-                  <div className="mt-0.5 flex h-1.5 items-center justify-center gap-0.5">
+                  <div className="mt-1 flex h-1.5 items-center justify-center gap-0.5">
                     {c.dots?.map((dotColor, dotIdx) => (
                       <span
                         key={dotIdx}
-                        className="h-1 w-1 rounded-full"
+                        className="h-1.5 w-1.5 rounded-full"
                         style={{ backgroundColor: dotColor }}
                       />
                     ))}
@@ -343,7 +482,7 @@ export function RemindersTimeline({
       {/* 4. Timeline Section */}
       <section className="space-y-4 pt-1">
         {groupedReminders.map(([dateStr, items]) => {
-          const isToday = dateStr.includes('12');
+          const isToday = dateStr.includes(String(selectedDay));
           return (
             <div key={dateStr} className="space-y-2.5">
               {/* Date Header + Badge */}
@@ -409,16 +548,6 @@ export function RemindersTimeline({
           );
         })}
       </section>
-
-      {/* Floating Add Button (+) in bottom right */}
-      <button
-        type="button"
-        onClick={() => onOpenSheet?.('expense')}
-        className="fixed right-6 bottom-24 grid h-12 w-12 place-items-center rounded-full bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white shadow-lg shadow-[#6366F1]/40 transition-transform active:scale-90 hover:scale-105 z-30"
-        aria-label="Add reminder"
-      >
-        <Plus className="h-6 w-6 stroke-[2.5]" />
-      </button>
 
       {/* 5. Subscription Manage Modal Drawer (matching left peek of Image 3) */}
       {activeItem && (

@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { Camera, Check, Keyboard, Mic, MicOff, ScanLine, ShieldAlert, Trash2, X } from 'lucide-react';
+import { Camera, Check, Keyboard, Mic, MicOff, ScanLine, ShieldAlert, Sparkles, Trash2, X } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { toISODate, formatRM } from '@/lib/utils';
-import { BOOKING_CATEGORIES, mockReceiptExtraction, parseBookingText, type BookingDraft } from '@/lib/bookkeeping';
+import { BOOKING_CATEGORIES, parseBookingText, type BookingDraft } from '@/lib/bookkeeping';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -49,10 +49,14 @@ export function MultimodalBookkeeping({
   defaultOpen = false,
   defaultMode = 'CHAT',
   autoStartVoice = false,
+  onOpenReceiptFlow,
+  onBooked,
 }: {
   defaultOpen?: boolean;
   defaultMode?: Mode;
   autoStartVoice?: boolean;
+  onOpenReceiptFlow?: () => void;
+  onBooked?: (data: { merchant: string; amount: number; category: string }) => void;
 }) {
   const bookExpense = useCtrlPayStore((s) => s.bookExpense);
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
@@ -107,13 +111,32 @@ export function MultimodalBookkeeping({
     setDraft(parsed);
   }
 
-  function handleReceiptFile(file: File | undefined) {
+  async function handleReceiptFile(file: File | undefined) {
     if (!file) return;
     clearPreview();
     setError(null);
     setNotice(null);
     setPreviewUrl(URL.createObjectURL(file));
-    setDraft(mockReceiptExtraction(file.name, { todayISO }));
+    setNotice('Analyzing receipt image with OCR in secure memory...');
+
+    try {
+      const { executeRealOcr } = await import('@/lib/real-ocr');
+      const res = await executeRealOcr(file);
+      setNotice(null);
+      setDraft({
+        merchant: res.merchant,
+        amountRM: res.amount,
+        category: res.spendCategory,
+        isNeed: res.isNeed,
+        date: todayISO,
+        source: 'RECEIPT',
+        rawText: `OCR real extract · ${res.merchant} RM ${res.amount.toFixed(2)}`,
+        confidence: res.confidence / 100,
+      });
+    } catch {
+      setNotice(null);
+      setError('Could not extract text from this receipt. Try another photo or enter manually.');
+    }
   }
 
   function startVoice() {
@@ -155,6 +178,12 @@ export function MultimodalBookkeeping({
       isNeed: draft.isNeed,
       source: draft.source,
     });
+    const bookedData = {
+      merchant: draft.merchant,
+      amount: draft.amountRM,
+      category: draft.category.replaceAll('_', ' '),
+    };
+    onBooked?.(bookedData);
     setNotice(`Booked ${formatRM(draft.amountRM)} at ${draft.merchant}. The receipt image was discarded.`);
     setChatText('');
     resetDraft();
@@ -215,9 +244,9 @@ export function MultimodalBookkeeping({
           )}
 
           {mode === 'RECEIPT' && (
-            <div className="space-y-2">
-              <label className="flex cursor-pointer flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-holst-600/50 bg-holst-50 py-4 text-[12.5px] font-bold text-holst-800">
-                <ScanLine className="h-4 w-4" /> Tap to scan / upload a receipt
+            <div className="space-y-2.5">
+              <label className="flex cursor-pointer flex-row items-center justify-center gap-2 rounded-2xl border border-dashed border-holst-600/50 bg-holst-50 py-3.5 text-[12.5px] font-bold text-holst-800 hover:bg-holst-100 transition-colors">
+                <ScanLine className="h-4 w-4 text-[#10606F]" /> Tap camera / upload real receipt
                 <input
                   type="file"
                   accept="image/*"
@@ -227,6 +256,17 @@ export function MultimodalBookkeeping({
                   aria-label="Receipt image"
                 />
               </label>
+
+              {onOpenReceiptFlow && (
+                <button
+                  type="button"
+                  onClick={onOpenReceiptFlow}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-[#10606F]/10 to-[#1D8B94]/15 hover:from-[#10606F]/20 hover:to-[#1D8B94]/25 text-[#10606F] text-[11.5px] font-bold border border-[#10606F]/20 transition-all shadow-2xs"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-[#1D8B94]" /> Open Fullscreen Receipt Scanner →
+                </button>
+              )}
+
               {previewUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

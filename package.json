@@ -4,7 +4,7 @@
   "private": true,
   "description": "CtrlPay — proactive defensive personal-finance agent sandbox (2026 Shenzhen FinTechathon, Topic A)",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node --max-old-space-size=4096 node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,31 +15,32 @@
     "verify:sdk-version": "node scripts/verify-sdk-version.mjs"
   },
   "dependencies": {
-    "ai": "~4.3.16",
-    "@ai-sdk/react": "~1.2.12",
     "@ai-sdk/google": "~1.2.22",
-    "zod": "^3.23.8",
+    "@ai-sdk/react": "~1.2.12",
+    "ai": "~4.3.16",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.454.0",
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "zustand": "^4.5.5",
-    "framer-motion": "^11.11.17",
-    "lucide-react": "^0.454.0",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.4",
-    "class-variance-authority": "^0.7.1"
+    "tesseract.js": "^7.0.0",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.5"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
     "@types/node": "^20.17.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "tailwindcss": "^3.4.14",
-    "postcss": "^8.4.47",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.35",
-    "vitest": "^2.1.4",
-    "tailwindcss-animate": "^1.0.7"
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }

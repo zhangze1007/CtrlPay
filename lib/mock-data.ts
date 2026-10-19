@@ -36,7 +36,7 @@ export const PROFILE = {
  * Balances & budgets (DEMO_CONFIG)
  * ------------------------------------------------------------------ */
 
-export const INITIAL_BALANCE = 56750.0;
+export const INITIAL_BALANCE = 7540.0;
 export const MONTHLY_SAVINGS_GOAL = 300.0;
 export const INITIAL_DEFENSE_VAULT = 0.0;
 

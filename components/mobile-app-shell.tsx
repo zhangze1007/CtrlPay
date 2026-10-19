@@ -7,19 +7,24 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeftRight,
+  ArrowRight,
   ArrowUpRight,
   BarChart2,
   BatteryFull,
   Bell,
+  Bot,
   Bus,
+  BarChart3,
   CalendarDays,
   CalendarRange,
   Camera,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   CircleDot,
   Clapperboard,
+  Copy,
   CreditCard,
   CupSoda,
   Filter,
@@ -38,11 +43,12 @@ import {
   Receipt,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
-  Smartphone,
+  Tag,
   Timer,
   TrendingUp,
   User,
@@ -52,6 +58,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { BrandIcon, type ActivityItem } from '@/components/activity-section';
 import { useCtrlPayStore, type SandboxEvent } from '@/lib/store';
 import type { SpendCategory } from '@/lib/types';
 import {
@@ -71,7 +78,7 @@ import {
   SUBSCRIPTIONS,
   USAGE_SIGNALS,
 } from '@/lib/mock-data';
-import { formatCanteenMealsEquivalent, formatDisplayCurrency } from '@/lib/currency-ppp';
+import { formatDisplayCurrency } from '@/lib/currency-ppp';
 import { SUBSCRIPTION_REGISTRY } from '@/lib/subscription-registry';
 import { analyzeZombies, ZOMBIE_RULES } from '@/lib/zombie-radar';
 import { upcomingFixedBills } from '@/lib/ledger';
@@ -89,8 +96,17 @@ import { QuarantineCards } from '@/components/quarantine-cards';
 import { SimulationToolbar } from '@/components/simulation-toolbar';
 import { SpendingBars } from '@/components/spending-bars';
 import { SpendingStatisticChart } from '@/components/spending-statistic-chart';
+import { CircularExpenseDonut } from '@/components/circular-expense-donut';
+import { ClinicalProfileView } from '@/components/clinical-profile-view';
+import { ActivitySection } from '@/components/activity-section';
+import { CentroHeroCard } from '@/components/centro-hero-card';
 import { SubscriptionTab } from '@/components/subscription-tab';
 import { RemindersTimeline } from '@/components/reminders-timeline';
+import { CampusCashDashboard } from '@/components/dashboard/campus-cash-dashboard';
+import { ModernSettingsView } from '@/components/profile/modern-settings-view';
+import { ModernCalendarView } from '@/components/calendar/modern-calendar';
+import { BudgetDetailsView } from '@/components/dashboard/budget-details-view';
+import { AllTransactionsSlideView } from '@/components/transactions/all-transactions-slide-view';
 import { ArcRing } from '@/components/arc-ring';
 import { FolderTabCard } from '@/components/folder-tab-card';
 import { StudentDowngradeDrawer } from '@/components/student-downgrade-drawer';
@@ -101,12 +117,14 @@ import { ExpenseOverviewCard } from '@/components/corridor-chart';
 import { SteppedLogo, UnequalMenuIcon } from '@/components/ui/design-icons';
 import { ProfileSheet } from '@/components/profile-sheet';
 import { NotificationsSheet } from '@/components/notifications-sheet';
-import { CurrencySwitcherPill } from '@/components/currency-switcher-pill';
+import { CopilotTab } from '@/components/copilot-tab';
 import {
   QuickLogBackTapModal,
   type QuickLogTransactionInput,
 } from '@/components/quick-log-backtap-modal';
 import { BiometricPasskeyGate } from '@/components/biometric-passkey-gate';
+import { ReceiptAiFlowModal } from '@/components/ocr/receipt-ai-flow-modal';
+import { PiggyDefenseVaultTab } from '@/components/vault/piggy-defense-vault-tab';
 
 export type MobileTab = 'home' | 'timeline' | 'subscription' | 'agent' | 'radar' | 'vault';
 
@@ -120,7 +138,9 @@ type SheetId =
   | 'audit'
   | 'commitments'
   | 'ai'
-  | 'sandbox';
+  | 'sandbox'
+  | 'budgetDetails'
+  | 'allTransactions';
 type AiSegment = 'OCR' | 'VOICE' | 'COPILOT';
 
 export interface MobileAppShellProps {
@@ -249,11 +269,27 @@ function SignalIcon() {
  * Bottom dock + multimodal AI orb
  * ------------------------------------------------------------------ */
 
+function SparkleStarIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M12 2.5L14.4 9.6L21.5 12L14.4 14.4L12 21.5L9.6 14.4L2.5 12L9.6 9.6L12 2.5Z" />
+    </svg>
+  );
+}
+
 const DOCK_ITEMS: Array<{ id: MobileTab; label: string; icon: React.ElementType }> = [
   { id: 'home', label: 'Home', icon: HomeIcon },
-  { id: 'timeline', label: 'Timeline', icon: CalendarRange },
-  { id: 'radar', label: 'Radar', icon: Radar },
-  { id: 'vault', label: 'Vault', icon: ShieldCheck },
+  { id: 'timeline', label: 'Timeline', icon: CalendarDays },
+  { id: 'subscription', label: 'Subscription', icon: CreditCard },
+  { id: 'vault', label: 'Vault', icon: PiggyBank },
 ];
 
 function DockButton({
@@ -271,102 +307,249 @@ function DockButton({
       type="button"
       className="ct-dock-btn"
       aria-current={active ? 'page' : undefined}
+      aria-label={item.label}
       onClick={() => onSelect(item.id)}
     >
-      <Icon className="h-[18px] w-[18px]" />
-      <span>{item.label}</span>
+      <Icon className="h-5 w-5" />
       <span className="ct-dock-dot" />
     </button>
   );
 }
 
-function AiOrb({
-  listening,
+function SlidingNavigationPlusOrb({
   onTap,
-  onHold,
-  onRelease,
+  onSelectOcr,
+  onSelectCopilot,
 }: {
-  listening: boolean;
   onTap: () => void;
-  onHold: () => void;
-  onRelease: () => void;
+  onSelectOcr: () => void;
+  onSelectCopilot: () => void;
 }) {
-  const hold = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const started = React.useRef(0);
-  const longFired = React.useRef(false);
-  const pointerHandled = React.useRef(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [hoveredAction, setHoveredAction] = React.useState<'ocr' | 'copilot' | null>(null);
 
-  const clearHold = React.useCallback(() => {
-    if (hold.current) {
-      clearTimeout(hold.current);
-      hold.current = null;
+  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPosRef = React.useRef<{ x: number; y: number } | null>(null);
+  const isDraggingRef = React.useRef(false);
+  const isExpandedRef = React.useRef(false);
+  isExpandedRef.current = isExpanded;
+
+  const clearTimer = React.useCallback(() => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
     }
   }, []);
 
-  React.useEffect(() => clearHold, [clearHold]);
+  React.useEffect(() => clearTimer, [clearTimer]);
 
-  function onPointerDown() {
-    pointerHandled.current = true;
-    longFired.current = false;
-    started.current = Date.now();
-    clearHold();
-    // Long press threshold: 280ms opens the voice drawer.
-    hold.current = setTimeout(() => {
-      longFired.current = true;
-      onHold();
-    }, 280);
-  }
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = true;
+    setHoveredAction(null);
 
-  function onPointerUp() {
-    clearHold();
-    const held = Date.now() - started.current;
-    if (longFired.current) {
-      onRelease();
-      return;
+    clearTimer();
+    // Long press threshold: 220ms triggers slide-out of OCR & Copilot
+    holdTimerRef.current = setTimeout(() => {
+      setIsExpanded(true);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+    }, 220);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current || !startPosRef.current) return;
+    const deltaX = e.clientX - startPosRef.current.x;
+
+    if (isExpandedRef.current) {
+      if (deltaX < -22) {
+        setHoveredAction('ocr');
+      } else if (deltaX > 22) {
+        setHoveredAction('copilot');
+      } else {
+        setHoveredAction(null);
+      }
     }
-    // Short tap: under 250ms opens the OCR scanner.
-    if (held < 250) onTap();
-  }
+  };
 
-  function onCancel() {
-    clearHold();
-    longFired.current = false;
-    onRelease();
-  }
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
 
-  function onClick() {
-    // Keyboard / programmatic activation skips pointer events — treat as a tap.
-    if (pointerHandled.current) {
-      pointerHandled.current = false;
-      return;
+    clearTimer();
+    const wasExpanded = isExpandedRef.current;
+    const action = hoveredAction;
+    isDraggingRef.current = false;
+    startPosRef.current = null;
+
+    if (wasExpanded) {
+      if (action === 'ocr') {
+        setIsExpanded(false);
+        setHoveredAction(null);
+        onSelectOcr();
+        return;
+      }
+      if (action === 'copilot') {
+        setIsExpanded(false);
+        setHoveredAction(null);
+        onSelectCopilot();
+        return;
+      }
+      // Held long enough and released in center without sliding: keep open for direct tap
+    } else {
+      // Short tap: under 220ms triggers quick expense
+      onTap();
     }
-    onTap();
-  }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+    clearTimer();
+    isDraggingRef.current = false;
+    startPosRef.current = null;
+  };
 
   return (
-    <button
-      type="button"
-      className="ct-orb shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-holst-200"
-      data-listening={listening}
-      aria-label="Multimodal AI — tap for receipt OCR, hold to talk"
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onCancel}
-      onPointerLeave={onCancel}
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={onClick}
-    >
-      {listening ? (
-        <>
-          <span className="ct-wave" />
-          <span className="ct-wave ct-wave-2" />
-          <span className="ct-wave ct-wave-3" />
-          <Sparkles className="relative z-10 h-6 w-6 text-white" />
-        </>
-      ) : (
-        <Plus className="relative z-10 h-6 w-6 stroke-[2.5] text-white" />
+    <div className="relative shrink-0 flex items-center justify-center">
+      {/* Dim backdrop to dismiss when tapped outside */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => {
+            setIsExpanded(false);
+            setHoveredAction(null);
+          }}
+        />
       )}
-    </button>
+
+      {/* Satellite Buttons: Left (OCR) and Right (Copilot) floating above dock */}
+      <AnimatePresence>
+        {isExpanded && (
+          <>
+            {/* Left Satellite: OCR Scan (Camera) */}
+            <motion.div
+              initial={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              animate={{
+                opacity: 1,
+                x: -64,
+                y: -52,
+                scale: hoveredAction === 'ocr' ? 1.18 : 1.0,
+              }}
+              exit={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 26 }}
+              className="absolute z-40 pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setHoveredAction(null);
+                  onSelectOcr();
+                }}
+                className={cn(
+                  'relative h-[48px] w-[48px] rounded-full flex items-center justify-center transition-all',
+                  'bg-gradient-to-br from-[#10606F] via-[#0A3D4A] to-[#04222B] text-white border-[3.5px] border-white',
+                  'shadow-[0_12px_28px_-4px_rgba(4,34,43,0.45),0_0_16px_-2px_rgba(29,139,148,0.4)]',
+                  hoveredAction === 'ocr' &&
+                    'ring-4 ring-[#1D8B94] ring-offset-2 ring-offset-white shadow-[0_0_24px_rgba(29,139,148,0.7)]'
+                )}
+                aria-label="Scan OCR Receipt"
+              >
+                <Camera className="h-5 w-5 text-white" />
+                <span
+                  className={cn(
+                    'absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-black shadow-md transition-all',
+                    hoveredAction === 'ocr'
+                      ? 'bg-[#10606F] text-white scale-110'
+                      : 'bg-[#04222B] text-white'
+                  )}
+                >
+                  Scan OCR
+                </span>
+              </button>
+            </motion.div>
+
+            {/* Right Satellite: Copilot AI (Bot) */}
+            <motion.div
+              initial={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              animate={{
+                opacity: 1,
+                x: 64,
+                y: -52,
+                scale: hoveredAction === 'copilot' ? 1.18 : 1.0,
+              }}
+              exit={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 26 }}
+              className="absolute z-40 pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setHoveredAction(null);
+                  onSelectCopilot();
+                }}
+                className={cn(
+                  'relative h-[48px] w-[48px] rounded-full flex items-center justify-center transition-all',
+                  'bg-gradient-to-br from-[#10606F] via-[#0A3D4A] to-[#04222B] text-white border-[3.5px] border-white',
+                  'shadow-[0_12px_28px_-4px_rgba(4,34,43,0.45),0_0_16px_-2px_rgba(29,139,148,0.4)]',
+                  hoveredAction === 'copilot' &&
+                    'ring-4 ring-[#1D8B94] ring-offset-2 ring-offset-white shadow-[0_0_24px_rgba(29,139,148,0.7)]'
+                )}
+                aria-label="Copilot AI Agent"
+              >
+                <Bot className="h-5 w-5 text-white" />
+                <span
+                  className={cn(
+                    'absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-black shadow-md transition-all',
+                    hoveredAction === 'copilot'
+                      ? 'bg-[#10606F] text-white scale-110'
+                      : 'bg-[#04222B] text-white'
+                  )}
+                >
+                  Copilot AI
+                </span>
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Center + Button */}
+      <button
+        type="button"
+        className={cn(
+          'ct-orb shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-holst-200 z-40 transition-transform duration-200 select-none',
+          isExpanded && 'scale-95 shadow-[0_0_20px_rgba(29,139,148,0.5)]'
+        )}
+        aria-label="Navigation quick action: tap for expense, press & slide left for OCR, right for Copilot"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onClick={() => {
+          if (isExpanded) {
+            setIsExpanded(false);
+            setHoveredAction(null);
+          }
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <Plus
+          className={cn(
+            'relative z-10 h-6 w-6 stroke-[2.5] text-white transition-transform duration-200',
+            isExpanded && 'rotate-45'
+          )}
+        />
+      </button>
+    </div>
   );
 }
 
@@ -614,227 +797,32 @@ function LimitRow({ label, value }: { label: string; value: number }) {
 function HomeTab({
   onOpenSheet,
   onGoTab,
+  onOpenTransaction,
+  onOpenCfar,
   onQuickLog,
 }: {
   onOpenSheet: (s: SheetId) => void;
   onGoTab: (t: MobileTab) => void;
+  onOpenTransaction: (item: ActivityItem) => void;
+  onOpenCfar?: () => void;
   onQuickLog: () => void;
 }) {
-  const profile = useCtrlPayStore((s) => s.profile);
-  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
-  const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
-  const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
-  const floor = ESCROW_RULES.minDailySurvivalFloorRM;
-
   return (
-    <div className="animate-fade-in -mx-1 pb-4">
-      {/* 1. Top Bar matching Image 1: Profile on left, Bell on right */}
-      <header className="flex items-center justify-between pt-1">
-        {/* Profile Avatar + "Welcome Back 👋" + Name */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('profile')}
-          className="flex items-center gap-2.5 text-left transition-transform active:scale-98 group"
-          aria-label="Edit Profile"
-        >
-          <div className="relative h-11 w-11 overflow-hidden rounded-full ring-2 ring-white shadow-sm bg-[#0B1E3F] shrink-0">
-            <Image
-              src={profile.avatar || '/avatar.jpg'}
-              alt={profile.fullName}
-              width={44}
-              height={44}
-              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-              unoptimized
-            />
-          </div>
-          <div>
-            <p className="text-[11px] font-medium text-[#64748B] leading-none">Welcome Back 👋</p>
-            <h2 className="mt-1 text-[15.5px] font-extrabold text-[#0B1E3F] tracking-tight leading-none group-hover:text-[#1C7EC8] transition-colors">
-              {profile.fullName}
-            </h2>
-          </div>
-        </button>
-
-        {/* Bell + Back-Tap quick log buttons */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onQuickLog}
-            className="relative grid h-10 w-10 place-items-center rounded-full bg-[#FFF4E0] border border-[#F5B84D]/40 shadow-[0_4px_16px_rgba(245,184,77,0.25)] text-[#8A5408] hover:bg-[#FFEAC4] transition-all active:scale-95"
-            aria-label="Open Back-Tap quick logging"
-            title="iOS Back-Tap / press B twice"
-          >
-            <Smartphone className="h-4.5 w-4.5" />
-            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-[#F5B84D] ring-2 ring-white" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onOpenSheet('notifications')}
-            className="relative grid h-10 w-10 place-items-center rounded-full bg-white/95 border border-white/80 shadow-[0_4px_16px_rgba(11,30,63,0.06)] text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4.5 w-4.5" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#1C7EC8] ring-2 ring-white" />
-          </button>
-        </div>
-      </header>
-
-      {/* Display-currency / PPP switcher (base ledger stays MYR) */}
-      <div className="mt-3">
-        <CurrencySwitcherPill />
-      </div>
-
-      {/* 2. Available Balance Card matching Image 1 with subtle ambient gradient glow behind */}
-      <div className="relative mt-4">
-        <div className="pointer-events-none absolute -inset-1.5 rounded-[34px] bg-gradient-to-tr from-[#93C5FD]/40 via-[#C7D2FE]/25 to-[#67E8F9]/35 blur-xl opacity-75 -z-10" />
-        <section className="rounded-[28px] bg-white/95 p-5 shadow-[0_12px_36px_rgba(11,30,63,0.06)] border border-white/90 relative overflow-hidden backdrop-blur-md">
-          {/* Top row: Icon + Available Balance on left, circle arrow up-right on right */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="grid h-7 w-7 place-items-center rounded-lg bg-[#EBF4FF] text-[#1C7EC8]">
-                <CreditCard className="h-4 w-4" />
-              </div>
-              <span className="text-[13px] font-semibold text-[#0B1E3F]/75">Available Balance</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenSheet('expense')}
-              className="grid h-8 w-8 place-items-center rounded-full bg-[#0B1E3F] text-white shadow-sm transition-transform active:scale-95 hover:bg-[#122A54]"
-              aria-label="Add transaction"
-            >
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Big Bold Balance — rendered in the selected display currency (base ledger MYR) */}
-          <div className="mt-3.5">
-            <p className="text-[34px] sm:text-[38px] font-black tracking-[-0.03em] text-[#0B1E3F] leading-none">
-              {formatDisplayCurrency(currentBalance, displayCurrency)}
-            </p>
-            <p className="mt-1.5 text-[10.5px] font-semibold text-[#0B1E3F]/50">
-              {formatCanteenMealsEquivalent(currentBalance, displayCurrency)}
-            </p>
-          </div>
-
-          {/* Bottom Pill: Trend indicator */}
-          <div className="mt-3.5 flex items-center">
-            <button
-              type="button"
-              onClick={() => onOpenSheet('summary')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#F4F8FC] px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F]/75 hover:bg-[#EBF3FA] transition-colors"
-            >
-              <TrendingUp className="h-3.5 w-3.5 text-[#10B981]" />
-              <span>See last week tread</span>
-            </button>
-          </div>
-        </section>
-      </div>
-
-      {/* 3. Middle Section: Total Spending Graph with ambient flowing gradient behind */}
-      <div className="relative mt-4">
-        <div className="pointer-events-none absolute -inset-2 rounded-[38px] bg-gradient-to-b from-[#38BDF8]/25 via-[#818CF8]/15 to-[#1C7EC8]/20 blur-xl opacity-70 -z-10" />
-        <SpendingStatisticChart
-          incomeAmount={2400}
-          expenseAmount={spentThisMonth}
-          floor={floor}
-        />
-      </div>
-
-      {/* 4. Striking Deep Navy Blue Floating Bottom Container Block (#0B1E3F) */}
-      <div className="relative mt-5 -mx-3">
-        <div className="pointer-events-none absolute -inset-x-2 -top-4 h-12 bg-gradient-to-b from-[#1C7EC8]/25 via-[#2563EB]/15 to-transparent blur-md -z-10" />
-        <section className="relative rounded-t-[34px] bg-gradient-to-b from-[#0B1E3F] to-[#07152D] px-5 pt-3.5 pb-8 text-white shadow-[0_-16px_40px_rgba(11,30,63,0.35)] ring-1 ring-inset ring-white/10">
-        {/* Subtle center chevron / peak indicator */}
-        <div className="flex justify-center -mt-1 mb-2">
-          <button
-            type="button"
-            onClick={() => onOpenSheet('payments')}
-            className="h-1 w-9 rounded-full bg-white/20 hover:bg-white/40 transition-colors"
-            aria-label="Expand transactions"
-          />
-        </div>
-
-        {/* Header: Recent transactions on left, See All on right */}
-        <div className="flex items-center justify-between mb-3.5">
-          <h3 className="text-[17px] font-extrabold tracking-tight text-white">Recent transactions</h3>
-          <button
-            type="button"
-            onClick={() => onOpenSheet('payments')}
-            className="text-[12px] font-bold text-[#62AEED] hover:text-white transition-colors"
-          >
-            See All
-          </button>
-        </div>
-
-        {/* Minimalist Transaction Items from Image 1 */}
-        <div className="space-y-2.5">
-          {/* 1. Paypal */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#0070BA] text-white shadow-sm shrink-0">
-                <span className="font-sans font-black text-[18px] italic">P</span>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Paypal</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Today, 5:32 PM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-[#34D399]">+$80.89</span>
-          </div>
-
-          {/* 2. Google one */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-white text-[#0B1E3F] shadow-sm shrink-0 p-2.5">
-                <svg className="h-full w-full" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c2.44 0 4.67-.88 6.42-2.34l-2.07-2.07C14.98 18.37 13.56 19 12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7c1.93 0 3.68.79 4.95 2.05l2.12-2.12C17.29 3.2 14.79 2 12 2z"/>
-                  <path fill="#EA4335" d="M12 5c1.93 0 3.68.79 4.95 2.05l2.12-2.12C17.29 3.2 14.79 2 12 2v3z"/>
-                  <path fill="#FBBC05" d="M19.07 4.93l-2.12 2.12C18.21 8.32 19 10.07 19 12h3c0-2.79-1.2-5.29-2.93-7.07z"/>
-                  <path fill="#34A853" d="M19 12c0 1.93-.79 3.68-2.05 4.95l2.12 2.12C20.8 17.29 22 14.79 22 12h-3z"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Google one</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Today, 2:40 PM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-white">-$10.99</span>
-          </div>
-
-          {/* 3. Apple */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onOpenSheet('notifications')}
-            className="flex items-center justify-between rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.10] p-3 backdrop-blur-md transition-all active:scale-[0.99] cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-full bg-[#1C1C1E] text-white shadow-sm shrink-0">
-                <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.16.65-2.84 1.44-.59.69-1.11 1.76-.97 2.81 1.07.08 2.2-.62 2.8-1.38z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-[14.5px] font-bold text-white leading-tight">Apple</p>
-                <p className="text-[11px] text-white/60 leading-tight mt-0.5">Yesterday, 11:20 AM</p>
-              </div>
-            </div>
-            <span className="font-mono text-[14.5px] font-black text-white">-$15.00</span>
-          </div>
-        </div>
-      </section>
-      </div>
-    </div>
+    <CampusCashDashboard
+      onOpenProfile={() => onOpenSheet('profile')}
+      onOpenTimeline={() => onGoTab('timeline')}
+      onOpenExpense={() => onOpenSheet('expense')}
+      onOpenSimulator={() => {
+        onOpenCfar?.();
+        onGoTab('agent');
+      }}
+      onOpenAnalytics={() => onOpenSheet('payments')}
+      onOpenNotifications={() => onOpenSheet('notifications')}
+      onOpenBudgetDetails={() => onOpenSheet('budgetDetails')}
+      onOpenAllTransactions={() => onOpenSheet('allTransactions')}
+      onOpenItem={onOpenTransaction}
+      onQuickLog={onQuickLog}
+    />
   );
 }
 
@@ -971,7 +959,7 @@ function TimelineTab({
     <div className="animate-fade-in space-y-4">
       {/* Component from Image 2: Exact Expense Overview Card */}
       <ExpenseOverviewCard
-        amount="$120.00"
+        amount="RM 120.00"
         onCalendarClick={() => setShowCalendar((v) => !v)}
         onDrillClick={() => setShowStressTester((v) => !v)}
       />
@@ -1124,15 +1112,15 @@ function RadarTab({
           ]}
           arcLabels={
             isConcept
-              ? ['Invested', 'Profit', '$66k']
+              ? ['Invested', 'Profit', 'RM 1.5k/yr']
               : ['Active', 'Saved', 'Vault']
           }
           arcAmounts={
             isConcept
-              ? ['$120k', '', '']
+              ? ['RM 120/mo', '', '']
               : [`RM ${Math.round(activeAmt)}`, '', '']
           }
-          center={isConcept ? '$186k' : `RM ${Math.round(totalMonthly)}`}
+          center={isConcept ? 'RM 186/mo' : `RM ${Math.round(totalMonthly)}`}
           capsules={[
             { id: 'invested', icon: BarChart2, label: 'Column metrics' },
             { id: 'trend', icon: TrendingUp, label: 'Trend line' },
@@ -1159,7 +1147,7 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +4.73%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +$1,286 - Today
+                  +RM 1,286 - Today
                 </span>
               </>
             ) : (
@@ -1177,8 +1165,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : $96k' : 'Monthly burn : RM 39.90'}
-          footerRight={isConcept ? 'Profit : $16k' : 'Sweepable : +RM 39.90'}
+          footerLeft={isConcept ? 'Total Invested : RM 96k' : 'Monthly burn : RM 39.90'}
+          footerRight={isConcept ? 'Profit : RM 16k' : 'Sweepable : +RM 39.90'}
         />
 
         {/* Card 2: Withdraw / Student Arbitrage */}
@@ -1195,7 +1183,7 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +2.12%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +$942.65 - Today
+                  +RM 942.65 - Today
                 </span>
               </>
             ) : (
@@ -1213,8 +1201,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : $18,632' : 'Full price : RM 15.90'}
-          footerRight={isConcept ? 'Profit : +$942.65' : 'Student : RM 8.50'}
+          footerLeft={isConcept ? 'Total Invested : RM 18,632' : 'Full price : RM 15.90'}
+          footerRight={isConcept ? 'Profit : +RM 942.65' : 'Student : RM 8.50'}
         />
       </div>
 
@@ -1644,6 +1632,94 @@ function AiDrawer({
   );
 }
 
+function AgentTab({
+  copilot,
+  onOpenSheet,
+}: {
+  copilot?: React.ReactNode;
+  onOpenSheet: (s: SheetId) => void;
+}) {
+  const [segment, setSegment] = React.useState<AiSegment>('COPILOT');
+  const [listening, setListening] = React.useState(false);
+  const masterAutonomy = useCtrlPayStore((s) => s.masterAutonomyEnabled);
+
+  return (
+    <div className="animate-fade-in -mx-1 pb-4">
+      {/* Header */}
+      <header className="flex items-center justify-between pt-1 mb-3">
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#10B981]">
+              Autonomous Agent Active
+            </span>
+          </div>
+          <h2 className="text-[20px] font-black tracking-tight text-[#04222B]">Copilot AI</h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onOpenSheet('sandbox')}
+          className="flex items-center gap-1.5 rounded-full bg-[#0B1E3F] px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm transition-transform active:scale-95"
+        >
+          <Sparkles className="h-3 w-3 text-cyan-300" />
+          <span>{masterAutonomy ? 'T3 Autonomy' : 'Advisory Mode'}</span>
+        </button>
+      </header>
+
+      {/* Segment Selector: Copilot / Voice / OCR */}
+      <div className="ct-seg w-full justify-between mb-3">
+        <button
+          type="button"
+          data-on={segment === 'COPILOT'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => setSegment('COPILOT')}
+        >
+          <Sparkles className="h-3.5 w-3.5" /> Copilot
+        </button>
+        <button
+          type="button"
+          data-on={segment === 'VOICE'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => {
+            setSegment('VOICE');
+            setListening(true);
+          }}
+        >
+          <Mic className="h-3.5 w-3.5" /> Voice
+        </button>
+        <button
+          type="button"
+          data-on={segment === 'OCR'}
+          className="ct-seg-btn flex-1 justify-center"
+          onClick={() => setSegment('OCR')}
+        >
+          <Camera className="h-3.5 w-3.5" /> OCR Scan
+        </button>
+      </div>
+
+      {/* Content Area */}
+      {segment === 'COPILOT' && (
+        <div className="rounded-[28px] bg-white/90 p-3.5 shadow-sm border border-white/80 backdrop-blur-md min-h-[66vh] flex flex-col">
+          {copilot ?? <AgentChat withBookkeeping={true} />}
+        </div>
+      )}
+
+      {segment === 'VOICE' && (
+        <div className="rounded-[28px] bg-white/90 p-4 shadow-sm border border-white/80 backdrop-blur-md">
+          <MultimodalBookkeeping defaultOpen defaultMode="VOICE" autoStartVoice={listening} />
+        </div>
+      )}
+
+      {segment === 'OCR' && (
+        <div className="rounded-[28px] bg-white/90 p-4 shadow-sm border border-white/80 backdrop-blur-md">
+          <MultimodalBookkeeping defaultOpen defaultMode="RECEIPT" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ *
  * Shell
  * ------------------------------------------------------------------ */
@@ -1680,6 +1756,34 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
   const [quickLogOpen, setQuickLogOpen] = React.useState(false);
   const [gateOpen, setGateOpen] = React.useState(false);
   const [gateUnlocked, setGateUnlocked] = React.useState(false);
+  const [isReceiptFlowOpen, setIsReceiptFlowOpen] = React.useState(false);
+  const [budgetImpactCard, setBudgetImpactCard] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+    categorySpent: number;
+    categoryCap: number;
+    percentUsed: number;
+    isOverBudget: boolean;
+    overAmount: number;
+    dailyRunway: number;
+    isOverWeekly: boolean;
+  } | null>(null);
+  const [expenseSuccessModal, setExpenseSuccessModal] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+    dailyRunway: number;
+    isOverBudget?: boolean;
+    overAmount?: number;
+  } | null>(null);
+  const [activeCopilotProposal, setActiveCopilotProposal] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+  } | null>(null);
+  const [activeCopilotCfar, setActiveCopilotCfar] = React.useState(false);
+  const [selectedTransaction, setSelectedTransaction] = React.useState<ActivityItem | null>(null);
 
   const goals = useGoals();
   const activeGoal = goals.find((g) => g.id === goalId) ?? null;
@@ -1779,22 +1883,99 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         gateUnlocked={gateUnlocked}
       />
 
+      {/* Post-Expense Recording Success Bottom Sheet Modal (Matching User Screenshot: "记录好了会弹出这个") */}
+      <AnimatePresence>
+        {expenseSuccessModal && (
+          <div
+            className="absolute inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs animate-fade-in"
+            onClick={() => setExpenseSuccessModal(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              className="w-full max-w-[430px] rounded-t-[36px] bg-white pt-3 px-6 pb-7 text-center space-y-4 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] border-t border-slate-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag Handle */}
+              <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
+
+              {/* Circular Blue Checkmark Icon (Exact match to user screenshot) */}
+              <div className="flex justify-center pt-2">
+                <div className="h-20 w-20 rounded-full border-[2.5px] border-[#2563EB] flex items-center justify-center shadow-xs">
+                  <Check className="h-10 w-10 text-[#2563EB] stroke-[2.5]" />
+                </div>
+              </div>
+
+              {/* Bold Headline */}
+              <h3 className="text-[19px] sm:text-[20px] font-black text-[#0F172A] leading-snug px-3">
+                Your Expense was successfully recorded with RM {expenseSuccessModal.amount.toFixed(2)}
+              </h3>
+
+              {/* Subtitle / Details */}
+              <div className="text-[13px] text-gray-500 font-medium px-4 leading-relaxed space-y-1">
+                <p>
+                  {expenseSuccessModal.merchant} · {expenseSuccessModal.category}
+                </p>
+                {expenseSuccessModal.isOverBudget ? (
+                  <p className="text-amber-600 font-bold">
+                    ⚠️ Exceeded {expenseSuccessModal.category} cap by RM {expenseSuccessModal.overAmount?.toFixed(2)}. Daily runway adjusted to RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                  </p>
+                ) : (
+                  <p className="text-gray-500">
+                    Your daily runway remains healthy at RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                  </p>
+                )}
+              </div>
+
+              {/* Bottom Soft Blue Button (Matching screenshot) */}
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => setExpenseSuccessModal(null)}
+                  className="w-full py-3.5 rounded-2xl bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1A73E8] font-black text-[14px] transition-all active:scale-98 shadow-2xs"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="relative flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto no-scrollbar px-4 pb-[104px] pt-1">
           {tab === 'home' && (
             <HomeTab
               onOpenSheet={openSheet}
               onGoTab={setTab}
+              onOpenTransaction={setSelectedTransaction}
+              onOpenCfar={() => setActiveCopilotCfar(true)}
               onQuickLog={() => setQuickLogOpen(true)}
             />
           )}
           {tab === 'timeline' && (
-            <RemindersTimeline onBack={() => setTab('home')} onOpenSheet={openSheet} />
+            <ModernCalendarView onBack={() => setTab('home')} onOpenSheet={(s) => openSheet(s as SheetId)} />
           )}
           {tab === 'subscription' && (
             <SubscriptionTab
               onOpenSheet={openSheet}
               onVerifyStudent={() => setDowngradeId('spotify_my')}
+            />
+          )}
+          {tab === 'agent' && (
+            <CopilotTab
+              onBack={() => {
+                setTab('home');
+                setActiveCopilotCfar(false);
+              }}
+              onOpenSheet={(s) => openSheet(s as SheetId)}
+              onOpenWhatIf={() => setActiveCopilotCfar(true)}
+              initialCfarActive={activeCopilotCfar}
+              onClearCfar={() => setActiveCopilotCfar(false)}
+              initialProposal={activeCopilotProposal}
+              onClearProposal={() => setActiveCopilotProposal(null)}
             />
           )}
           {tab === 'radar' && (
@@ -1804,41 +1985,55 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
               onManageSubscription={(id) => setDowngradeId(id)}
             />
           )}
-          {tab === 'vault' && <VaultTab onOpenAudit={() => openSheet('audit')} />}
+          {tab === 'vault' && <PiggyDefenseVaultTab onOpenAudit={() => openSheet('audit')} />}
         </div>
       </div>
 
-      {/* Floating glass dock + center elevated button matching Image 1 */}
+      {/* Floating white capsule dock: home timeline (+) subscription vault */}
       <nav className="ct-dock" aria-label="Primary">
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'home' ? 'page' : undefined}
+          aria-label="Home"
           onClick={() => setTab('home')}
         >
-          <HomeIcon className="h-[18px] w-[18px]" />
-          <span>Home</span>
+          <HomeIcon className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'timeline' ? 'page' : undefined}
+          aria-label="Timeline"
           onClick={() => setTab('timeline')}
         >
-          <CalendarDays className="h-[18px] w-[18px]" />
-          <span>Timeline</span>
+          <CalendarDays className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
-        <AiOrb listening={listeningActive} onTap={() => openSheet('expense')} onHold={openVoice} onRelease={releaseVoice} />
+        <SlidingNavigationPlusOrb
+          onTap={() => openSheet('expense')}
+          onSelectOcr={() => setIsReceiptFlowOpen(true)}
+          onSelectCopilot={() => setTab('agent')}
+        />
         <button
           type="button"
           className="ct-dock-btn"
           aria-current={tab === 'subscription' ? 'page' : undefined}
+          aria-label="Subscription"
           onClick={() => setTab('subscription')}
         >
-          <CalendarRange className="h-[18px] w-[18px]" />
-          <span>Subscriptions</span>
+          <CreditCard className="h-5 w-5" />
+          <span className="ct-dock-dot" />
+        </button>
+        <button
+          type="button"
+          className="ct-dock-btn"
+          aria-current={tab === 'vault' ? 'page' : undefined}
+          aria-label="Vault"
+          onClick={() => setTab('vault')}
+        >
+          <PiggyBank className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
       </nav>
@@ -1861,21 +2056,97 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'expense'} onClose={closeSheet} title="Add an expense" subtitle="Confirm before book">
-        <MultimodalBookkeeping defaultOpen />
+        <MultimodalBookkeeping
+          defaultOpen
+          onOpenReceiptFlow={() => {
+            closeSheet();
+            setIsReceiptFlowOpen(true);
+          }}
+          onBooked={(data) => {
+            closeSheet();
+            const s = useCtrlPayStore.getState();
+            const categoryBudgets: Record<string, number> = {
+              'Dining & Food': 400,
+              'Food & Dining': 400,
+              'Bubble Tea Dining': 400,
+              'Living & Home': 300,
+              'Transport': 150,
+              'Shopping': 150,
+              'Entertainment': 100,
+              'Bills & Utilities': 100,
+            };
+            const catCap = categoryBudgets[data.category] || 300;
+            const catSpent = s.categoryExpenses[data.category] || data.amount;
+            const isOverCategory = catSpent > catCap;
+            setTimeout(() => {
+              setExpenseSuccessModal({
+                merchant: data.merchant,
+                amount: data.amount,
+                category: data.category,
+                dailyRunway: s.dynamicDailyAllowance(),
+                isOverBudget: isOverCategory,
+                overAmount: Math.max(0, catSpent - catCap),
+              });
+            }, 300);
+          }}
+        />
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'payments'} onClose={closeSheet} title="Simulate a payment" subtitle="Judge controls">
         <PaymentsSheet onClose={closeSheet} />
       </PhoneSheet>
 
-      <PhoneSheet
-        open={sheet === 'profile'}
-        onClose={closeSheet}
-        title="Edit Profile"
-        subtitle="Neo-Banking Personal Settings"
-      >
-        <ProfileSheet onClose={closeSheet} />
-      </PhoneSheet>
+      <AnimatePresence>
+        {sheet === 'profile' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F3F4F1] overflow-hidden"
+          >
+            <div className="flex-1 overflow-y-auto no-scrollbar">
+              <ModernSettingsView
+                onClose={closeSheet}
+                onOpenSandbox={() => openSheet('sandbox')}
+                onOpenAudit={() => openSheet('audit')}
+              />
+            </div>
+          </motion.div>
+        )}
+        {sheet === 'budgetDetails' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F8FAF8] overflow-hidden"
+          >
+            <BudgetDetailsView
+              onClose={closeSheet}
+              onOpenTimeline={() => {
+                closeSheet();
+                setTab('timeline');
+              }}
+              onOpenSimulator={() => openSheet('payments')}
+            />
+          </motion.div>
+        )}
+
+        {sheet === 'allTransactions' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F8FAF8] overflow-hidden"
+          >
+            <AllTransactionsSlideView
+              onClose={closeSheet}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <PhoneSheet
         open={sheet === 'notifications'}
@@ -1883,7 +2154,15 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         title="Notifications"
         subtitle="Proactive Alerts & Signals"
       >
-        <NotificationsSheet onClose={closeSheet} />
+        <NotificationsSheet
+          onClose={closeSheet}
+          aiNotification={budgetImpactCard ? { merchant: budgetImpactCard.merchant, amount: budgetImpactCard.amount, category: budgetImpactCard.category } : { merchant: 'Store Purchase', amount: 24.64, category: 'Dining & Food' }}
+          onSelectProposal={(prop) => {
+            closeSheet();
+            setActiveCopilotProposal(prop);
+            setTab('agent');
+          }}
+        />
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'summary'} onClose={closeSheet} title="Daily summary" subtitle="12:00 PM snapshot">
@@ -1954,6 +2233,160 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
       />
 
       <PaymentInterceptorModal />
+
+      {/* Real OCR Receipt Flow Modal */}
+      <ReceiptAiFlowModal
+        isOpen={isReceiptFlowOpen}
+        onClose={() => setIsReceiptFlowOpen(false)}
+        onSaveSuccess={(data) => {
+          setIsReceiptFlowOpen(false);
+          const s = useCtrlPayStore.getState();
+          const categoryBudgets: Record<string, number> = {
+            'Dining & Food': 400,
+            'Food & Dining': 400,
+            'Bubble Tea Dining': 400,
+            'Living & Home': 300,
+            'Transport': 150,
+            'Shopping': 150,
+            'Entertainment': 100,
+            'Bills & Utilities': 100,
+          };
+          const catCap = categoryBudgets[data.category] || 300;
+          const catSpent = s.categoryExpenses[data.category] || data.amount;
+          const isOverCategory = catSpent > catCap;
+          const isNearLimit = catSpent / catCap >= 0.85;
+          const isOverWeekly = s.spentThisWeek > s.userLimits.weeklyPayLimit;
+          const hasImpact = isOverCategory || isNearLimit || isOverWeekly;
+
+          // User requested: "记录好了会弹出这个" (Bottom sheet success confirmation modal)
+          setTimeout(() => {
+            setExpenseSuccessModal({
+              merchant: data.merchant,
+              amount: data.amount,
+              category: data.category,
+              dailyRunway: s.dynamicDailyAllowance(),
+              isOverBudget: isOverCategory,
+              overAmount: Math.max(0, catSpent - catCap),
+            });
+          }, 300);
+        }}
+        onComplete={() => {
+          setIsReceiptFlowOpen(false);
+        }}
+      />
+
+      {/* Global Transaction Detail Drawer strictly inside the phone frame (like View More) */}
+      <AnimatePresence>
+        {selectedTransaction && (
+          <div
+            className="absolute inset-0 z-50 flex items-end justify-center p-0 bg-black/50 backdrop-blur-xs animate-fade-in"
+            onClick={() => setSelectedTransaction(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+              className="w-full max-w-[390px] rounded-t-[32px] sm:rounded-[32px] bg-white p-5 shadow-[0_20px_60px_rgba(4,34,43,0.3)] border border-white/90 animate-rise-in max-h-[85vh] overflow-y-auto no-scrollbar font-sans"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="grid h-8 w-8 place-items-center rounded-full shadow-sm shrink-0"
+                    style={{ backgroundColor: selectedTransaction.iconBg }}
+                  >
+                    <BrandIcon type={selectedTransaction.iconType} />
+                  </div>
+                  <span className="text-[13px] font-black text-[#04222B]">Transaction Detail</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTransaction(null)}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-[#04222B] hover:bg-slate-200 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Receipt Hero */}
+              <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                  TOTAL AMOUNT PAID
+                </span>
+                <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
+                  {selectedTransaction.amount}
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
+                  <CheckCircle2 className="h-3 w-3 text-[#10B981]" />
+                  Successful · {selectedTransaction.timestamp}
+                </span>
+              </div>
+
+              {/* Meta Table */}
+              <div className="space-y-2.5 text-[12px]">
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Merchant</span>
+                  <span className="font-bold text-[#04222B]">{selectedTransaction.title}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Category</span>
+                  <span className="font-bold text-[#04222B] flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-[#1D8B94]" />
+                    {selectedTransaction.category}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Payment Method</span>
+                  <span className="font-bold text-[#04222B]">{selectedTransaction.paymentMethod}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Reference ID</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedTransaction.referenceId);
+                      alert('Reference ID copied to clipboard!');
+                    }}
+                    className="font-mono font-bold text-[#10606F] flex items-center gap-1 hover:underline"
+                  >
+                    <span>{selectedTransaction.referenceId}</span>
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Auto-Categorization Insight Box */}
+              <div className="mt-3.5 rounded-2xl bg-[#E2F4F0]/60 p-3 border border-[#98D8D0]/40">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles className="h-3.5 w-3.5 text-[#10B981]" />
+                  <span className="text-[11px] font-black text-[#04222B]">
+                    AI Auto-Extractor Note
+                  </span>
+                  <span className="text-[9.5px] font-bold text-[#10606F] ml-auto">
+                    {selectedTransaction.aiConfidence ?? 98}% Confidence
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#0A3D4A] leading-relaxed">
+                  {selectedTransaction.aiCategorizationNote ??
+                    'Parsed automatically from background system notifications. Categorized according to the Campus CFaR student framework.'}
+                </p>
+              </div>
+
+              {/* Dismiss Button */}
+              <button
+                type="button"
+                onClick={() => setSelectedTransaction(null)}
+                className="mt-4 w-full py-3 rounded-xl bg-[#04222B] text-white text-[12.5px] font-bold hover:bg-[#0A3D4A] active:scale-[0.98] transition-all"
+              >
+                Done
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

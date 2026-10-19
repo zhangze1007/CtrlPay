@@ -14,14 +14,14 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 | Final sandbox clock | `2026-03-31T23:59:59.999Z` |
 | Audit entries | 11 |
 | Audit chain verified | YES |
-| Final ledger | balance RM 56731.5 · defenseVault RM 16.4 · rewardPool RM 22.4 |
+| Final ledger | balance RM 7521.5 · defenseVault RM 16.4 · rewardPool RM 22.4 |
 
 ## The 8-step judge workflow
 
 ### Step 1 — Default-OFF safety gate (T0 advisory only)
 
 - Sandbox clock: `2026-03-12T09:00:00.000Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 0 · rewardPool RM 24
+- Ledger after this step: balance RM 7540 · defenseVault RM 0 · rewardPool RM 24
 
 ```json
 {
@@ -31,7 +31,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
     "cfar95": 0,
     "es95": 0,
     "intraMonthLiquidityBreachProb": 0,
-    "lowestProjectedBalanceRM": 56012.24,
+    "lowestProjectedBalanceRM": 6802.24,
     "riskLevel": "HIGH"
   },
   "t3Attempt": {
@@ -44,7 +44,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 2 — Payment interceptor — Shopee RM 180 impulse buy
 
 - Sandbox clock: `2026-03-12T09:00:00.000Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 0 · rewardPool RM 24
+- Ledger after this step: balance RM 7540 · defenseVault RM 0 · rewardPool RM 24
 
 ```json
 {
@@ -53,11 +53,11 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
   "cfar95": 0,
   "es95": 0,
   "intraMonthLiquidityBreachProb": 0,
-  "lowestProjectedBalanceRM": 56012.24,
+  "lowestProjectedBalanceRM": 6802.24,
   "stratifiedShortfallProbability": 0,
-  "projectedMonthEndBalance": 55754.97,
-  "projectedMonthEndBalanceWithIncomeRM": 56739.87,
-  "dynamicDailyAllowance": 2793.32,
+  "projectedMonthEndBalance": 6544.97,
+  "projectedMonthEndBalanceWithIncomeRM": 7529.87,
+  "dynamicDailyAllowance": 332.82,
   "riskLevel": "HIGH",
   "limitBreach": {
     "weekly": true,
@@ -73,7 +73,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 3 — 24h Commitment Quarantine lock (early claim refused)
 
 - Sandbox clock: `2026-03-12T09:00:00.000Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 0 · rewardPool RM 24
+- Ledger after this step: balance RM 7540 · defenseVault RM 0 · rewardPool RM 24
 
 ```json
 {
@@ -98,7 +98,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 4 — Fast-forward +24h and claim the quarantine reward
 
 - Sandbox clock: `2026-03-13T09:00:00.000Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 9 · rewardPool RM 15
+- Ledger after this step: balance RM 7540 · defenseVault RM 9 · rewardPool RM 15
 
 ```json
 {
@@ -115,7 +115,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 5 — Zombie Radar and Spotify student downgrade sweep
 
 - Sandbox clock: `2026-03-13T09:00:00.000Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 9 · rewardPool RM 15
+- Ledger after this step: balance RM 7540 · defenseVault RM 9 · rewardPool RM 15
 
 ```json
 {
@@ -142,7 +142,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 6 — Jump to Month-End — two-stage sweep settlement
 
 - Sandbox clock: `2026-03-31T23:59:59.999Z`
-- Ledger after this step: balance RM 56750 · defenseVault RM 16.4 · rewardPool RM 22.4
+- Ledger after this step: balance RM 7540 · defenseVault RM 16.4 · rewardPool RM 22.4
 
 ```json
 {
@@ -171,17 +171,17 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 7 — Back-Tap quick logging syncs the dynamic daily budget
 
 - Sandbox clock: `2026-03-31T23:59:59.999Z`
-- Ledger after this step: balance RM 56731.5 · defenseVault RM 16.4 · rewardPool RM 22.4
+- Ledger after this step: balance RM 7521.5 · defenseVault RM 16.4 · rewardPool RM 22.4
 
 ```json
 {
   "sandboxClock": "2026-03-31T23:59:59.999Z",
   "trigger": "iOS Back-Tap / double-tap B / sandbox button → single quick-log path",
   "amountRM": 18.5,
-  "balanceBefore": 56750,
-  "balanceAfter": 56731.5,
-  "dynamicDailyAllowanceBefore": 56190.1,
-  "dynamicDailyAllowanceAfter": 56171.6,
+  "balanceBefore": 7540,
+  "balanceAfter": 7521.5,
+  "dynamicDailyAllowanceBefore": 6980.1,
+  "dynamicDailyAllowanceAfter": 6961.6,
   "authorizationRef": "USER_AUTHORIZED_BACKTAP_TRANSFER"
 }
 ```
@@ -189,7 +189,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ### Step 8 — Cryptographic audit-chain verification
 
 - Sandbox clock: `2026-03-31T23:59:59.999Z`
-- Ledger after this step: balance RM 56731.5 · defenseVault RM 16.4 · rewardPool RM 22.4
+- Ledger after this step: balance RM 7521.5 · defenseVault RM 16.4 · rewardPool RM 22.4
 
 ```json
 {
