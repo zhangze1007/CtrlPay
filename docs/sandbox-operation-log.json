@@ -11,7 +11,7 @@
     "chainVerified": true,
     "finalSandboxClock": "2026-03-31T23:59:59.999Z",
     "finalLedger": {
-      "currentBalance": 56750,
+      "currentBalance": 7540,
       "defenseVault": 16.4,
       "rewardPool": 22.4
     }
@@ -22,7 +22,7 @@
       "title": "Default-OFF safety gate (T0 advisory only)",
       "sandboxClock": "2026-03-12T09:00:00.000Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 0,
         "rewardPool": 24
       },
@@ -33,7 +33,7 @@
           "cfar95": 0,
           "es95": 0,
           "intraMonthLiquidityBreachProb": 0,
-          "lowestProjectedBalanceRM": 56012.24,
+          "lowestProjectedBalanceRM": 6802.24,
           "riskLevel": "HIGH"
         },
         "t3Attempt": {
@@ -47,7 +47,7 @@
       "title": "Payment interceptor — Shopee RM 180 impulse buy",
       "sandboxClock": "2026-03-12T09:00:00.000Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 0,
         "rewardPool": 24
       },
@@ -57,11 +57,11 @@
         "cfar95": 0,
         "es95": 0,
         "intraMonthLiquidityBreachProb": 0,
-        "lowestProjectedBalanceRM": 56012.24,
+        "lowestProjectedBalanceRM": 6802.24,
         "stratifiedShortfallProbability": 0,
-        "projectedMonthEndBalance": 55754.97,
-        "projectedMonthEndBalanceWithIncomeRM": 56739.87,
-        "dynamicDailyAllowance": 2793.32,
+        "projectedMonthEndBalance": 6544.97,
+        "projectedMonthEndBalanceWithIncomeRM": 7529.87,
+        "dynamicDailyAllowance": 332.82,
         "riskLevel": "HIGH",
         "limitBreach": {
           "weekly": true,
@@ -78,7 +78,7 @@
       "title": "24h Commitment Quarantine lock (early claim refused)",
       "sandboxClock": "2026-03-12T09:00:00.000Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 0,
         "rewardPool": 24
       },
@@ -105,7 +105,7 @@
       "title": "Fast-forward +24h and claim the quarantine reward",
       "sandboxClock": "2026-03-13T09:00:00.000Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 9,
         "rewardPool": 15
       },
@@ -124,7 +124,7 @@
       "title": "Zombie Radar and Spotify student downgrade sweep",
       "sandboxClock": "2026-03-13T09:00:00.000Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 9,
         "rewardPool": 15
       },
@@ -153,7 +153,7 @@
       "title": "Jump to Month-End — two-stage sweep settlement",
       "sandboxClock": "2026-03-31T23:59:59.999Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 16.4,
         "rewardPool": 22.4
       },
@@ -184,7 +184,7 @@
       "title": "Cryptographic audit-chain verification",
       "sandboxClock": "2026-03-31T23:59:59.999Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 7540,
         "defenseVault": 16.4,
         "rewardPool": 22.4
       },

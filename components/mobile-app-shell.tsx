@@ -18,6 +18,7 @@ import {
   CalendarDays,
   CalendarRange,
   Camera,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -926,7 +927,7 @@ function TimelineTab({
     <div className="animate-fade-in space-y-4">
       {/* Component from Image 2: Exact Expense Overview Card */}
       <ExpenseOverviewCard
-        amount="$120.00"
+        amount="RM 120.00"
         onCalendarClick={() => setShowCalendar((v) => !v)}
         onDrillClick={() => setShowStressTester((v) => !v)}
       />
@@ -1077,15 +1078,15 @@ function RadarTab({
           ]}
           arcLabels={
             isConcept
-              ? ['Invested', 'Profit', '$66k']
+              ? ['Invested', 'Profit', 'RM 1.5k/yr']
               : ['Active', 'Saved', 'Vault']
           }
           arcAmounts={
             isConcept
-              ? ['$120k', '', '']
+              ? ['RM 120/mo', '', '']
               : [`RM ${Math.round(activeAmt)}`, '', '']
           }
-          center={isConcept ? '$186k' : `RM ${Math.round(totalMonthly)}`}
+          center={isConcept ? 'RM 186/mo' : `RM ${Math.round(totalMonthly)}`}
           capsules={[
             { id: 'invested', icon: BarChart2, label: 'Column metrics' },
             { id: 'trend', icon: TrendingUp, label: 'Trend line' },
@@ -1112,7 +1113,7 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +4.73%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +$1,286 - Today
+                  +RM 1,286 - Today
                 </span>
               </>
             ) : (
@@ -1130,8 +1131,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : $96k' : 'Monthly burn : RM 39.90'}
-          footerRight={isConcept ? 'Profit : $16k' : 'Sweepable : +RM 39.90'}
+          footerLeft={isConcept ? 'Total Invested : RM 96k' : 'Monthly burn : RM 39.90'}
+          footerRight={isConcept ? 'Profit : RM 16k' : 'Sweepable : +RM 39.90'}
         />
 
         {/* Card 2: Withdraw / Student Arbitrage */}
@@ -1148,7 +1149,7 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +2.12%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +$942.65 - Today
+                  +RM 942.65 - Today
                 </span>
               </>
             ) : (
@@ -1166,8 +1167,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : $18,632' : 'Full price : RM 15.90'}
-          footerRight={isConcept ? 'Profit : +$942.65' : 'Student : RM 8.50'}
+          footerLeft={isConcept ? 'Total Invested : RM 18,632' : 'Full price : RM 15.90'}
+          footerRight={isConcept ? 'Profit : +RM 942.65' : 'Student : RM 8.50'}
         />
       </div>
 
@@ -1685,10 +1686,25 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
   const [downgradeId, setDowngradeId] = React.useState<string | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
   const [isReceiptFlowOpen, setIsReceiptFlowOpen] = React.useState(false);
-  const [aiPushNotification, setAiPushNotification] = React.useState<{
+  const [budgetImpactCard, setBudgetImpactCard] = React.useState<{
     merchant: string;
     amount: number;
     category: string;
+    categorySpent: number;
+    categoryCap: number;
+    percentUsed: number;
+    isOverBudget: boolean;
+    overAmount: number;
+    dailyRunway: number;
+    isOverWeekly: boolean;
+  } | null>(null);
+  const [expenseSuccessModal, setExpenseSuccessModal] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+    dailyRunway: number;
+    isOverBudget?: boolean;
+    overAmount?: number;
   } | null>(null);
   const [activeCopilotProposal, setActiveCopilotProposal] = React.useState<{
     merchant: string;
@@ -1735,71 +1751,64 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
     >
       <StatusBar onOpenSandbox={() => openSheet('sandbox')} />
 
-      {/* In-Phone Push Notification Banner */}
+      {/* Post-Expense Recording Success Bottom Sheet Modal (Matching User Screenshot: "记录好了会弹出这个") */}
       <AnimatePresence>
-        {aiPushNotification && (
-          <motion.div
-            initial={{ y: -80, opacity: 0, scale: 0.94 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: -80, opacity: 0, scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-            className="absolute top-12 inset-x-3 z-50 rounded-[22px] bg-[#04222B]/95 text-white backdrop-blur-2xl border border-white/20 p-3 shadow-[0_16px_40px_rgba(4,34,43,0.5),0_0_20px_rgba(16,96,111,0.3)] select-none cursor-pointer group"
-            onClick={() => {
-              const data = aiPushNotification;
-              setAiPushNotification(null);
-              setActiveCopilotProposal(data);
-              setTab('agent');
-            }}
+        {expenseSuccessModal && (
+          <div
+            className="absolute inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-xs animate-fade-in"
+            onClick={() => setExpenseSuccessModal(null)}
           >
-            <div className="flex items-start gap-3">
-              {/* Bot Icon with glowing pulse ring */}
-              <div className="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-[#10606F] to-[#1D8B94] text-white shadow-md">
-                <Bot className="h-5 w-5" />
-                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#10B981] border-2 border-[#04222B]" />
-                </span>
-              </div>
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              className="w-full max-w-[430px] rounded-t-[36px] bg-white pt-3 px-6 pb-7 text-center space-y-4 shadow-[0_-12px_40px_rgba(0,0,0,0.18)] border-t border-slate-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Drag Handle */}
+              <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
 
-              {/* Text info */}
-              <div className="flex-1 min-w-0 pr-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-cyan-300" />
-                    CtrlPay AI Copilot
-                  </span>
-                  <span className="text-[10px] text-gray-400 font-medium">Just now</span>
+              {/* Circular Blue Checkmark Icon (Exact match to user screenshot) */}
+              <div className="flex justify-center pt-2">
+                <div className="h-20 w-20 rounded-full border-[2.5px] border-[#2563EB] flex items-center justify-center shadow-xs">
+                  <Check className="h-10 w-10 text-[#2563EB] stroke-[2.5]" />
                 </div>
-                <h4 className="text-[13px] font-black text-white leading-tight mt-0.5 truncate">
-                  Budget Analysis Ready
-                </h4>
-                <p className="text-[11px] text-gray-300 mt-0.5 leading-snug line-clamp-2">
-                  RM {aiPushNotification.amount.toFixed(2)} recorded for{' '}
-                  <span className="font-bold text-white">{aiPushNotification.merchant}</span>. Tap to
-                  transfer to AI Copilot for budget proposal &amp; visual adjustment.
-                </p>
               </div>
 
-              {/* Action pill & Dismiss button */}
-              <div className="flex flex-col items-end gap-1 shrink-0">
+              {/* Bold Headline */}
+              <h3 className="text-[19px] sm:text-[20px] font-black text-[#0F172A] leading-snug px-3">
+                Your Expense was successfully recorded with RM {expenseSuccessModal.amount.toFixed(2)}
+              </h3>
+
+              {/* Subtitle / Details */}
+              <div className="text-[13px] text-gray-500 font-medium px-4 leading-relaxed space-y-1">
+                <p>
+                  {expenseSuccessModal.merchant} · {expenseSuccessModal.category}
+                </p>
+                {expenseSuccessModal.isOverBudget ? (
+                  <p className="text-amber-600 font-bold">
+                    ⚠️ Exceeded {expenseSuccessModal.category} cap by RM {expenseSuccessModal.overAmount?.toFixed(2)}. Daily runway adjusted to RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                  </p>
+                ) : (
+                  <p className="text-gray-500">
+                    Your daily runway remains healthy at RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                  </p>
+                )}
+              </div>
+
+              {/* Bottom Soft Blue Button (Matching screenshot) */}
+              <div className="pt-2">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setAiPushNotification(null);
-                  }}
-                  className="grid h-5 w-5 place-items-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                  aria-label="Dismiss notification"
+                  onClick={() => setExpenseSuccessModal(null)}
+                  className="w-full py-3.5 rounded-2xl bg-[#E8F0FE] hover:bg-[#D2E3FC] text-[#1A73E8] font-black text-[14px] transition-all active:scale-98 shadow-2xs"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  Done
                 </button>
-                <div className="mt-1 flex items-center gap-1 rounded-full bg-gradient-to-r from-[#10606F] to-[#10B981] px-2.5 py-1 text-[10.5px] font-extrabold text-white shadow-sm group-hover:scale-105 transition-transform">
-                  <span>Transfer</span>
-                  <ArrowRight className="h-3 w-3" />
-                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -1913,7 +1922,40 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'expense'} onClose={closeSheet} title="Add an expense" subtitle="Confirm before book">
-        <MultimodalBookkeeping defaultOpen />
+        <MultimodalBookkeeping
+          defaultOpen
+          onOpenReceiptFlow={() => {
+            closeSheet();
+            setIsReceiptFlowOpen(true);
+          }}
+          onBooked={(data) => {
+            closeSheet();
+            const s = useCtrlPayStore.getState();
+            const categoryBudgets: Record<string, number> = {
+              'Dining & Food': 400,
+              'Food & Dining': 400,
+              'Bubble Tea Dining': 400,
+              'Living & Home': 300,
+              'Transport': 150,
+              'Shopping': 150,
+              'Entertainment': 100,
+              'Bills & Utilities': 100,
+            };
+            const catCap = categoryBudgets[data.category] || 300;
+            const catSpent = s.categoryExpenses[data.category] || data.amount;
+            const isOverCategory = catSpent > catCap;
+            setTimeout(() => {
+              setExpenseSuccessModal({
+                merchant: data.merchant,
+                amount: data.amount,
+                category: data.category,
+                dailyRunway: s.dynamicDailyAllowance(),
+                isOverBudget: isOverCategory,
+                overAmount: Math.max(0, catSpent - catCap),
+              });
+            }, 300);
+          }}
+        />
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'payments'} onClose={closeSheet} title="Simulate a payment" subtitle="Judge controls">
@@ -1980,7 +2022,7 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
       >
         <NotificationsSheet
           onClose={closeSheet}
-          aiNotification={aiPushNotification || { merchant: 'The Coffee Bean & Tea Leaf', amount: 24.64, category: 'Food & Beverage' }}
+          aiNotification={budgetImpactCard ? { merchant: budgetImpactCard.merchant, amount: budgetImpactCard.amount, category: budgetImpactCard.category } : { merchant: 'Store Purchase', amount: 24.64, category: 'Dining & Food' }}
           onSelectProposal={(prop) => {
             closeSheet();
             setActiveCopilotProposal(prop);
@@ -2032,16 +2074,41 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
 
       <PaymentInterceptorModal />
 
-      {/* 4-Step OCR & AI Financial Intelligence Flow Modal */}
+      {/* Real OCR Receipt Flow Modal */}
       <ReceiptAiFlowModal
         isOpen={isReceiptFlowOpen}
         onClose={() => setIsReceiptFlowOpen(false)}
         onSaveSuccess={(data) => {
           setIsReceiptFlowOpen(false);
-          // Trigger in-phone push notification after realistic 1.2s delay
+          const s = useCtrlPayStore.getState();
+          const categoryBudgets: Record<string, number> = {
+            'Dining & Food': 400,
+            'Food & Dining': 400,
+            'Bubble Tea Dining': 400,
+            'Living & Home': 300,
+            'Transport': 150,
+            'Shopping': 150,
+            'Entertainment': 100,
+            'Bills & Utilities': 100,
+          };
+          const catCap = categoryBudgets[data.category] || 300;
+          const catSpent = s.categoryExpenses[data.category] || data.amount;
+          const isOverCategory = catSpent > catCap;
+          const isNearLimit = catSpent / catCap >= 0.85;
+          const isOverWeekly = s.spentThisWeek > s.userLimits.weeklyPayLimit;
+          const hasImpact = isOverCategory || isNearLimit || isOverWeekly;
+
+          // User requested: "记录好了会弹出这个" (Bottom sheet success confirmation modal)
           setTimeout(() => {
-            setAiPushNotification(data);
-          }, 1200);
+            setExpenseSuccessModal({
+              merchant: data.merchant,
+              amount: data.amount,
+              category: data.category,
+              dailyRunway: s.dynamicDailyAllowance(),
+              isOverBudget: isOverCategory,
+              overAmount: Math.max(0, catSpent - catCap),
+            });
+          }, 300);
         }}
         onComplete={() => {
           setIsReceiptFlowOpen(false);

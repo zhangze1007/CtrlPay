@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ActivityItem } from '@/components/activity-section';
+import { ActivityItem, useCtrlPayStore } from '@/lib/store';
 
 export interface AllTransactionsSlideViewProps {
   onClose: () => void;
@@ -338,7 +338,8 @@ export function AllTransactionsSlideView({
   const [selectedTxn, setSelectedTxn] = React.useState<ActivityItem | null>(null);
   const [copiedTxn, setCopiedTxn] = React.useState(false);
 
-  const filtered = EXTENDED_ACTIVITIES.filter((item) => {
+  const activities = useCtrlPayStore((s) => s.activities);
+  const filtered = (activities ?? EXTENDED_ACTIVITIES).filter((item) => {
     const matchesCategory =
       activeCategoryFilter === 'all' || item.categoryType === activeCategoryFilter;
     const matchesSearch =

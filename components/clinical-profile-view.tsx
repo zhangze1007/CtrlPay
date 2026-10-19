@@ -72,9 +72,9 @@ export function ClinicalProfileView({
         description:
           'Automated financial circuit breakers that prevent impulsive overdrafts while maintaining your daily survival floor.',
         metrics: [
-          { label: 'Daily Allowance', value: `$${allowance.toFixed(0)} / day` },
-          { label: 'Weekly Pay Limit', value: '$800.00' },
-          { label: 'Monthly Cap', value: '$3,200.00' },
+          { label: 'Daily Allowance', value: `RM ${allowance.toFixed(0)} / day` },
+          { label: 'Weekly Pay Limit', value: 'RM 800.00' },
+          { label: 'Monthly Cap', value: 'RM 3,200.00' },
           { label: 'Circuit Breaker', value: 'Active · Dual-Shield' },
         ],
         statusText: 'Dual constraints on user transactions & autonomous AI agents are active.',
@@ -93,8 +93,8 @@ export function ClinicalProfileView({
           'Continuous 30-day projection modeling upcoming bills, subscription amortizations, and daily allowance variance.',
         metrics: [
           { label: 'Solvency Confidence', value: '99.4% (AAA)' },
-          { label: 'Projected Month-End', value: `$${(currentBalance - 420).toLocaleString()}` },
-          { label: 'Daily Survival Floor', value: '$30.00 / day' },
+          { label: 'Projected Month-End', value: `RM ${(currentBalance - 420).toLocaleString()}` },
+          { label: 'Daily Survival Floor', value: 'RM 30.00 / day' },
           { label: 'Breach Probability', value: '< 0.05% Safe' },
         ],
         statusText: 'All 3 stress test scenarios passed with comfortable liquidity margin.',
@@ -134,7 +134,7 @@ export function ClinicalProfileView({
           { label: 'Active Subscriptions', value: '6 Platforms' },
           { label: 'Scheduled Rules', value: '24 Smart Mandates' },
           { label: 'Student Discount Arbitrage', value: studentVerified ? 'Active (-47% Spotify)' : 'Pending Verification' },
-          { label: 'Monthly Burn Rate', value: studentVerified ? '$124.30' : '$131.70' },
+          { label: 'Monthly Burn Rate', value: studentVerified ? 'RM 124.30' : 'RM 131.70' },
         ],
         statusText: 'Zombie subscription detection running continuously in background.',
       },
@@ -150,8 +150,8 @@ export function ClinicalProfileView({
         description:
           'High-risk or impulsive purchases are placed into a 24-hour cooling-off escrow with biometric approval required to unlock.',
         metrics: [
-          { label: 'Vault Balance', value: `$${Number(defenseVault || 0).toLocaleString()}` },
-          { label: 'Auto-Sweep Threshold', value: '$100.00' },
+          { label: 'Vault Balance', value: `RM ${Number(defenseVault || 0).toLocaleString()}` },
+          { label: 'Auto-Sweep Threshold', value: 'RM 100.00' },
           { label: 'Quarantine Window', value: '24 Hours Cooling-Off' },
           { label: 'Biometric Lock', value: 'FaceID Required' },
         ],
@@ -171,7 +171,7 @@ export function ClinicalProfileView({
         metrics: [
           { label: 'Current Tax Period', value: '2026 Q1 - Ready' },
           { label: 'Scanned Receipts', value: '38 OCR Records' },
-          { label: 'Deductible Expenses', value: '$840.00' },
+          { label: 'Deductible Expenses', value: 'RM 840.00' },
           { label: 'Format', value: 'PDF / CSV / JSON' },
         ],
         statusText: 'Official bank stamp verified with digital SHA-256 certificate.',
@@ -409,8 +409,8 @@ export function ClinicalProfileView({
                   description:
                     'Master multi-currency liquidity pool connected to Visa/Mastercard virtual cards with automated daily allowances.',
                   metrics: [
-                    { label: 'Total Liquidity', value: `$${currentBalance.toLocaleString()}` },
-                    { label: 'Survival Floor', value: '$30.00 / day' },
+                    { label: 'Total Liquidity', value: `RM ${currentBalance.toLocaleString()}` },
+                    { label: 'Survival Floor', value: 'RM 30.00 / day' },
                     { label: 'Virtual Card', value: 'Visa Platinum ···· 3534' },
                     { label: 'Escrow Status', value: 'Guaranteed 100%' },
                   ],
@@ -429,7 +429,7 @@ export function ClinicalProfileView({
                   Digital Wallet & Cards
                 </p>
                 <p className="text-[11px] font-bold text-[#0070F3]">
-                  ${currentBalance.toLocaleString()} · ${allowance.toFixed(0)}/day
+                  RM {currentBalance.toLocaleString()} · RM {allowance.toFixed(0)}/day
                 </p>
               </div>
             </div>
@@ -457,7 +457,7 @@ export function ClinicalProfileView({
                     { label: 'University', value: 'USM Engineering' },
                     { label: 'Campus ID', value: profile.studentEmail || 'student@usm.my' },
                     { label: 'Verification', value: studentVerified ? 'Verified Active ✓' : 'Instant Pre-Approved' },
-                    { label: 'Annual Savings', value: '$428.00 / yr' },
+                    { label: 'Annual Savings', value: 'RM 428.00 / yr' },
                   ],
                   statusText: 'Next institutional re-check in September 2026.',
                 },

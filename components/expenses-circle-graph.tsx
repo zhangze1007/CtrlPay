@@ -26,7 +26,7 @@ const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategory[] = [
     name: 'Meal',
     percentage: 51,
     amount: 1186,
-    formattedAmount: '$ 1,186',
+    formattedAmount: 'RM 1,186',
     colorStart: '#00E5FF',
     colorEnd: '#0070F3',
     glowColor: 'rgba(0, 180, 255, 0.65)',
@@ -36,7 +36,7 @@ const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategory[] = [
     name: 'Family',
     percentage: 25,
     amount: 593,
-    formattedAmount: '$ 593',
+    formattedAmount: 'RM 593',
     colorStart: '#C084FC',
     colorEnd: '#7C3AED',
     glowColor: 'rgba(168, 85, 247, 0.65)',
@@ -46,13 +46,13 @@ const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategory[] = [
     name: 'Entertainments',
     percentage: 12,
     amount: 286,
-    formattedAmount: '$ 286',
+    formattedAmount: 'RM 286',
     colorStart: '#FF3366',
     colorEnd: '#FF5E62',
     glowColor: 'rgba(255, 46, 110, 0.65)',
     subItems: [
-      { name: 'Netflix', amount: '-$50', icon: 'netflix' },
-      { name: 'Epic games', amount: '-$236', icon: 'epic' },
+      { name: 'Netflix', amount: '-RM 50', icon: 'netflix' },
+      { name: 'Epic games', amount: '-RM 236', icon: 'epic' },
     ],
   },
   {
@@ -60,7 +60,7 @@ const DEFAULT_EXPENSE_CATEGORIES: ExpenseCategory[] = [
     name: 'Study',
     percentage: 12,
     amount: 286,
-    formattedAmount: '$ 286',
+    formattedAmount: 'RM 286',
     colorStart: '#FFD000',
     colorEnd: '#F59E0B',
     glowColor: 'rgba(245, 158, 11, 0.65)',
@@ -382,7 +382,7 @@ export function ExpensesCircleGraph({
             ) : (
               <div className="space-y-0.5">
                 <div className="text-[20px] font-black text-[#0B1E3F] tracking-tight font-sans leading-none">
-                  ${totalAmount.toLocaleString()}
+                  RM {totalAmount.toLocaleString()}
                 </div>
                 <div className="text-[11px] font-bold text-slate-500 tracking-tight mt-0.5">
                   {trendPercentage}
