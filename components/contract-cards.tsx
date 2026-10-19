@@ -19,7 +19,9 @@ import {
   declineProposal,
   dismissProposal,
   modifyProposal,
+  passkeyAuthorizationRef,
 } from '@/lib/tool-resolution';
+import { PasskeySigningPulse } from '@/components/biometric-passkey-gate';
 import { formatRM } from '@/lib/utils';
 import type { SignedProposal, EscrowTerms, ModifiedTerms, QuarantineTerms, SweepTerms } from '@/lib/types';
 import type { SpendCategory } from '@/lib/types';
@@ -54,6 +56,7 @@ function useProposalCard(kind: Kind, args: Record<string, unknown>, toolCallId: 
   const [proposal, setProposal] = React.useState<SignedProposal | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [signing, setSigning] = React.useState(false);
   const resolvedRef = React.useRef(Boolean(result));
   const mountedAtRef = React.useRef(Date.now());
   const proposalIdRef = React.useRef<string | null>(null);
@@ -102,18 +105,29 @@ function useProposalCard(kind: Kind, args: Record<string, unknown>, toolCallId: 
     setBusy(true);
     setError(null);
     try {
+      // T3 signing runs through the simulated device passkey gate: a 0.5s
+      // "Verifying Device FIDO2 Passkey (Face ID)" pulse, then a structured
+      // FIDO2 authorization ref is attached to the decision and the audit entry.
+      const ref =
+        status === 'DECLINED' ? undefined : passkeyAuthorizationRef(proposal.proposalId);
+      if (ref) {
+        setSigning(true);
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        setSigning(false);
+      }
+
       const built =
         status === 'APPROVED'
-          ? approveProposal(proposal.proposalId, proposal.terms)
+          ? approveProposal(proposal.proposalId, proposal.terms, ref)
           : status === 'MODIFIED'
-            ? modifyProposal(proposal.proposalId, newTerms ?? {}, proposal.terms)
+            ? modifyProposal(proposal.proposalId, newTerms ?? {}, proposal.terms, ref)
             : declineProposal(proposal.proposalId);
 
       if (!built.decision) throw new Error('DECISION_MISSING');
 
       const out = await submitDecision(proposal, built.decision);
       if (status !== 'DECLINED') {
-        applyDecision(out.proposal, status, newTerms);
+        applyDecision(out.proposal, status, newTerms, ref);
       }
       // Fold the server-recorded AGENT decision entry into the local audit chain.
       void syncServerAudit();
@@ -124,12 +138,13 @@ function useProposalCard(kind: Kind, args: Record<string, unknown>, toolCallId: 
         terms: out.proposal.terms,
       });
     } catch (e) {
+      setSigning(false);
       setError((e as Error).message);
       setBusy(false);
     }
   }
 
-  return { proposal, error, busy, decided: Boolean(result), masterAutonomyEnabled, decide };
+  return { proposal, error, busy, signing, decided: Boolean(result), masterAutonomyEnabled, decide };
 }
 
 function DecisionButtons({
@@ -139,6 +154,8 @@ function DecisionButtons({
   busy,
   approveLabel,
   disabled,
+  signing,
+  proposalId,
 }: {
   children?: React.ReactNode;
   onApprove: () => void;
@@ -146,9 +163,12 @@ function DecisionButtons({
   busy: boolean;
   approveLabel: string;
   disabled?: boolean;
+  signing?: boolean;
+  proposalId?: string | null;
 }) {
   return (
     <div className="flex flex-wrap gap-2">
+      <PasskeySigningPulse active={Boolean(signing)} proposalId={proposalId} />
       <Button size="sm" disabled={busy || disabled} onClick={onApprove}>
         <Check className="h-4 w-4" /> {approveLabel}
       </Button>
@@ -165,7 +185,7 @@ function DecisionButtons({
 /* ------------------------------------------------------------------ */
 
 export function QuarantineCard({ toolCallId, args, result, addToolResult }: CardProps) {
-  const { proposal, error, busy, decided, masterAutonomyEnabled, decide } = useProposalCard(
+  const { proposal, error, busy, signing, decided, masterAutonomyEnabled, decide } = useProposalCard(
     'QUARANTINE',
     args,
     toolCallId,
@@ -246,6 +266,8 @@ export function QuarantineCard({ toolCallId, args, result, addToolResult }: Card
             )}
             <DecisionButtons
               busy={busy}
+              signing={signing}
+              proposalId={proposal?.proposalId}
               approveLabel="Accept 24h Quarantine (T3)"
               onApprove={() => decide('APPROVED')}
               onDecline={() => decide('DECLINED')}
@@ -262,7 +284,7 @@ export function QuarantineCard({ toolCallId, args, result, addToolResult }: Card
 /* ------------------------------------------------------------------ */
 
 export function EscrowCard({ toolCallId, args, result, addToolResult }: CardProps) {
-  const { proposal, error, busy, decided, masterAutonomyEnabled, decide } = useProposalCard(
+  const { proposal, error, busy, signing, decided, masterAutonomyEnabled, decide } = useProposalCard(
     'ESCROW',
     args,
     toolCallId,
@@ -365,6 +387,8 @@ export function EscrowCard({ toolCallId, args, result, addToolResult }: CardProp
 
             <DecisionButtons
               busy={busy}
+              signing={signing}
+              proposalId={proposal?.proposalId}
               approveLabel="Accept Escrow (T3)"
               onApprove={() => decide('APPROVED')}
               onDecline={() => decide('DECLINED')}
@@ -390,7 +414,7 @@ export function EscrowCard({ toolCallId, args, result, addToolResult }: CardProp
 /* ------------------------------------------------------------------ */
 
 export function SweepCard({ toolCallId, args, result, addToolResult }: CardProps) {
-  const { proposal, error, busy, decided, masterAutonomyEnabled, decide } = useProposalCard(
+  const { proposal, error, busy, signing, decided, masterAutonomyEnabled, decide } = useProposalCard(
     'SWEEP',
     args,
     toolCallId,
@@ -453,6 +477,8 @@ export function SweepCard({ toolCallId, args, result, addToolResult }: CardProps
             )}
             <DecisionButtons
               busy={busy}
+              signing={signing}
+              proposalId={proposal?.proposalId}
               approveLabel="Approve sweep (T3)"
               onApprove={() => decide('APPROVED')}
               onDecline={() => decide('DECLINED')}

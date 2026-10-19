@@ -504,7 +504,114 @@ example `premiumReward + 0.01`) is rejected with `INTEGRITY_HASH_MISMATCH`.
   (`inputSchema`, `addToolOutput`, `toUIMessageStreamResponse`, `stopWhen`), and that free-tier
   safety never reads the `plan` flag.
 - **Evidence.** The judge walkthrough is reproducible via the sandbox execution-evidence generator
-  (see `docs/SANDBOX_EXECUTION_EVIDENCE.md` and `docs/sandbox-operation-log.json`).
+  (see `docs/SANDBOX_EXECUTION_EVIDENCE.md` and `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`). The
+  in-app **Audit Log → Export evidence** button also downloads the live hash chain as JSON.
+
+---
+
+## 5. v2.5 Feature Extensions
+
+### 5.1 Multi-currency & Purchasing-Power-Parity (PPP) display layer
+
+**Invariant — single base ledger.** The Zustand store, ledger, `SUBSCRIPTION_REGISTRY` and
+`quant-engine` always compute in **MYR (RM)**. Currency switching is a pure render-layer mapping in
+`lib/currency-ppp.ts`; it never mutates state, never re-signs a proposal and never changes what is
+sent to the LLM. This keeps the Post-LLM numeric-provenance guard and every HMAC-SHA256
+`integrityHash` valid.
+
+For a base amount $v_{\text{MYR}}$ and region $c$:
+
+$$v_{\text{display}}(c) = \operatorname{round}(v_{\text{MYR}} \times r_c,\ 2)$$
+
+$$N_{\text{meals}} = \max\left(1, \operatorname{round}\left(\frac{v_{\text{MYR}}}{9.00}\right)\right)$$
+
+The canteen meal index is anchored to the Malaysian campus baseline (RM 9.00/meal) while the caption
+localises the per-meal price using the regional registry:
+
+| Code | Region | Symbol | Rate vs MYR | Local canteen meal | Survival floor |
+|---|---|---|---|---|---|
+| MYR | Malaysia (ASEAN) | RM | 1.00 | RM 9.00 | RM 15.00 |
+| CNY | Shenzhen / Mainland (GBA) | ¥ | 1.65 | ¥ 15.00 | ¥ 25.00 |
+| HKD | Hong Kong (GBA) | HK$ | 1.80 | HK$ 40.00 | HK$ 65.00 |
+| SGD | Singapore (ASEAN) | S$ | 0.30 | S$ 5.00 | S$ 8.00 |
+| USD | Global | $ | 0.23 | $ 10.00 | $ 16.00 |
+
+Every switch appends a T0 read-only `CURRENCY_VIEW_SWITCH` audit entry
+(`data_accessed: ['displayCurrency']`). The converted values are rendered in the Home balance, the
+Dynamic Daily Allowance, the Defense Vault hero and the payment-interceptor CFaR panel.
+
+### 5.2 iOS Back-Tap quick logging & live Dynamic Budget Management
+
+`components/quick-log-backtap-modal.tsx` accepts three equivalent triggers:
+
+1. **iOS Shortcut / Back-Tap deep link** — open `/?trigger=backtap` (bind it to *Settings → Accessibility → Touch → Back Tap*).
+2. **Sandbox button** — Home header and Judge Sandbox → Time Machine.
+3. **Desktop shortcut** — double-tap the `B` key (ignored while typing in an input).
+
+The modal previews the post-entry daily allowance before committing:
+
+$$\text{DDA}_{\text{projected}} = \frac{\max(0,\ B_t - X_{\text{entry}} - \sum F_i - S_{\text{goal}})}{\max(1, D_{\text{rem}})}$$
+
+Committing calls `quickLogTransaction`, which writes the **single MYR ledger** (expense or income),
+emits a `BOOKING` sandbox event and appends a T1 `USER_BACKTAP_QUICK_LOG` / `USER_BACKTAP_INCOME`
+audit entry with `authorization_ref = USER_AUTHORIZED_BACKTAP_TRANSFER`. The next render recomputes
+`dynamicDailyAllowance()` from the engine — no cached or LLM-derived budget is used.
+
+### 5.3 Zero-knowledge passkey gate & T3 biometric signing
+
+`components/biometric-passkey-gate.tsx` provides:
+
+- a black-glass **Face ID / Touch ID gate** (locked status-bar icon), with a 0.8s simulated scan; and
+- a **0.5s signing pulse** shown while a T3 contract is approved.
+
+**SIMULATION ONLY.** No WebAuthn credential, biometric template or device key is created, stored or
+transmitted. The compliance statement is rendered in the UI: *"Zero-Knowledge Local Enclave
+Simulation (WebAuthn / FIDO2 standard) · Biometric templates never leave the user's device or enter
+CtrlPay servers."*
+
+The T3 gate now accepts two action-specific ref formats:
+
+- `USER_CLICK_APPROVE_PROPOSAL_<id>` — plain per-action click (default).
+- `FIDO2_PASSKEY_BIOMETRIC_AUTH_<id>` — the same action performed through the passkey gate.
+
+`lib/permissions.ts` validates both against `CLICK_AUTH_RE`; the server still enforces Master ON +
+T3, and the client audit entry records the structured ref so the audit drawer shows the biometric
+attestation path. Swapping the simulated scan for the real WebAuthn API requires no change to the
+permission or audit layers.
+
+### 5.4 Assisted cancellation sheet (T2 draft + T3 two-stage settlement)
+
+`components/subscription-cancel-email-sheet.tsx` upgrades the former student-downgrade drawer into a
+two-channel sheet:
+
+- **Channel A — whitelisted deep link.** The only URL rendered comes from `SUBSCRIPTION_REGISTRY`
+  by `subscriptionId`; the LLM never supplies a URL. Student plans additionally require a mock
+  `.edu` OTP (any 6 digits in the sandbox) before the downgrade action is enabled.
+- **Channel B — in-app email preview.** When the registry has a `mailtoTemplate`, the full
+  `To / Subject / Body` draft is rendered inside the sheet (solving the "mailto is invisible on a
+  judge's laptop" problem) with an "Open in mail app" link and an
+  **"I've sent it — start PendingSweep"** button.
+
+Both paths create a server-signed **SWEEP** proposal (`STUDENT_DOWNGRADE` or `CANCEL`) and apply it
+as a `PENDING_NEXT_BILLING_VERIFICATION` record. Nothing enters `defenseVault` until the sandbox
+clock crosses the next billing date and the charge verifiably disappears.
+
+### 5.5 Execution evidence & export
+
+The deterministic generator now runs an **8-step** workflow: default-OFF gate → Shopee RM 180
+interception → 24h quarantine → +24h reward claim → student downgrade sweep → month-end two-stage
+settlement → **Back-Tap quick log with DDA re-computation** → SHA-256 chain verification. It writes
+`docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json` and `docs/SANDBOX_EXECUTION_EVIDENCE.md`. Judges can also
+download the live chain from the Audit Log panel.
+
+### 5.6 Topic A four-verb coverage
+
+| Topic A requirement | CtrlPay implementation |
+|---|---|
+| **Budgeting** | Dynamic Daily Allowance, dual mandate limits, sinking fund, Needs-Protected Escrow |
+| **Bill analysis** | Fixed-bill calendar, subscription registry, two-stage sweep verification, Zombie Radar |
+| **Spending insights** | CFaR / ES95 bootstrap simulation, corridor chart, student-unit equivalents, month-end roast |
+| **Actionable recommendations** | Signed T3 contracts (quarantine / escrow / sweep), assisted cancellation email, deep links, Back-Tap capture |
 
 ---
 

@@ -20,10 +20,18 @@ ringgit** with a tamper-evident audit trail.
 | 01 | Technical documentation (architecture, algorithms, security design) | `docs/TECHNICAL_DOCUMENTATION.md` |
 | 04 | Source code & tests | `README.md`, `tests/`, `THIRD_PARTY_LICENSES.md` |
 | 05 | Security self-assessment report | `SECURITY_REPORT.md` |
-| 06 | Execution evidence (sandbox operation logs) | `docs/SANDBOX_EXECUTION_EVIDENCE.md`, `docs/sandbox-operation-log.json` |
+| 06 | Execution evidence (sandbox operation logs) | `docs/SANDBOX_EXECUTION_EVIDENCE.md`, `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json` |
 
 The execution evidence is produced deterministically by `npm run generate:evidence` (it runs the
-7-step judge workflow against the real engine, store and audit logger).
+8-step judge workflow against the real engine, store and audit logger). The same evidence can be
+exported live from the in-app **Audit Log → Export evidence** button.
+
+### v2.5 highlights (judge quick map)
+
+- **Multi-currency / PPP display layer** — 5 currencies (MYR · CNY · HKD · SGD · USD) switch instantly; the ledger and engine stay 100% MYR (`lib/currency-ppp.ts`).
+- **Back-Tap quick logging** — `?trigger=backtap` deep link, sandbox button, or double-tap `B`; live Dynamic Daily Allowance preview (`components/quick-log-backtap-modal.tsx`).
+- **Zero-knowledge passkey gate** — Face ID / fingerprint simulation with FIDO2 authorization refs on T3 signatures (`components/biometric-passkey-gate.tsx`).
+- **Assisted cancellation sheet** — whitelisted deep link + in-app email preview + two-stage PendingSweep (`components/subscription-cancel-email-sheet.tsx`).
 
 ---
 

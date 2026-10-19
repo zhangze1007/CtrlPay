@@ -1000,7 +1000,7 @@ Build sequentially. Do not start a phase until the previous one passes its **Don
 - Test the dangling-tool-call path: approve, modify, decline, and "clear chat while pending" all lead to a clean next turn.
 - Confirm Free-tier safety features do not read the `plan` flag.
 - CSP header (`default-src 'self'`; no third-party scripts) and `next.config` security headers.
-- Fill the Security Self-Assessment (Section 10) with the actual survey results and screenshots.
+- Security Self-Assessment (Section 10): privacy-by-default rationale (no survey data or fabricated numbers); sandbox registry/pricing disclosures recorded.
 - Rehearse the **5-minute demo script:**
   1. Open dashboard: Master Switch OFF → only T0 analysis available.
   2. Click `Simulate Shopee RM 180 Impulse Buy` → auto CFaR → intercept modal with shortfall probability.
@@ -1049,20 +1049,21 @@ app/page.tsx
 | **(5) Identity & Student Privilege Verification 身份与学生资格验证** | Identity 身份层 | Data-minimized **Student Email (.edu / USM) OTP** in the sandbox; no ID/passport/face data collected; production path: **integrate a licensed third-party eKYC provider** | Demo OTP flow; confirm no ID uploads exist in the codebase; data inventory shows only email and verified flag | Sandbox OTP is simulated, so it proves flow, not identity. Student emails can be shared or misused; production requires a licensed eKYC/institution verification partner. |
 | **(6) Safe Navigator Deep-Link & `mailto:` Execution 安全导航与邮件草稿** | Execution / Integrity 执行层 | Hardcoded `SUBSCRIPTION_REGISTRY` HTTPS whitelist keyed by `subscriptionId` enum (the LLM cannot supply URLs); `mailto:` drafts built **client-side** from registry templates; CtrlPay holds **no autonomous credentials and no OAuth write access**; links open with `noopener noreferrer` | Registry unit test (HTTPS only, valid recipients); attempt to pass `deepLinkUrl` in a tool call (rejected by `.strict()`); code search for Gmail send scopes (none) | Registry entries can go stale if merchants change URLs (needs a maintenance and verification process); the user can edit the draft before sending; the mail client is outside our control. |
 
-### 10.2 User Data Authorization Survey Integration
+### 10.2 Privacy-by-Default Design Rationale
 
-We ran a student user privacy survey asking respondents how willing they are to grant four data accesses: **(a) Gmail read-only receipt access, (b) bank statement upload, (c) location tracking, (d) IC verification**. The findings directly shaped the architecture:
+> **No survey sample size or willingness percentage is claimed in this submission.** The rationale
+> below is qualitative; no user data is fabricated.
 
-| Survey item | Design decision it informed |
-|---|---|
-| Gmail read-only receipt access | Opt-in only; read-only; **structured fields only**; revocable; replaces "silent scanning"; sandbox uses mock emails |
-| Bank statement upload | Not required for core features; sandbox ledger and a manual/receipt bookkeeping path remain fully functional |
-| Location tracking | **Dropped.** Replaced by a time-triggered 12:00 PM summary; GPS kept on the future roadmap |
-| IC verification | **Dropped** from the demo; student OTP only; licensed eKYC in production |
+CtrlPay assumes **zero trust** toward silent background scanning and autonomous money movement until
+the user explicitly opts in. The resulting decisions are: Gmail receipt access is opt-in /
+read-only / structured-fields-only; bank statement upload is not required for any core feature; GPS is
+not collected (replaced by the 12:00 PM summary); IC/passport/facial data is not collected (student
+OTP only; licensed eKYC in production).
 
-Result: **data minimization by default, and all optional permissions default to OFF.**
-
-> **TODO before submission (do not fabricate):** insert the real survey sample size (n = `[__]`), the willingness percentage for each of the four items (`[__]%`), and how those numbers map to each decision above. Remove this note once filled in.
+These decisions are enforced by the Master Autonomy Switch default OFF, T0–T3 tiers, dual mandate
+limits, the NEEDS-protection floor and per-action T3 authorization. `SUBSCRIPTION_REGISTRY` prices
+and links are a sandbox snapshot (last verified 2026-03-01); Pro pricing is a team hypothesis; all
+defensive controls are permanently free (ethical freemium, enforced by `tests/compliance.test.ts`).
 
 ### 10.3 IP & Asset Compliance Statement
 

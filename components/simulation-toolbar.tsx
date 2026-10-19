@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, FastForward, SkipForward, Timer, Zap } from 'lucide-react';
+import { CalendarClock, FastForward, Radar, SkipForward, Smartphone, Timer, Zap } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { PAYMENT_EVENTS } from '@/lib/mock-data';
 import type { PermissionTier } from '@/lib/permissions';
@@ -42,7 +42,13 @@ function SectionLabel({ n, title, hint }: { n: number; title: string; hint?: str
  * 1. Time Machine · 2. Checkout Webhook Triggers · 3. Autonomy & Tier Matrix.
  * All controls, labels and store actions are unchanged.
  */
-export function SimulationToolbar() {
+export function SimulationToolbar({
+  onOpenQuickLog,
+  onOpenRadar,
+}: {
+  onOpenQuickLog?: () => void;
+  onOpenRadar?: () => void;
+}) {
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
   const advanceClock = useCtrlPayStore((s) => s.advanceClock);
   const jumpToMonthEnd = useCtrlPayStore((s) => s.jumpToMonthEnd);
@@ -83,6 +89,20 @@ export function SimulationToolbar() {
             <Button size="sm" variant="outline" onClick={() => jumpToMonthEnd()}>
               <SkipForward className="h-4 w-4" /> Jump to Month-End
             </Button>
+            {onOpenQuickLog && (
+              <Button
+                size="sm"
+                className="bg-amber-500 text-zinc-950 hover:bg-amber-400"
+                onClick={onOpenQuickLog}
+              >
+                <Smartphone className="h-4 w-4" /> Back-Tap Quick Log (2× tap B)
+              </Button>
+            )}
+            {onOpenRadar && (
+              <Button size="sm" variant="secondary" onClick={onOpenRadar}>
+                <Radar className="h-4 w-4" /> Zombie Radar console
+              </Button>
+            )}
           </div>
         </section>
 

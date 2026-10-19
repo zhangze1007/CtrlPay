@@ -42,6 +42,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
+  Smartphone,
   Timer,
   TrendingUp,
   User,
@@ -58,16 +59,19 @@ import {
   DEMO_CONFIG,
   ESCROW_RULES,
   toStudentUnits,
+  unpaidFixedBillTotal,
 } from '@/lib/quant-engine';
 import {
   FIXED_BILLS,
   HISTORICAL_DAILY_SPENDING,
+  MONTHLY_SAVINGS_GOAL,
   PAYMENT_EVENTS,
   PROFILE,
   RECURRING_TRANSACTIONS,
   SUBSCRIPTIONS,
   USAGE_SIGNALS,
 } from '@/lib/mock-data';
+import { formatCanteenMealsEquivalent, formatDisplayCurrency } from '@/lib/currency-ppp';
 import { SUBSCRIPTION_REGISTRY } from '@/lib/subscription-registry';
 import { analyzeZombies, ZOMBIE_RULES } from '@/lib/zombie-radar';
 import { upcomingFixedBills } from '@/lib/ledger';
@@ -97,6 +101,12 @@ import { ExpenseOverviewCard } from '@/components/corridor-chart';
 import { SteppedLogo, UnequalMenuIcon } from '@/components/ui/design-icons';
 import { ProfileSheet } from '@/components/profile-sheet';
 import { NotificationsSheet } from '@/components/notifications-sheet';
+import { CurrencySwitcherPill } from '@/components/currency-switcher-pill';
+import {
+  QuickLogBackTapModal,
+  type QuickLogTransactionInput,
+} from '@/components/quick-log-backtap-modal';
+import { BiometricPasskeyGate } from '@/components/biometric-passkey-gate';
 
 export type MobileTab = 'home' | 'timeline' | 'subscription' | 'agent' | 'radar' | 'vault';
 
@@ -179,12 +189,33 @@ function formatDay(iso: string): string {
  * Status bar
  * ------------------------------------------------------------------ */
 
-function StatusBar({ onOpenSandbox }: { onOpenSandbox: () => void }) {
+function StatusBar({
+  onOpenSandbox,
+  onOpenGate,
+  gateUnlocked,
+}: {
+  onOpenSandbox: () => void;
+  onOpenGate: () => void;
+  gateUnlocked: boolean;
+}) {
   const clock = useCtrlPayStore((s) => s.sandboxClock);
   const time = new Date(clock).toISOString().slice(11, 16);
   return (
     <div className="relative z-10 flex shrink-0 items-center justify-between px-6 pb-1 pt-3 text-holst-950">
-      <span className="duo-num text-[12px] font-bold">{time}</span>
+      <span className="flex items-center gap-2">
+        <button
+          type="button"
+          className="ct-icon-btn h-7 w-7"
+          onClick={onOpenGate}
+          aria-label={gateUnlocked ? 'Passkey gate — unlocked' : 'Open the passkey lock gate'}
+          title="Face ID / passkey gate"
+        >
+          <Lock
+            className={cn('h-3.5 w-3.5', gateUnlocked ? 'text-[#0F6B55]' : 'text-holst-950/70')}
+          />
+        </button>
+        <span className="duo-num text-[12px] font-bold">{time}</span>
+      </span>
       <span className="ct-island absolute left-1/2 top-1.5 h-6 w-[92px] -translate-x-1/2 rounded-full" />
       <span className="flex items-center gap-2">
         <button
@@ -583,13 +614,16 @@ function LimitRow({ label, value }: { label: string; value: number }) {
 function HomeTab({
   onOpenSheet,
   onGoTab,
+  onQuickLog,
 }: {
   onOpenSheet: (s: SheetId) => void;
   onGoTab: (t: MobileTab) => void;
+  onQuickLog: () => void;
 }) {
   const profile = useCtrlPayStore((s) => s.profile);
   const currentBalance = useCtrlPayStore((s) => s.currentBalance);
   const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
+  const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
   const floor = ESCROW_RULES.minDailySurvivalFloorRM;
 
   return (
@@ -621,17 +655,34 @@ function HomeTab({
           </div>
         </button>
 
-        {/* Bell notification button */}
-        <button
-          type="button"
-          onClick={() => onOpenSheet('notifications')}
-          className="relative grid h-10 w-10 place-items-center rounded-full bg-white/95 border border-white/80 shadow-[0_4px_16px_rgba(11,30,63,0.06)] text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#1C7EC8] ring-2 ring-white" />
-        </button>
+        {/* Bell + Back-Tap quick log buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onQuickLog}
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-[#FFF4E0] border border-[#F5B84D]/40 shadow-[0_4px_16px_rgba(245,184,77,0.25)] text-[#8A5408] hover:bg-[#FFEAC4] transition-all active:scale-95"
+            aria-label="Open Back-Tap quick logging"
+            title="iOS Back-Tap / press B twice"
+          >
+            <Smartphone className="h-4.5 w-4.5" />
+            <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 animate-pulse rounded-full bg-[#F5B84D] ring-2 ring-white" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenSheet('notifications')}
+            className="relative grid h-10 w-10 place-items-center rounded-full bg-white/95 border border-white/80 shadow-[0_4px_16px_rgba(11,30,63,0.06)] text-[#0B1E3F] hover:bg-white transition-all active:scale-95"
+            aria-label="Notifications"
+          >
+            <Bell className="h-4.5 w-4.5" />
+            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-[#1C7EC8] ring-2 ring-white" />
+          </button>
+        </div>
       </header>
+
+      {/* Display-currency / PPP switcher (base ledger stays MYR) */}
+      <div className="mt-3">
+        <CurrencySwitcherPill />
+      </div>
 
       {/* 2. Available Balance Card matching Image 1 with subtle ambient gradient glow behind */}
       <div className="relative mt-4">
@@ -655,10 +706,13 @@ function HomeTab({
             </button>
           </div>
 
-          {/* Big Bold Balance matching Image 1: $56,750.00 */}
+          {/* Big Bold Balance — rendered in the selected display currency (base ledger MYR) */}
           <div className="mt-3.5">
             <p className="text-[34px] sm:text-[38px] font-black tracking-[-0.03em] text-[#0B1E3F] leading-none">
-              ${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatDisplayCurrency(currentBalance, displayCurrency)}
+            </p>
+            <p className="mt-1.5 text-[10.5px] font-semibold text-[#0B1E3F]/50">
+              {formatCanteenMealsEquivalent(currentBalance, displayCurrency)}
             </p>
           </div>
 
@@ -963,9 +1017,11 @@ type RadarOrbitMode = 'invested' | 'trend' | 'circle';
 function RadarTab({
   onVerifyStudent,
   onOpenSheet,
+  onManageSubscription,
 }: {
   onVerifyStudent: () => void;
   onOpenSheet: (s: SheetId) => void;
+  onManageSubscription?: (subscriptionId: string) => void;
 }) {
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
   const zombieTags = useCtrlPayStore((s) => s.zombieTags);
@@ -1175,7 +1231,7 @@ function RadarTab({
 
         {showFullConsole && (
           <div className="mt-3 space-y-3 animate-fade-in">
-            <ZombieRadarPanel />
+            <ZombieRadarPanel onManageSubscription={onManageSubscription} />
           </div>
         )}
       </div>
@@ -1298,6 +1354,7 @@ function VaultHero({ onOpenAudit }: { onOpenAudit: () => void }) {
   const currentBalance = useCtrlPayStore((s) => s.currentBalance);
   const defenseVault = useCtrlPayStore((s) => s.defenseVault);
   const rewardPool = useCtrlPayStore((s) => s.rewardPool);
+  const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
   const sweeps = useCtrlPayStore((s) => s.pendingSweeps);
   const verified = sweeps.filter((s) => s.status === 'VERIFIED').length;
   const [bucket, setBucket] = React.useState<'free' | 'vault' | 'reward' | null>(null);
@@ -1331,7 +1388,7 @@ function VaultHero({ onOpenAudit }: { onOpenAudit: () => void }) {
         ]}
         arcLabels={['FREE', 'VAULT', 'REWARD']}
         arcAmounts={[arcRM(currentBalance), arcRM(defenseVault), arcRM(rewardPool)]}
-        center={formatRM(shown)}
+        center={formatDisplayCurrency(shown, displayCurrency)}
         centerKicker={kicker}
         centerSub="no interest · no leverage"
         capsules={[
@@ -1348,7 +1405,9 @@ function VaultHero({ onOpenAudit }: { onOpenAudit: () => void }) {
       <div className="mt-3 grid grid-cols-2 gap-2">
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Reward pool</p>
-          <p className="duo-num mt-1 text-[15px] font-extrabold text-holst-950">{formatRM(rewardPool)}</p>
+          <p className="duo-num mt-1 text-[15px] font-extrabold text-holst-950">
+            {formatDisplayCurrency(rewardPool, displayCurrency)}
+          </p>
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Verified sweeps</p>
@@ -1468,7 +1527,13 @@ function PaymentsSheet({ onClose }: { onClose: () => void }) {
  * Holds the sandbox clock controls, the payment-injection events, the
  * autonomy/permission ladder, the plan switch and the raw event feed.
  */
-function JudgeSandboxSheet() {
+function JudgeSandboxSheet({
+  onOpenQuickLog,
+  onOpenRadar,
+}: {
+  onOpenQuickLog: () => void;
+  onOpenRadar: () => void;
+}) {
   return (
     <div className="space-y-3">
       <p className="rounded-2xl bg-holst-50/80 p-3 text-[11px] leading-relaxed duo-muted ring-1 ring-inset ring-holst-950/5">
@@ -1476,7 +1541,7 @@ function JudgeSandboxSheet() {
         clock to trigger time-based events, inject a mock merchant payment to fire the CFaR interceptor, or flip the
         permission ladder. Everything below is faithful to the shipped engine.
       </p>
-      <SimulationToolbar />
+      <SimulationToolbar onOpenQuickLog={onOpenQuickLog} onOpenRadar={onOpenRadar} />
       <EventFeed />
     </div>
   );
@@ -1486,6 +1551,7 @@ function SummarySheet({ onSimulate }: { onSimulate: () => void }) {
   const allowance = useCtrlPayStore((s) => s.dynamicDailyAllowance());
   const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
   const events = useCtrlPayStore((s) => s.events);
+  const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
   const units = toStudentUnits(allowance);
 
   const last = [...events].reverse().find((e) => e.type === 'DAILY_SUMMARY');
@@ -1498,7 +1564,9 @@ function SummarySheet({ onSimulate }: { onSimulate: () => void }) {
         <SplitAmount value={spentToday} size={34} tone="light" className="mt-2" />
         <p className="mt-1 text-[10.5px] text-holst-200/80">spent so far today</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <span className="ct-pill-glass">Safe today {formatRM(allowance)}</span>
+          <span className="ct-pill-glass">
+            Safe today {formatDisplayCurrency(allowance, displayCurrency)}
+          </span>
           <span className="ct-pill-glass">
             ≈ {units.mixedRiceMeals} rice · {units.bubbleTea} tea
           </span>
@@ -1580,6 +1648,28 @@ function AiDrawer({
  * Shell
  * ------------------------------------------------------------------ */
 
+/** Maps the Back-Tap wizard's friendly categories onto the engine's SpendCategory. */
+function spendCategoryForQuickLog(
+  subCategory: QuickLogTransactionInput['subCategory'],
+  isNeed: boolean,
+): SpendCategory {
+  switch (subCategory) {
+    case 'Transport':
+      return 'Transport_Essential';
+    case 'Shopping':
+      return 'Shopping';
+    case 'Entertainment':
+      return 'Entertainment';
+    case 'Utilities':
+      return 'Bills_Utilities';
+    case 'Allowance':
+      return 'Campus_Cafeteria_Basic';
+    case 'Food & Dining':
+    default:
+      return isNeed ? 'Campus_Cafeteria_Basic' : 'Bubble_Tea_Dining';
+  }
+}
+
 export function MobileAppShell({ copilot, initialTab = 'home', className }: MobileAppShellProps) {
   const [tab, setTab] = React.useState<MobileTab>(initialTab);
   const [sheet, setSheet] = React.useState<SheetId>('none');
@@ -1587,9 +1677,69 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
   const [listening, setListening] = React.useState(false);
   const [downgradeId, setDowngradeId] = React.useState<string | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
+  const [quickLogOpen, setQuickLogOpen] = React.useState(false);
+  const [gateOpen, setGateOpen] = React.useState(false);
+  const [gateUnlocked, setGateUnlocked] = React.useState(false);
 
   const goals = useGoals();
   const activeGoal = goals.find((g) => g.id === goalId) ?? null;
+
+  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
+  const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
+  const amortizeAnnualFees = useCtrlPayStore((s) => s.amortizeAnnualFees);
+  const dailyAllowance = useCtrlPayStore((s) => s.dynamicDailyAllowance());
+  const quickLogTransaction = useCtrlPayStore((s) => s.quickLogTransaction);
+
+  const unpaidBills = React.useMemo(
+    () => unpaidFixedBillTotal(upcomingFixedBills(sandboxClock, SUBSCRIPTIONS, amortizeAnnualFees)),
+    [sandboxClock, amortizeAnnualFees],
+  );
+  const daysLeft = remainingDaysInMonth(sandboxClock);
+
+  const commitQuickLog = React.useCallback(
+    (tx: QuickLogTransactionInput) => {
+      quickLogTransaction({
+        type: tx.type,
+        amount: tx.amountMYR,
+        merchant: tx.merchantOrTitle,
+        category: spendCategoryForQuickLog(tx.subCategory, tx.category === 'NEEDS'),
+        isNeed: tx.category === 'NEEDS',
+        subCategory: tx.subCategory,
+        paymentAccount: tx.paymentAccount,
+      });
+    },
+    [quickLogTransaction],
+  );
+
+  // iOS Back-Tap / Shortcut deep link: open the app at `?trigger=backtap`.
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('trigger') === 'backtap') {
+      setQuickLogOpen(true);
+    }
+  }, []);
+
+  // Desktop fallback: double-tap the `B` key (ignored while typing).
+  React.useEffect(() => {
+    let lastTap = 0;
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) {
+        return;
+      }
+      if (e.key.toLowerCase() !== 'b') return;
+      const now = Date.now();
+      if (now - lastTap <= 420) {
+        lastTap = 0;
+        setQuickLogOpen(true);
+      } else {
+        lastTap = now;
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const openSheet = React.useCallback((s: SheetId) => {
     setListening(false);
@@ -1623,11 +1773,21 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         className,
       )}
     >
-      <StatusBar onOpenSandbox={() => openSheet('sandbox')} />
+      <StatusBar
+        onOpenSandbox={() => openSheet('sandbox')}
+        onOpenGate={() => setGateOpen(true)}
+        gateUnlocked={gateUnlocked}
+      />
 
       <div className="relative flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto no-scrollbar px-4 pb-[104px] pt-1">
-          {tab === 'home' && <HomeTab onOpenSheet={openSheet} onGoTab={setTab} />}
+          {tab === 'home' && (
+            <HomeTab
+              onOpenSheet={openSheet}
+              onGoTab={setTab}
+              onQuickLog={() => setQuickLogOpen(true)}
+            />
+          )}
           {tab === 'timeline' && (
             <RemindersTimeline onBack={() => setTab('home')} onOpenSheet={openSheet} />
           )}
@@ -1641,6 +1801,7 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
             <RadarTab
               onVerifyStudent={() => setDowngradeId('spotify_my')}
               onOpenSheet={openSheet}
+              onManageSubscription={(id) => setDowngradeId(id)}
             />
           )}
           {tab === 'vault' && <VaultTab onOpenAudit={() => openSheet('audit')} />}
@@ -1735,7 +1896,16 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         title="Judge sandbox"
         subtitle="Clock · payment injection · event feed"
       >
-        <JudgeSandboxSheet />
+        <JudgeSandboxSheet
+          onOpenQuickLog={() => {
+            closeSheet();
+            setQuickLogOpen(true);
+          }}
+          onOpenRadar={() => {
+            closeSheet();
+            setTab('radar');
+          }}
+        />
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'commitments'} onClose={closeSheet} title="Commitment devices" subtitle="Quarantines & sweeps">
@@ -1764,6 +1934,23 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         subscriptionId={downgradeId ?? 'spotify_my'}
         open={downgradeId !== null}
         onClose={() => setDowngradeId(null)}
+      />
+
+      <BiometricPasskeyGate
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        onUnlocked={() => setGateUnlocked(true)}
+      />
+
+      <QuickLogBackTapModal
+        isOpen={quickLogOpen}
+        onClose={() => setQuickLogOpen(false)}
+        currentBalanceMYR={currentBalance}
+        currentDynamicDailyAllowanceMYR={dailyAllowance}
+        unpaidBillsMYR={unpaidBills}
+        savingsGoalMYR={MONTHLY_SAVINGS_GOAL}
+        daysLeftInMonth={daysLeft}
+        onCommitTransaction={commitQuickLog}
       />
 
       <PaymentInterceptorModal />

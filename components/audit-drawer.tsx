@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CheckCircle2, FileClock, RefreshCw, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, FileClock, RefreshCw, XCircle } from 'lucide-react';
 import { auditLog, type AuditEntry, type AuditTier } from '@/lib/audit-logger';
 import { syncServerAudit } from '@/lib/audit-sync';
 import { useCtrlPayStore } from '@/lib/store';
@@ -33,6 +33,27 @@ export function AuditDrawer() {
   const chainOk = auditLog.verifyChain(userId);
   const statuses = ['ALL', ...Array.from(new Set(entries.map((e) => e.status)))];
 
+  const exportEvidence = React.useCallback(() => {
+    const payload = {
+      schema: 'ctrlpay.execution-evidence-export.v1',
+      exportedAt: new Date().toISOString(),
+      tenant: userId,
+      chainVerified: auditLog.verifyChain(userId),
+      entryCount: auditLog.list(userId).length,
+      note: 'Sandbox operation evidence. data_accessed stores field names only, never raw PII.',
+      entries: auditLog.list(userId),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ctrlpay-execution-evidence-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [userId]);
+
   const visible = entries.filter(
     (e) => (tier === 'ALL' || e.permissionTier === tier) && (status === 'ALL' || e.status === status),
   );
@@ -47,6 +68,14 @@ export function AuditDrawer() {
           <CardDescription>Append-only, hash-chained. Field names only — never raw PII values.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportEvidence}
+            title="Download the current hash-chained audit log as JSON"
+          >
+            <Download className="h-3.5 w-3.5" /> Export evidence
+          </Button>
           <Badge variant={chainOk ? 'success' : 'danger'}>
             {chainOk ? (
               <>

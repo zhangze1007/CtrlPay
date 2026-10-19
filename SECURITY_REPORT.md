@@ -96,62 +96,36 @@
 
 ---
 
-## 10.2 User Data Authorization Survey Integration
+## 10.2 Privacy-by-Default Design Rationale
 
-We ran a student user privacy survey asking how willing respondents would be to grant four data accesses: **(a) Gmail read-only receipt access, (b) bank statement upload, (c) real-time GPS location tracking, (d) IC / passport upload & facial liveness verification**. The findings shaped the architecture.
+> **No quantitative survey is claimed in this report.** The submission contains no survey sample
+> size (`n`) and no willingness percentages; earlier planning templates that reserved those fields
+> have been removed so nothing unverified is presented to judges.
 
-> ⚠️ **Fill-in template — do not fabricate.** Every `[__]` / `[...]` below must be replaced with real,
-> collected data (and screenshots) before submission. All other cells that cite `plan.md` design
-> decisions are already final. Delete this note once the tables are filled.
+CtrlPay's permission model was designed under a **Privacy-by-Default / Zero-Trust** assumption:
+until a user has been explicitly educated and has opted in, we assume **zero tolerance** for silent
+background scanning, data resale and autonomous money movement. The architecture therefore enforces
+the most conservative posture first and lets the user unlock capabilities one tier at a time.
 
-### 10.2.1 Survey instrument & sample
-
-| Field | Value |
-|---|---|
-| Survey title | Student data-privacy & money-app permissions |
-| Target population | University students (USM / `.edu` email domain) |
-| Fielding window | `[YYYY-MM-DD]` → `[YYYY-MM-DD]` |
-| Responses (n) | `[__]` |
-| Completion rate | `[__]%` |
-| Instrument (questionnaire) | `[link or repo path, e.g. docs/survey/instrument.md]` |
-| Raw responses (anonymised) | `[repo path or shared drive]` |
-| Consent / ethics note | `[how consent was obtained]` |
-| Screenshots folder | `docs/screenshots/` |
-
-### 10.2.2 Willingness to grant each access
-
-Willingness measured on a 5-point scale, reported here as **willing** (agree + strongly agree),
-**unwilling** (disagree + strongly disagree) and **neutral / don't know**.
-
-| # | Access | Question wording (verbatim) | Willing | Unwilling | Neutral / DK | Evidence (screenshot) |
-|---|---|---|---|---|---|---|
-| (a) | Gmail read-only receipt access | `[verbatim question]` | `[__]%` | `[__]%` | `[__]%` | `docs/screenshots/[survey-a.png]` |
-| (b) | Bank statement upload | `[verbatim question]` | `[__]%` | `[__]%` | `[__]%` | `docs/screenshots/[survey-b.png]` |
-| (c) | Real-time GPS location tracking | `[verbatim question]` | `[__]%` | `[__]%` | `[__]%` | `docs/screenshots/[survey-c.png]` |
-| (d) | IC / passport upload & facial liveness verification | `[verbatim question]` | `[__]%` | `[__]%` | `[__]%` | `docs/screenshots/[survey-d.png]` |
-
-Optional breakdowns to include if collected: by year of study, by faculty, and whether the
-respondent had previously been charged for a subscription they forgot.
-
-### 10.2.3 How the numbers map to each design decision
-
-| Survey item | Result (fill in) | Design decision it informed |
+| Data access | Product decision | Why |
 |---|---|---|
-| Gmail read-only receipt access | willing `[__]%` | **Opt-in only**, read-only, **structured fields only**, revocable; replaces "silent scanning". Sandbox uses mock emails. |
-| Bank statement upload | willing `[__]%` | **Not required** for core features; the sandbox ledger and a manual/receipt bookkeeping path stay fully functional. |
-| Real-time GPS location tracking | willing `[__]%` | **Dropped.** Replaced by a time-triggered **12:00 PM** daily summary; GPS kept on the roadmap. |
-| IC / passport upload & facial liveness verification | willing `[__]%` | **Dropped** from the demo; **student OTP only**; licensed eKYC in production. |
+| (a) Gmail read-only receipt access | **Opt-in only**; read-only; structured fields only; revocable; the sandbox uses mock emails | Parsing receipts saves manual entry, but silent inbox scanning is unacceptable by default. |
+| (b) Bank statement upload | **Not required** for any core safety feature | The sandbox ledger plus manual/receipt bookkeeping keep every feature usable without bank credentials. |
+| (c) Real-time GPS location tracking | **Not collected** | Replaced by a time-triggered 12:00 PM summary; GPS stays on the future roadmap. |
+| (d) IC / passport upload & facial liveness | **Not collected** | Student status is proven with a sandbox email OTP; production would use a licensed eKYC provider, never raw documents inside CtrlPay. |
 
-**Result:** data minimisation by default, and **all optional permissions default to OFF**.
+These decisions map directly onto enforceable controls:
 
-**Submission checklist** (tick when done, then delete):
+- **Master Autonomy Switch default OFF** — T0 read-only analysis only until the user opts in (`lib/store.ts`).
+- **T0–T3 tiered authorization** — T1 tagging, T2 drafted cancellations, T3 state changes; T3 always requires a per-action click or a passkey signature (`lib/permissions.ts`).
+- **Dual mandate limits** — the user's spending limits and the AI mandate cap every contract; NEEDS categories can never be escrowed; the 40% reduction cap and the RM 15 survival floor are enforced server-side (`lib/quant-engine.ts`).
+- **Every optional permission defaults to OFF** and is individually revocable in the UI; the audit log records field names only, never raw PII values.
 
-- [ ] `n` recorded in §10.2.1
-- [ ] Willing / unwilling / neutral percentages filled for all four items
-- [ ] Verbatim question wording pasted for all four items
-- [ ] Screenshots saved under `docs/screenshots/` and referenced
-- [ ] §10.2.3 "Result" column filled
-- [ ] This fill-in note and checklist removed
+### 10.2.1 Sandbox data & commercial-model disclosures
+
+- **Registry snapshot.** Prices, cancellation links and mailto recipients in `SUBSCRIPTION_REGISTRY` are a **sandbox snapshot (last verified 2026-03-01)**. Production would synchronise them through merchant official APIs or a scheduled compliance review.
+- **Pro pricing is a hypothesis.** The Pro tier (RM 9.90/month, RM 49 student first year) is a **team business-model hypothesis**, not a live price.
+- **Ethical freemium.** Every defensive control — overspend alerts, payment interception, the T0–T3 switches and the audit log — is **permanently free** and never reads the `plan` flag; `tests/compliance.test.ts` enforces this.
 
 ---
 

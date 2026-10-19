@@ -55,6 +55,20 @@ export function clickAuthorizationRef(proposalId: string): string {
   return ref;
 }
 
+/**
+ * Structured passkey authorization ref used when the user signs a T3 contract
+ * through the simulated FIDO2/Face ID gate. It still contains the per-proposal
+ * identifier, so it is just as action-specific as the plain click ref.
+ */
+export function passkeyAuthorizationRef(proposalId: string): string {
+  const compact = proposalId.replace(/[^A-Za-z0-9]/g, '');
+  const ref = `FIDO2_PASSKEY_BIOMETRIC_AUTH_${compact.slice(0, 8)}`;
+  if (!CLICK_AUTH_RE.test(ref)) {
+    throw new Error(`INVALID_PROPOSAL_ID_FOR_PASSKEY_REF: "${proposalId}"`);
+  }
+  return ref;
+}
+
 export function approveProposal(
   proposalId: string,
   terms: ProposalTerms,

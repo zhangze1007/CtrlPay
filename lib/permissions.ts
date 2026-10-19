@@ -36,7 +36,14 @@ export interface TierCheck {
   reason?: string;
 }
 
-export const CLICK_AUTH_RE = /^USER_CLICK_APPROVE_PROPOSAL_[A-Za-z0-9]+$/;
+/**
+ * Per-action T3 authorization refs. Two formats are accepted:
+ *   - `USER_CLICK_APPROVE_PROPOSAL_*` — a plain per-action click.
+ *   - `FIDO2_PASSKEY_BIOMETRIC_AUTH_*` — the same click performed through the
+ *     simulated device passkey (Face ID / fingerprint), recorded for audit evidence.
+ */
+export const CLICK_AUTH_RE =
+  /^(USER_CLICK_APPROVE_PROPOSAL|FIDO2_PASSKEY_BIOMETRIC_AUTH)_[A-Za-z0-9]+$/;
 
 export function tierOf(toolName: string): PermissionTier {
   return TOOL_TIERS[toolName] ?? 'T3';

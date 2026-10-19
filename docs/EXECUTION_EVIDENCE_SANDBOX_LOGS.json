@@ -7,11 +7,11 @@
   "deterministic": true,
   "reproducibilityNote": "The wall clock is frozen at the sandbox start and Math.random is pinned; proposals use fixed ids. Re-running \"npm run generate:evidence\" reproduces this file byte-for-byte.",
   "summary": {
-    "auditEntries": 10,
+    "auditEntries": 11,
     "chainVerified": true,
     "finalSandboxClock": "2026-03-31T23:59:59.999Z",
     "finalLedger": {
-      "currentBalance": 56750,
+      "currentBalance": 56731.5,
       "defenseVault": 16.4,
       "rewardPool": 22.4
     }
@@ -181,18 +181,38 @@
     },
     {
       "step": 7,
+      "title": "Back-Tap quick logging syncs the dynamic daily budget",
+      "sandboxClock": "2026-03-31T23:59:59.999Z",
+      "ledger": {
+        "currentBalance": 56731.5,
+        "defenseVault": 16.4,
+        "rewardPool": 22.4
+      },
+      "observations": {
+        "sandboxClock": "2026-03-31T23:59:59.999Z",
+        "trigger": "iOS Back-Tap / double-tap B / sandbox button → single quick-log path",
+        "amountRM": 18.5,
+        "balanceBefore": 56750,
+        "balanceAfter": 56731.5,
+        "dynamicDailyAllowanceBefore": 56190.1,
+        "dynamicDailyAllowanceAfter": 56171.6,
+        "authorizationRef": "USER_AUTHORIZED_BACKTAP_TRANSFER"
+      }
+    },
+    {
+      "step": 8,
       "title": "Cryptographic audit-chain verification",
       "sandboxClock": "2026-03-31T23:59:59.999Z",
       "ledger": {
-        "currentBalance": 56750,
+        "currentBalance": 56731.5,
         "defenseVault": 16.4,
         "rewardPool": 22.4
       },
       "observations": {
         "verified": true,
-        "entryCount": 10,
+        "entryCount": 11,
         "genesisPrevHash": "GENESIS",
-        "finalEntryHash": "5a5ecd232c004339f932d4a07d64f2ec8f377502efafd131b510d109810039e7"
+        "finalEntryHash": "fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74"
       }
     }
   ],
@@ -236,6 +256,10 @@
     {
       "sandboxClock": "2026-03-31T23:59:59.999Z",
       "line": "[SANDBOX] advanceClock 1773392400000 -> 1775001599999 21 event(s)"
+    },
+    {
+      "sandboxClock": "2026-03-31T23:59:59.999Z",
+      "line": "[SANDBOX] quickLogTransaction EXPENSE Tealive & Campus Lunch (Back-Tap) 18.5"
     }
   ],
   "auditLog": [
@@ -403,6 +427,24 @@
       "status": "EXECUTED",
       "prevHash": "e12fd5d490f89dbff0a0ac89958b30236013bd4c7cebb4dfe88f59a419fad364",
       "entryHash": "5a5ecd232c004339f932d4a07d64f2ec8f377502efafd131b510d109810039e7"
+    },
+    {
+      "logId": "log_mmn8luo0_b_f9tfnfse",
+      "timestamp": "2026-03-12T09:00:00.000Z",
+      "sandboxClock": "2026-03-31T23:59:59.999Z",
+      "actor": "USER",
+      "actionType": "USER_BACKTAP_QUICK_LOG",
+      "permissionTier": "T1",
+      "data_accessed": [
+        "transactions",
+        "balance",
+        "paymentAccount"
+      ],
+      "authorization_ref": "USER_AUTHORIZED_BACKTAP_TRANSFER",
+      "proposal_hash": null,
+      "status": "EXECUTED",
+      "prevHash": "5a5ecd232c004339f932d4a07d64f2ec8f377502efafd131b510d109810039e7",
+      "entryHash": "fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74"
     }
   ]
 }

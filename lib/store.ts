@@ -53,6 +53,7 @@ import {
 } from './utils';
 import type { AiMandate, SignedProposal, SpendCategory, UserSpendingLimit } from './types';
 import type { PermissionTier } from './permissions';
+import type { CurrencyCode } from './currency-ppp';
 
 export type { PermissionTier };
 export type { ZombieTag };
@@ -114,6 +115,20 @@ export interface PaymentIntent {
   isNeed: boolean;
 }
 
+/**
+ * Back-Tap / shortcut quick-logging input (iOS Back-Tap deep link, sandbox button
+ * or double-tap B). Amounts are ALWAYS stored in the MYR base ledger.
+ */
+export interface QuickLogInput {
+  type: 'EXPENSE' | 'INCOME';
+  amount: number;
+  merchant: string;
+  category: SpendCategory;
+  isNeed: boolean;
+  subCategory: string;
+  paymentAccount: string;
+}
+
 export interface CtrlPayState {
   userId: string;
   sandboxClock: number; // ms epoch, controlled ONLY by the Simulation Toolbar
@@ -142,6 +157,8 @@ export interface CtrlPayState {
     studentEmail: string;
     avatar: string;
   };
+  /** DISPLAY-ONLY currency. The ledger/engine always stays in MYR (RM). */
+  displayCurrency: CurrencyCode;
 
   // actions
   setProfile(next: Partial<{ fullName: string; memberId: string; studentEmail: string; avatar: string }>): void;
@@ -151,6 +168,7 @@ export interface CtrlPayState {
     p: SignedProposal,
     decision: 'APPROVED' | 'MODIFIED' | 'DECLINED',
     newTerms?: { durationDays?: number; dailyBudgetReduction?: number },
+    authorizationRef?: string,
   ): void;
   claimQuarantineReward(proposalId: string): void;
   releaseQuarantine(proposalId: string): void;
@@ -160,6 +178,7 @@ export interface CtrlPayState {
   setAiMandate(next: Partial<AiMandate>): void;
   setPlan(plan: 'FREE' | 'PRO'): void;
   setRoastTone(tone: 'GENTLE' | 'SPICY'): void;
+  setDisplayCurrency(currency: CurrencyCode): void;
   setStudentVerified(on: boolean): void;
   setGmailConsent(on: boolean): void;
   simulatePaymentIntent(intent: PaymentIntent): void;
@@ -171,6 +190,7 @@ export interface CtrlPayState {
     isNeed: boolean;
     source?: string;
   }): void;
+  quickLogTransaction(input: QuickLogInput): void;
   refreshZombieTags(): void;
   answerZombie(subscriptionId: SubscriptionId, usedInPast30Days: boolean): void;
   dismissEvent(id: string): void;
@@ -218,6 +238,7 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
   amortizeAnnualFees: false,
   plan: 'FREE',
   roastTone: 'GENTLE',
+  displayCurrency: 'MYR',
   spentThisWeek: SPENT_THIS_WEEK,
   spentThisMonth: SPENT_THIS_MONTH,
   studentVerified: false,
@@ -384,6 +405,21 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
     console.info('[SANDBOX] setRoastTone', tone);
   },
 
+  setDisplayCurrency(currency) {
+    const s = get();
+    set({ displayCurrency: currency });
+    audit(s, {
+      actor: 'USER',
+      actionType: 'CURRENCY_VIEW_SWITCH',
+      permissionTier: 'T0',
+      data_accessed: ['displayCurrency'],
+      authorization_ref: `USER_SWITCH_DISPLAY_${currency}`,
+      proposal_hash: null,
+      status: 'MODIFIED',
+    });
+    console.info('[SANDBOX] setDisplayCurrency', currency);
+  },
+
   setStudentVerified(on) {
     const s = get();
     set({ studentVerified: on });
@@ -529,7 +565,47 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
     console.info('[SANDBOX] bookExpense', b.merchant, amount, b.category);
   },
 
-  applyDecision(p, decision, newTerms) {
+  quickLogTransaction(t) {
+    const s = get();
+    const at = s.sandboxClock;
+    const amount = round2(t.amount);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
+    const isExpense = t.type === 'EXPENSE';
+    set({
+      currentBalance: round2(s.currentBalance + (isExpense ? -amount : amount)),
+      spentThisWeek: isExpense ? round2(s.spentThisWeek + amount) : s.spentThisWeek,
+      spentThisMonth: isExpense ? round2(s.spentThisMonth + amount) : s.spentThisMonth,
+      events: pushEvent(s.events, {
+        id: `evt_QUICKLOG_${at}_${t.merchant}_${amount}`,
+        type: 'BOOKING',
+        at,
+        payload: {
+          merchant: t.merchant,
+          amount,
+          category: t.category,
+          isNeed: t.isNeed,
+          source: 'BACKTAP_QUICK_LOG',
+          entryType: t.type,
+          subCategory: t.subCategory,
+          paymentAccount: t.paymentAccount,
+          units: toStudentUnits(amount),
+        },
+      }),
+    });
+    audit(s, {
+      actor: 'USER',
+      actionType: isExpense ? 'USER_BACKTAP_QUICK_LOG' : 'USER_BACKTAP_INCOME',
+      permissionTier: 'T1',
+      data_accessed: ['transactions', 'balance', 'paymentAccount'],
+      authorization_ref: 'USER_AUTHORIZED_BACKTAP_TRANSFER',
+      proposal_hash: null,
+      status: 'EXECUTED',
+    });
+    console.info('[SANDBOX] quickLogTransaction', t.type, t.merchant, amount);
+  },
+
+  applyDecision(p, decision, newTerms, authorizationRef) {
     const s = get();
     const at = s.sandboxClock;
 
@@ -597,7 +673,8 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
       actionType: 'USER_DECISION',
       permissionTier: 'T3',
       data_accessed: ['proposals', 'balance'],
-      authorization_ref: `USER_CLICK_APPROVE_PROPOSAL_${p.proposalId.slice(-4)}`,
+      authorization_ref:
+        authorizationRef ?? `USER_CLICK_APPROVE_PROPOSAL_${p.proposalId.slice(-4)}`,
       proposal_hash: p.integrityHash,
       status: decision === 'MODIFIED' ? 'MODIFIED' : 'APPROVED',
     });

@@ -35,7 +35,13 @@ const TAG_COPY: Record<string, string> = {
  * bottom in bright jade. Turning the Sinking Fund on visibly empties the ghost column
  * for annual licences.
  */
-export function ZombieRadarPanel({ compact = false }: { compact?: boolean }) {
+export function ZombieRadarPanel({
+  compact = false,
+  onManageSubscription,
+}: {
+  compact?: boolean;
+  onManageSubscription?: (subscriptionId: string) => void;
+}) {
   const zombieTags = useCtrlPayStore((s) => s.zombieTags);
   const amortize = useCtrlPayStore((s) => s.amortizeAnnualFees);
   const setAmortize = useCtrlPayStore((s) => s.setAmortize);
@@ -98,6 +104,15 @@ export function ZombieRadarPanel({ compact = false }: { compact?: boolean }) {
                 <p className="text-[10px] font-semibold text-holst-200/60">{r.cycle}</p>
               )}
             </div>
+            {onManageSubscription && (
+              <button
+                type="button"
+                onClick={() => onManageSubscription(r.id)}
+                className="ml-1 shrink-0 rounded-full border border-white/20 bg-white/5 px-2.5 py-1 text-[9.5px] font-bold text-holst-100 transition-colors hover:bg-white/15"
+              >
+                Manage
+              </button>
+            )}
           </li>
         ))}
       </ul>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { assertTier, tierOf, TOOL_TIERS } from '@/lib/permissions';
+import { assertTier, tierOf, TOOL_TIERS, CLICK_AUTH_RE } from '@/lib/permissions';
+import { passkeyAuthorizationRef } from '@/lib/tool-resolution';
 
 const off = { masterAutonomyEnabled: false, enabledTiers: { T0: true, T1: false, T2: false, T3: false } };
 const onT1 = { masterAutonomyEnabled: true, enabledTiers: { T0: true, T1: true, T2: false, T3: false } };
@@ -47,5 +48,13 @@ describe('permission tiers', () => {
     expect(
       assertTier('propose_quarantine', onAll, { authorizationRef: 'MANDATE_DEFAULT_T0' }).ok,
     ).toBe(false);
+  });
+
+  it('accepts the structured passkey (FIDO2) ref for T3 and keeps it proposal-specific', () => {
+    const ref = passkeyAuthorizationRef('prop_demo_8f3a71d2');
+    expect(CLICK_AUTH_RE.test(ref)).toBe(true);
+    expect(ref).toBe('FIDO2_PASSKEY_BIOMETRIC_AUTH_propdemo');
+    expect(assertTier('propose_sweep', onAll, { authorizationRef: ref }).ok).toBe(true);
+    expect(CLICK_AUTH_RE.test('FIDO2_PASSKEY_BIOMETRIC_AUTH_')).toBe(false);
   });
 });

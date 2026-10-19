@@ -4,7 +4,9 @@ import * as React from 'react';
 import { AlertTriangle, Lock, ShieldAlert, Wallet } from 'lucide-react';
 import { useCtrlPayStore, type PaymentIntent } from '@/lib/store';
 import { requestProposal, submitDecision } from '@/lib/api-client';
-import { approveProposal } from '@/lib/tool-resolution';
+import { approveProposal, passkeyAuthorizationRef } from '@/lib/tool-resolution';
+import { formatDisplayCurrency } from '@/lib/currency-ppp';
+import { PasskeySigningPulse } from '@/components/biometric-passkey-gate';
 import { formatRM } from '@/lib/utils';
 import type { WhatIfResult } from '@/lib/domain';
 import { Badge } from '@/components/ui/badge';
@@ -24,9 +26,11 @@ export function PaymentInterceptorModal() {
   const applyDecision = useCtrlPayStore((s) => s.applyDecision);
   const proceedPayment = useCtrlPayStore((s) => s.proceedPayment);
   const masterAutonomyEnabled = useCtrlPayStore((s) => s.masterAutonomyEnabled);
+  const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
 
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [signing, setSigning] = React.useState<string | null>(null);
 
   const found = [...events].reverse().find((e) => e.type === 'PAYMENT_INTERCEPT');
   if (!found) return null;
@@ -46,17 +50,18 @@ export function PaymentInterceptorModal() {
         itemPrice: intent.amount,
         category: intent.category,
       });
-      const { authorizationRef } = await submitDecision(
+      const authorizationRef = passkeyAuthorizationRef(proposal.proposalId);
+      setSigning(proposal.proposalId);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setSigning(null);
+      await submitDecision(
         proposal,
-        approveProposal(proposal.proposalId, proposal.terms).decision!,
+        approveProposal(proposal.proposalId, proposal.terms, authorizationRef).decision!,
       );
-      applyDecision(
-        { ...proposal, status: 'APPROVED' },
-        'APPROVED',
-      );
-      void authorizationRef;
+      applyDecision({ ...proposal, status: 'APPROVED' }, 'APPROVED', undefined, authorizationRef);
       dismissEvent(intercept.id);
     } catch (e) {
+      setSigning(null);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -73,10 +78,18 @@ export function PaymentInterceptorModal() {
         lockedCategories: [intent.category],
         durationDays: 7,
       });
-      await submitDecision(proposal, approveProposal(proposal.proposalId, proposal.terms).decision!);
-      applyDecision({ ...proposal, status: 'APPROVED' }, 'APPROVED');
+      const authorizationRef = passkeyAuthorizationRef(proposal.proposalId);
+      setSigning(proposal.proposalId);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setSigning(null);
+      await submitDecision(
+        proposal,
+        approveProposal(proposal.proposalId, proposal.terms, authorizationRef).decision!,
+      );
+      applyDecision({ ...proposal, status: 'APPROVED' }, 'APPROVED', undefined, authorizationRef);
       dismissEvent(intercept.id);
     } catch (e) {
+      setSigning(null);
       setError((e as Error).message);
     } finally {
       setBusy(false);
@@ -88,6 +101,7 @@ export function PaymentInterceptorModal() {
       className="absolute inset-0 z-50 flex flex-col justify-end bg-[rgba(4,34,43,0.45)] backdrop-blur-[2px]"
       onClick={() => dismissEvent(intercept.id)}
     >
+      <PasskeySigningPulse active={signing !== null} proposalId={signing} />
       <Card
         className="flex max-h-full w-full animate-sheet-up flex-col overflow-hidden rounded-b-none rounded-t-[30px] border-0 shadow-lift"
         onClick={(e) => e.stopPropagation()}
@@ -137,18 +151,24 @@ export function PaymentInterceptorModal() {
             </div>
             <div className="rounded-2xl bg-holst-50/70 p-2.5">
               <p className="text-[10px] duo-muted">CFaR 95</p>
-              <p className="duo-num text-[13px] font-bold">{formatRM(result.cfar95)}</p>
+              <p className="duo-num text-[13px] font-bold">
+                {formatDisplayCurrency(result.cfar95, displayCurrency)}
+              </p>
             </div>
             <div className="rounded-2xl bg-holst-50/70 p-2.5">
               <p className="text-[10px] duo-muted">Projected month-end</p>
-              <p className="duo-num text-[13px] font-bold">{formatRM(result.projectedMonthEndBalance)}</p>
+              <p className="duo-num text-[13px] font-bold">
+                {formatDisplayCurrency(result.projectedMonthEndBalance, displayCurrency)}
+              </p>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="rounded-2xl bg-holst-50/70 p-2.5">
               <p className="text-[10px] duo-muted">ES95 tail risk</p>
-              <p className="duo-num text-[13px] font-bold text-holst-600">{formatRM(result.es95)}</p>
+              <p className="duo-num text-[13px] font-bold text-holst-600">
+                {formatDisplayCurrency(result.es95, displayCurrency)}
+              </p>
             </div>
             <div className="rounded-2xl bg-holst-50/70 p-2.5">
               <p className="text-[10px] duo-muted">NSF dip risk</p>
@@ -164,7 +184,9 @@ export function PaymentInterceptorModal() {
             </div>
             <div className="rounded-2xl bg-holst-50/70 p-2.5">
               <p className="text-[10px] duo-muted">Path floor (5th pct.)</p>
-              <p className="duo-num text-[13px] font-bold">{formatRM(result.lowestProjectedBalanceRM)}</p>
+              <p className="duo-num text-[13px] font-bold">
+                {formatDisplayCurrency(result.lowestProjectedBalanceRM, displayCurrency)}
+              </p>
             </div>
           </div>
 
