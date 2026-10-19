@@ -18,7 +18,7 @@ const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
     id: 'shopping',
     name: 'Shopping',
     amount: 3320,
-    shortAmount: '$3320',
+    shortAmount: 'RM 3.3k',
     color: '#10606F', // Holst 800 (Deep Sea Teal)
     glowColor: 'rgba(16, 96, 111, 0.35)',
   },
@@ -26,7 +26,7 @@ const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
     id: 'health',
     name: 'Health',
     amount: 2300,
-    shortAmount: '$2300',
+    shortAmount: 'RM 2.3k',
     color: '#1D8B94', // Holst 600 (Cyan Jade)
     glowColor: 'rgba(29, 139, 148, 0.35)',
   },
@@ -34,7 +34,7 @@ const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
     id: 'invest',
     name: 'Invest',
     amount: 2000,
-    shortAmount: '$2000',
+    shortAmount: 'RM 2.0k',
     color: '#2DA096', // Mint Emerald
     glowColor: 'rgba(45, 160, 150, 0.35)',
   },
@@ -42,7 +42,7 @@ const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
     id: 'tax',
     name: 'Tax',
     amount: 1600,
-    shortAmount: '$1600',
+    shortAmount: 'RM 1.6k',
     color: '#4FB8B4', // Holst 400 (Sky Foam)
     glowColor: 'rgba(79, 184, 180, 0.35)',
   },
@@ -50,7 +50,7 @@ const DEFAULT_BUDGET_ITEMS: BudgetItem[] = [
     id: 'charity',
     name: 'Charity',
     amount: 1400,
-    shortAmount: '$1400',
+    shortAmount: 'RM 1.4k',
     color: '#98D8D0', // Holst 200 (Glacier Mint)
     glowColor: 'rgba(152, 216, 208, 0.35)',
   },
@@ -255,7 +255,7 @@ export function BudgetingDonutChart({
                   {activeItem.name}
                 </span>
                 <span className="text-[19px] font-black tracking-tight text-[#04222B] block leading-none mt-1">
-                  ${activeItem.amount.toLocaleString()}
+                  RM {activeItem.amount.toLocaleString()}
                 </span>
                 <span className="text-[9px] font-bold text-[#64748B] block mt-1">
                   {Math.round((activeItem.amount / totalAmount) * 100)}% of budget
@@ -267,7 +267,7 @@ export function BudgetingDonutChart({
                   Monthly Budget
                 </span>
                 <span className="text-[21px] font-black tracking-tight text-[#04222B] block leading-none mt-1">
-                  ${totalBudget.toLocaleString()}
+                  RM {totalBudget.toLocaleString()}
                 </span>
               </div>
             )}
@@ -323,7 +323,7 @@ export function BudgetingDonutChart({
                     isActive ? 'font-black text-[#04222B]' : 'font-bold text-[#04222B]/90',
                   )}
                 >
-                  ${item.amount.toLocaleString()}
+                  RM {item.amount.toLocaleString()}
                 </span>
               </button>
             );

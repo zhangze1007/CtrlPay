@@ -49,7 +49,7 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     category: 'Streaming & Video',
     amount: 17.9,
     progressPercent: 23,
-    pills: ['Family 4K', '48 words · Ad-Free'],
+    pills: ['Family 4K', '4.8 hrs/mo · Ad-Free'],
     bgColor: '#DDD6FE', // pastel lavender matching card 1
     textColor: '#1E1B4B',
     pillBg: 'rgba(255, 255, 255, 0.45)',
@@ -67,7 +67,7 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     category: 'Audio & Music',
     amount: 8.5, // student discounted
     progressPercent: 78,
-    pills: ['Student 47% OFF', '26 words · Lossless'],
+    pills: ['Student 47% OFF', '2.6 hrs/mo · Lossless'],
     bgColor: '#E9F562', // lime-yellow matching card 2
     textColor: '#1A2E05',
     pillBg: 'rgba(255, 255, 255, 0.55)',
@@ -76,7 +76,7 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     arrowColor: '#FFFFFF',
     billingCycle: 'Monthly · Renews 2nd',
     nextRenewal: 'June 2, 2026',
-    features: ['Save $7.40/mo with student arbitrage', '320kbps high fidelity streaming', 'Unlimited skips & offline podcasts'],
+    features: ['Save RM 7.40/mo with student arbitrage', '320kbps high fidelity streaming', 'Unlimited skips & offline podcasts'],
     studentDiscount: true,
   },
   {
@@ -86,7 +86,7 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     category: 'Cinema & Shows',
     amount: 45.0,
     progressPercent: 98,
-    pills: ['Ultra HD 4K', '167 words · 2 Screens'],
+    pills: ['Ultra HD 4K', '16.7 hrs/mo · 2 Screens'],
     bgColor: '#3B82F6', // royal sapphire blue matching card 3
     textColor: '#FFFFFF',
     pillBg: 'rgba(255, 255, 255, 0.25)',
@@ -104,7 +104,7 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     category: 'AI & Developer',
     amount: 20.0,
     progressPercent: 100,
-    pills: ['GPT-4o & Canvas', '96 words · Voice'],
+    pills: ['GPT-4o & Canvas', '9.6 hrs/mo · Voice'],
     bgColor: '#FB923C', // vibrant coral-orange matching card 4
     textColor: '#FFFFFF',
     pillBg: 'rgba(255, 255, 255, 0.25)',
@@ -165,9 +165,9 @@ const COLLECTION_SUBSCRIPTIONS: CollectionCardData[] = [
     pillBorder: 'rgba(15, 23, 42, 0.25)',
     arrowBg: '#0F172A',
     arrowColor: '#FFFFFF',
-    billingCycle: 'Quarterly · $39.90 / 3mo',
+    billingCycle: 'Quarterly · RM 39.90 / 3mo',
     nextRenewal: 'June 15, 2026',
-    features: ['0 active streams logged past 30 days', 'Flagged as potential zombie subscription', 'Save $39.90 if cancelled before next cycle'],
+    features: ['0 active streams logged past 30 days', 'Flagged as potential zombie subscription', 'Save RM 39.90 if cancelled before next cycle'],
     isZombie: true,
   },
 ];
@@ -245,7 +245,7 @@ export function CollectionSubscriptionCards({
                   {item.progressPercent}%
                 </span>
                 <p className="text-[10px] font-bold opacity-75 leading-none">
-                  ${item.amount.toFixed(2)}/mo
+                  RM {item.amount.toFixed(2)}/mo
                 </p>
               </div>
             </div>
@@ -297,7 +297,7 @@ export function CollectionSubscriptionCards({
                     {selectedItem.title}
                   </h3>
                   <p className="text-[12px] font-bold text-[#64748B]">
-                    ${selectedItem.amount.toFixed(2)} / month · {selectedItem.category}
+                    RM {selectedItem.amount.toFixed(2)} / month · {selectedItem.category}
                   </p>
                 </div>
               </div>
@@ -370,7 +370,7 @@ export function CollectionSubscriptionCards({
                     Student Arbitrage Active
                   </p>
                   <p className="text-[10.5px] font-semibold text-emerald-700">
-                    Saving $7.40 every month ($88.80/year)
+                    Saving RM 7.40 every month (RM 88.80/year)
                   </p>
                 </div>
                 <button

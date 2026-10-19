@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCtrlPayStore } from '@/lib/store';
 
 export interface BudgetDetailsViewProps {
   onClose: () => void;
@@ -26,6 +27,9 @@ export function BudgetDetailsView({
   onOpenSimulator,
 }: BudgetDetailsViewProps) {
   const [affordTestAmount, setAffordTestAmount] = React.useState(85);
+  const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
+  const totalBudget = 850;
+  const remainingBudget = Math.max(0, 240.0 - (spentThisMonth || 0));
 
   return (
     <div className="flex h-full flex-col bg-[#F8FAF8] overflow-hidden font-sans select-none">
@@ -36,7 +40,11 @@ export function BudgetDetailsView({
             Budget & Commitments
           </h2>
           <p className="text-[12px] text-[#64748B]">
-            Remaining: <strong className="text-[#10B981]">RM 240.00</strong> of RM 850
+            Remaining:{' '}
+            <strong className={remainingBudget < 50 ? 'text-[#EF4444]' : 'text-[#10B981]'}>
+              RM {remainingBudget.toFixed(2)}
+            </strong>{' '}
+            of RM {totalBudget}
           </p>
         </div>
 

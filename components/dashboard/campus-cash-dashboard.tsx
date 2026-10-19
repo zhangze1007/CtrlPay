@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivitySection, type ActivityItem } from '@/components/activity-section';
+import { useCtrlPayStore } from '@/lib/store';
 
 export interface CampusCashDashboardProps {
   onOpenProfile: () => void;
@@ -35,15 +36,6 @@ interface ExpenseCategory {
   isHigh?: boolean;
 }
 
-const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  { name: 'Dining & Food', percentage: 34, amount: 989.4, color: '#F43F5E', isHigh: true },
-  { name: 'Living & Home', percentage: 24, amount: 698.4, color: '#8B5CF6' },
-  { name: 'Bills & Utilities', percentage: 18, amount: 510.0, color: '#3B82F6' },
-  { name: 'Transport', percentage: 14, amount: 407.4, color: '#0EA5E9' },
-  { name: 'Entertainment', percentage: 8, amount: 232.8, color: '#EC4899' },
-  { name: 'Other', percentage: 2, amount: 72.0, color: '#10B981' },
-];
-
 export function CampusCashDashboard({
   onOpenProfile,
   onOpenTimeline,
@@ -55,6 +47,10 @@ export function CampusCashDashboard({
   onOpenAllTransactions,
   onOpenItem,
 }: CampusCashDashboardProps) {
+  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
+  const totalExpenses = useCtrlPayStore((s) => s.totalExpenses);
+  const categoryExpenses = useCtrlPayStore((s) => s.categoryExpenses);
+
   // Slide state: 'main' is the photo replica, 'expenses' is the expenses graph
   const [activeSlide, setActiveSlide] = React.useState<'main' | 'expenses'>('main');
   const [activeCategory, setActiveCategory] = React.useState<string | null>(null);
@@ -78,31 +74,66 @@ export function CampusCashDashboard({
     return `RM ${rmAmount.toLocaleString('en-US')}`;
   };
 
-  // Entrance count-up animation for balance
-  const [animatedBalance, setAnimatedBalance] = React.useState(0);
-  const [chartProgress, setChartProgress] = React.useState(0);
+  // Dynamic reactive categories computed from store category expenses & total
+  const categories: ExpenseCategory[] = React.useMemo(() => {
+    const safeTotal = totalExpenses > 0 ? totalExpenses : 2910;
+    const catMap = categoryExpenses ?? {};
+    const raw = [
+      { name: 'Dining & Food', amount: catMap['Dining & Food'] ?? 989.4, color: '#F43F5E' },
+      { name: 'Living & Home', amount: catMap['Living & Home'] ?? 698.4, color: '#8B5CF6' },
+      { name: 'Bills & Utilities', amount: catMap['Bills & Utilities'] ?? 510.0, color: '#3B82F6' },
+      { name: 'Transport', amount: catMap['Transport'] ?? 407.4, color: '#0EA5E9' },
+      { name: 'Entertainment', amount: catMap['Entertainment'] ?? 232.8, color: '#EC4899' },
+      { name: 'Other', amount: catMap['Other'] ?? 72.0, color: '#10B981' },
+    ];
+
+    let maxAmount = -1;
+    let maxName = '';
+    raw.forEach((r) => {
+      if (r.amount > maxAmount) {
+        maxAmount = r.amount;
+        maxName = r.name;
+      }
+    });
+
+    return raw.map((cat) => ({
+      ...cat,
+      percentage: Math.max(1, Math.round((cat.amount / safeTotal) * 100)),
+      isHigh: cat.name === maxName,
+    }));
+  }, [categoryExpenses, totalExpenses]);
+
+  // Entrance and reactive transition animation for balance
+  const [animatedBalance, setAnimatedBalance] = React.useState(currentBalance || 7540);
+  const [chartProgress, setChartProgress] = React.useState(1);
+  const prevBalanceRef = React.useRef(currentBalance || 7540);
+  const isInitialMount = React.useRef(true);
 
   React.useEffect(() => {
     let frame: number;
     const start = performance.now();
-    const duration = 1000;
-    const targetBalance = 7540;
+    const from = isInitialMount.current ? 0 : prevBalanceRef.current;
+    const to = currentBalance;
+    const duration = isInitialMount.current ? 1000 : 700;
+    isInitialMount.current = false;
 
     const animate = (now: number) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
       const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
 
-      setAnimatedBalance(ease * targetBalance);
+      setAnimatedBalance(from + (to - from) * ease);
       setChartProgress(ease);
 
       if (progress < 1) {
         frame = requestAnimationFrame(animate);
+      } else {
+        prevBalanceRef.current = to;
       }
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [currentBalance]);
 
   // Drag handler for manual swipe gesture
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -121,7 +152,7 @@ export function CampusCashDashboard({
   const circumference = 2 * Math.PI * radius;
 
   let accumulatedPercent = 0;
-  const segmentsWithAngles = EXPENSE_CATEGORIES.map((cat) => {
+  const segmentsWithAngles = categories.map((cat) => {
     const dashLength = (cat.percentage / 100) * circumference * chartProgress;
     const offset = -(accumulatedPercent / 100) * circumference * chartProgress;
     accumulatedPercent += cat.percentage;
@@ -297,7 +328,7 @@ export function CampusCashDashboard({
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Expenses</p>
                   <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
-                    {formatCapsuleCurrency(2910)}
+                    {formatCapsuleCurrency(totalExpenses)}
                   </p>
                 </div>
               </button>
@@ -315,7 +346,7 @@ export function CampusCashDashboard({
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Savings</p>
                   <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
-                    {formatCapsuleCurrency(1940)}
+                    {formatCapsuleCurrency(Math.max(0, 1940 - (totalExpenses - 2910)))}
                   </p>
                 </div>
               </div>
@@ -402,7 +433,7 @@ export function CampusCashDashboard({
               </p>
               <div className="flex items-center justify-center mt-1">
                 <span className="text-[32px] sm:text-[34px] font-medium text-[#0F172A] tracking-tight leading-none text-center">
-                  {formatCurrency(2910)}
+                  {formatCurrency(totalExpenses)}
                 </span>
               </div>
               <div className="flex items-center justify-center gap-1 text-[11px] font-normal text-[#64748B] mt-1">
@@ -460,7 +491,9 @@ export function CampusCashDashboard({
                       Total Spent
                     </span>
                     <span className="text-[15.5px] font-black tracking-tight text-[#0F172A] leading-tight mt-0.5">
-                      {currency === 'USD' ? '$ 654' : 'RM 2,910'}
+                      {currency === 'USD'
+                        ? `$ ${Math.round(totalExpenses / 4.45).toLocaleString('en-US')}`
+                        : `RM ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     </span>
                     <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-200/60 mt-0.5">
                       6 Categories
@@ -470,7 +503,7 @@ export function CampusCashDashboard({
 
                 {/* Categories (Widened with horizontal mini progress tracks) */}
                 <div className="flex-1 space-y-1 pl-1 min-w-0">
-                  {EXPENSE_CATEGORIES.map((cat) => {
+                  {categories.map((cat) => {
                     const isSelected = activeCategory === cat.name;
                     return (
                       <button
@@ -531,14 +564,17 @@ export function CampusCashDashboard({
                     </span>
                     <span className="font-extrabold text-[#0F172A]">
                       {currency}{' '}
-                      {EXPENSE_CATEGORIES.find((c) => c.name === activeCategory)?.amount.toFixed(2)}
+                      {categories.find((c) => c.name === activeCategory)?.amount.toFixed(2)}
                     </span>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between w-full text-[10.5px]">
                     <span className="text-[#64748B] flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-                      <span>Highest: Dining &amp; Food (34%)</span>
+                      <span>
+                        Highest: {categories.find((c) => c.isHigh)?.name ?? 'Dining & Food'} (
+                        {categories.find((c) => c.isHigh)?.percentage ?? 34}%)
+                      </span>
                     </span>
                     <button
                       type="button"

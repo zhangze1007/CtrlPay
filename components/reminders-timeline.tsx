@@ -68,7 +68,7 @@ const DEFAULT_REMINDERS: ReminderItem[] = [
     dayNum: 15,
     ringColor: '#6366F1',
     category: 'AI & Developer · Anthropic',
-    billingCycle: 'Monthly · Since Feb, 2025',
+    billingCycle: 'Monthly · Since Feb, 2026',
   },
   {
     id: 'figma',

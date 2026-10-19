@@ -497,7 +497,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
                   </span>
                 </div>
                 <p className="text-[10.5px] font-normal text-[#64748B] mt-0.5">
-                  Subscription savings • 12 Oct 2025
+                  Subscription savings • 12 Oct 2026
                 </p>
               </div>
             </div>
@@ -523,7 +523,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
                   </span>
                 </div>
                 <p className="text-[10.5px] font-normal text-[#64748B] mt-0.5">
-                  Awaiting next billing cycle • 8 Oct 2025
+                  Awaiting next billing cycle • 8 Oct 2026
                 </p>
               </div>
             </div>

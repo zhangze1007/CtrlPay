@@ -53,9 +53,18 @@ import {
 } from './utils';
 import type { AiMandate, SignedProposal, SpendCategory, UserSpendingLimit } from './types';
 import type { PermissionTier } from './permissions';
+import {
+  type ActivityItem,
+  INITIAL_ACTIVITIES,
+  EXTENDED_ACTIVITIES,
+  INITIAL_CATEGORY_EXPENSES,
+  INITIAL_TOTAL_EXPENSES,
+  mapToDashboardCategory,
+} from './activities';
 
 export type { PermissionTier };
 export type { ZombieTag };
+export type { ActivityItem };
 
 const DAY_MS = 86_400_000;
 const QUARANTINE_MS = 24 * 3_600_000;
@@ -129,6 +138,9 @@ export interface CtrlPayState {
   roastTone: 'GENTLE' | 'SPICY';
   spentThisWeek: number;
   spentThisMonth: number;
+  totalExpenses: number;
+  categoryExpenses: Record<string, number>;
+  activities: ActivityItem[];
   studentVerified: boolean;
   gmailConsent: boolean;
   quarantines: QuarantineRecord[];
@@ -167,10 +179,12 @@ export interface CtrlPayState {
   bookExpense(booking: {
     merchant: string;
     amount: number;
-    category: SpendCategory;
+    category: SpendCategory | string;
     isNeed: boolean;
     source?: string;
+    items?: Array<{ name: string; price: number }>;
   }): void;
+  addActivity(activity: ActivityItem): void;
   refreshZombieTags(): void;
   answerZombie(subscriptionId: SubscriptionId, usedInPast30Days: boolean): void;
   dismissEvent(id: string): void;
@@ -220,6 +234,9 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
   roastTone: 'GENTLE',
   spentThisWeek: SPENT_THIS_WEEK,
   spentThisMonth: SPENT_THIS_MONTH,
+  totalExpenses: INITIAL_TOTAL_EXPENSES,
+  categoryExpenses: { ...INITIAL_CATEGORY_EXPENSES },
+  activities: [...EXTENDED_ACTIVITIES],
   studentVerified: false,
   gmailConsent: false,
   quarantines: [],
@@ -477,10 +494,40 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
 
   proceedPayment(intent) {
     const s = get();
+    const amount = round2(intent.amount);
+    const catInfo = mapToDashboardCategory(intent.category, intent.merchant);
+    const prevCatTotal = s.categoryExpenses?.[catInfo.categoryName] ?? 0;
+    const newCatExpenses = {
+      ...(s.categoryExpenses ?? INITIAL_CATEGORY_EXPENSES),
+      [catInfo.categoryName]: round2(prevCatTotal + amount),
+    };
+
+    const newActivity: ActivityItem = {
+      id: `act-live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: intent.merchant,
+      subtitle: `${catInfo.categoryName} · Direct Payment`,
+      amount: `- RM ${amount.toFixed(2)} -`,
+      rawAmount: amount,
+      category: catInfo.categoryName,
+      categoryType: catInfo.categoryType,
+      iconBg: catInfo.iconBg,
+      iconType: catInfo.iconType,
+      timestamp: 'Just now',
+      paymentMethod: "Touch 'n Go eWallet (DuitNow QR)",
+      referenceId: `AUT-${Math.floor(10000 + Math.random() * 90000)}-LIVE`,
+      isExtractedFromNotification: false,
+      rawNotificationText: `Simulated checkout payment of RM ${amount.toFixed(2)} at ${intent.merchant}.`,
+      aiCategorizationNote: `Direct payment authorized. Categorized under ${catInfo.categoryName}. Real-time balance and expenses synced.`,
+      aiConfidence: 99,
+    };
+
     set({
-      currentBalance: round2(s.currentBalance - intent.amount),
-      spentThisWeek: round2(s.spentThisWeek + intent.amount),
-      spentThisMonth: round2(s.spentThisMonth + intent.amount),
+      currentBalance: round2(s.currentBalance - amount),
+      spentThisWeek: round2(s.spentThisWeek + amount),
+      spentThisMonth: round2(s.spentThisMonth + amount),
+      totalExpenses: round2((s.totalExpenses ?? INITIAL_TOTAL_EXPENSES) + amount),
+      categoryExpenses: newCatExpenses,
+      activities: [newActivity, ...(s.activities ?? EXTENDED_ACTIVITIES)],
       events: s.events.filter((e) => e.type !== 'PAYMENT_INTERCEPT'),
     });
     audit(s, {
@@ -499,10 +546,43 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
     const s = get();
     const at = s.sandboxClock;
     const amount = round2(b.amount);
+    const catInfo = mapToDashboardCategory(String(b.category), b.merchant);
+    const prevCatTotal = s.categoryExpenses?.[catInfo.categoryName] ?? 0;
+    const newCatExpenses = {
+      ...(s.categoryExpenses ?? INITIAL_CATEGORY_EXPENSES),
+      [catInfo.categoryName]: round2(prevCatTotal + amount),
+    };
+
+    const newActivity: ActivityItem = {
+      id: `act-live-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      title: b.merchant,
+      subtitle: b.items?.length
+        ? b.items.map((it) => it.name).join(', ')
+        : `${catInfo.categoryName} · ${b.source ?? 'Quick Log'}`,
+      amount: `- RM ${amount.toFixed(2)} -`,
+      rawAmount: amount,
+      category: catInfo.categoryName,
+      categoryType: catInfo.categoryType,
+      iconBg: catInfo.iconBg,
+      iconType: catInfo.iconType,
+      timestamp: 'Just now',
+      paymentMethod: "Touch 'n Go eWallet (DuitNow QR)",
+      referenceId: `TXN-${Date.now().toString().slice(-5)}`,
+      isExtractedFromNotification: b.source === 'NOTIFICATION' || b.source === 'OCR',
+      rawNotificationText: b.source === 'OCR'
+        ? `Receipt OCR recognized: RM ${amount.toFixed(2)} at ${b.merchant}. Discarded from memory.`
+        : `Payment of RM ${amount.toFixed(2)} to ${b.merchant} recorded.`,
+      aiCategorizationNote: `AI categorized under ${catInfo.categoryName}. Real-time balance and expenses synced.`,
+      aiConfidence: 99,
+    };
+
     set({
       currentBalance: round2(s.currentBalance - amount),
       spentThisWeek: round2(s.spentThisWeek + amount),
       spentThisMonth: round2(s.spentThisMonth + amount),
+      totalExpenses: round2((s.totalExpenses ?? INITIAL_TOTAL_EXPENSES) + amount),
+      categoryExpenses: newCatExpenses,
+      activities: [newActivity, ...(s.activities ?? EXTENDED_ACTIVITIES)],
       events: pushEvent(s.events, {
         id: `evt_BOOKING_${at}_${b.merchant}_${amount}`,
         type: 'BOOKING',
@@ -527,6 +607,10 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
       status: 'EXECUTED',
     });
     console.info('[SANDBOX] bookExpense', b.merchant, amount, b.category);
+  },
+
+  addActivity(activity) {
+    set((s) => ({ activities: [activity, ...(s.activities ?? EXTENDED_ACTIVITIES)] }));
   },
 
   applyDecision(p, decision, newTerms) {

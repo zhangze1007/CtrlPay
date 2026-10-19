@@ -185,7 +185,7 @@ export function FluidCircleGauge({
           dominantBaseline="central"
         >
           <textPath href={`#${uid}-path-a`} startOffset="78%" textAnchor="middle">
-            $132k
+            RM 132/mo
           </textPath>
         </text>
 
@@ -198,7 +198,7 @@ export function FluidCircleGauge({
           dominantBaseline="central"
         >
           <textPath href={`#${uid}-path-b`} startOffset="50%" textAnchor="middle">
-            $66k
+            RM 1.5k/yr
           </textPath>
         </text>
 
@@ -301,7 +301,7 @@ export function FluidCircleGauge({
         </span>
         <div className="mt-0.5 flex items-baseline gap-0.5">
           <span className="text-[28px] sm:text-[32px] font-black tracking-[-0.04em] text-[#0B1E3F] leading-none drop-shadow-sm">
-            ${activeCat?.amount.toFixed(0)}
+            RM {activeCat?.amount.toFixed(0)}
           </span>
           <span className="text-[12px] font-extrabold text-[#0B1E3F]/75">/mo</span>
         </div>

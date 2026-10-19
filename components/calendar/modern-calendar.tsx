@@ -72,7 +72,7 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: '16 May · 10:30 AM',
     day: 16,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#E0F2FE',
     iconColor: '#0055B8',
     iconType: 'coffee',
@@ -91,7 +91,7 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: 'Target: 30 June · Runway safe',
     day: 16,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#CCF92E',
     iconColor: '#000000',
     iconType: 'laptop',
@@ -111,7 +111,7 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: '16 May · 1:15 PM',
     day: 16,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#FEF9C3',
     iconColor: '#B45309',
     iconType: 'food',
@@ -130,7 +130,7 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: 'Target: 15 July · Protected',
     day: 17,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#E2F4F0',
     iconColor: '#10606F',
     iconType: 'shield',
@@ -150,7 +150,7 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: '17 May · 3:40 PM',
     day: 17,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#FEE2E2',
     iconColor: '#DC2626',
     iconType: 'book',
@@ -168,13 +168,49 @@ const INITIAL_CALENDAR_ACTIVITIES: CalendarActivityItem[] = [
     time: '18 May · 9:00 AM',
     day: 18,
     month: 4,
-    year: 2025,
+    year: 2026,
     iconBg: '#F1F5F9',
     iconColor: '#0F172A',
     iconType: 'apple',
     paymentMethod: 'Apple Pay · Mastercard *4829',
     referenceId: 'APL-11920-SUB',
     aiNote: 'Zombie Radar monitored. Fixed commitment subscription paid.',
+  },
+  {
+    id: 'cal-act-sb-1',
+    type: 'transaction',
+    title: 'Shopee Campus Gadgets',
+    subtitle: 'Electronics & Audio Accessories',
+    amount: '- RM 180.00',
+    tag: 'Discretionary',
+    time: '12 Mar · 9:00 AM',
+    day: 12,
+    month: 2,
+    year: 2026,
+    iconBg: '#FFEDD5',
+    iconColor: '#EA580C',
+    iconType: 'custom',
+    paymentMethod: 'DuitNow QR · Sandbox Gate',
+    referenceId: 'TXN-SHP-20260312',
+    aiNote: 'Sandbox Step 1: Quarantined under default-OFF safety gate.',
+  },
+  {
+    id: 'cal-act-sb-2',
+    type: 'transaction',
+    title: 'Anti-Impulse Defense Sweep',
+    subtitle: 'Quarantine cooling reward',
+    amount: '+ RM 2.40',
+    tag: 'Vault Bonus',
+    time: '13 Mar · 9:00 AM',
+    day: 13,
+    month: 2,
+    year: 2026,
+    iconBg: '#DCFCE7',
+    iconColor: '#16A34A',
+    iconType: 'shield',
+    paymentMethod: 'CtrlPay Defense Engine',
+    referenceId: 'REW-SND-20260313',
+    aiNote: 'Step 2: Discretionary spend avoided, yield allocated to Defense Vault.',
   },
 ];
 
@@ -319,7 +355,7 @@ function AllTrailsLogo({ className }: { className?: string }) {
 
 export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewProps) {
   // Calendar dynamic month & year state
-  const [currentYear, setCurrentYear] = React.useState<number>(2025);
+  const [currentYear, setCurrentYear] = React.useState<number>(2026);
   const [currentMonthIndex, setCurrentMonthIndex] = React.useState<number>(4); // 4 = May
   const [selectedDay, setSelectedDay] = React.useState<number>(16);
   const [showGoalsAscent, setShowGoalsAscent] = React.useState(false);
@@ -339,6 +375,7 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
 
   const goals = useGoals();
   const bookExpense = useCtrlPayStore((s) => s.bookExpense);
+  const storeActivities = useCtrlPayStore((s) => s.activities ?? []);
 
   // Upcoming Subscriptions Popover Hover/Tap State (Matching User Reference Image)
   const [hoveredSubDate, setHoveredSubDate] = React.useState<number | null>(null);
@@ -384,27 +421,59 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
   const daysInMonth = new Date(currentYear, currentMonthIndex + 1, 0).getDate();
   const startWeekday = new Date(currentYear, currentMonthIndex, 1).getDay();
 
+  // Merge live store activities (from OCR scan, simulation, manual entry) into calendar activities
+  const allActivities = React.useMemo(() => {
+    const liveItems: CalendarActivityItem[] = storeActivities
+      .filter((sa) => sa.id.startsWith('act-live-'))
+      .map((sa) => {
+        const isFood = sa.category.toLowerCase().includes('food') || sa.category.toLowerCase().includes('dining');
+        const isBook = sa.category.toLowerCase().includes('book') || sa.category.toLowerCase().includes('education');
+        return {
+          id: sa.id,
+          type: 'transaction' as const,
+          title: sa.title,
+          subtitle: sa.subtitle,
+          amount: `- RM ${sa.rawAmount.toFixed(2)}`,
+          tag: sa.category,
+          time: '16 May · Just now',
+          day: 16,
+          month: 4,
+          year: 2026,
+          iconBg: sa.iconBg || '#E2F4F0',
+          iconColor: '#10606F',
+          iconType: isFood ? ('food' as const) : isBook ? ('book' as const) : ('custom' as const),
+          paymentMethod: sa.paymentMethod || "Touch 'n Go eWallet (DuitNow QR)",
+          referenceId: sa.referenceId || `TXN-${sa.id.slice(-5)}`,
+          aiNote: sa.aiCategorizationNote || 'Live expense synced with student budget balance.',
+        };
+      });
+
+    const liveIds = new Set(liveItems.map((item) => item.id));
+    const remaining = activities.filter((item) => !liveIds.has(item.id));
+    return [...liveItems, ...remaining];
+  }, [storeActivities, activities]);
+
   // Calendar cells
   const cells: Array<{ day: number | null; hasActivity?: boolean; isHighlight?: boolean }> = [];
   for (let i = 0; i < startWeekday; i++) {
     cells.push({ day: null });
   }
   for (let d = 1; d <= daysInMonth; d++) {
-    const hasActivity = activities.some(
+    const hasActivity = allActivities.some(
       (a) => a.day === d && (a.month === undefined || a.month === currentMonthIndex)
     );
     cells.push({
       day: d,
-      isHighlight: currentMonthIndex === 4 && currentYear === 2025 && d === 16,
+      isHighlight: currentMonthIndex === 4 && currentYear === 2026 && d === 16,
       hasActivity,
     });
   }
 
   // Filter activities for selected day and month
-  const filteredActivities = activities.filter(
+  const filteredActivities = allActivities.filter(
     (a) => a.day === selectedDay && (a.month === undefined || a.month === currentMonthIndex)
   );
-  const displayActivities = filteredActivities.length > 0 ? filteredActivities : activities;
+  const displayActivities = filteredActivities.length > 0 ? filteredActivities : allActivities;
 
   // Add Manual Expense handler
   const handleAddManualExpense = (e: React.FormEvent) => {
@@ -412,38 +481,19 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
     const parsedAmount = parseFloat(newExpenseAmount);
     if (!newExpenseMerchant.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
 
-    const newTxn: CalendarActivityItem = {
-      id: `manual-txn-${Date.now()}`,
-      type: 'transaction',
-      title: newExpenseMerchant.trim(),
-      subtitle: `${newExpenseCategory} · Manual Entry`,
-      amount: `- RM ${parsedAmount.toFixed(2)}`,
-      tag: newExpenseCategory,
-      time: `${selectedDay} ${MONTH_NAMES[currentMonthIndex].slice(0, 3)} · Just now`,
-      day: selectedDay,
-      month: currentMonthIndex,
-      year: currentYear,
-      iconBg: '#E2F4F0',
-      iconColor: '#10606F',
-      iconType:
-        newExpenseCategory === 'Food & Beverage'
-          ? 'food'
-          : newExpenseCategory === 'Education'
-          ? 'book'
-          : 'custom',
-      paymentMethod: newExpensePayment,
-      referenceId: `MAN-${Date.now().toString().slice(-5)}`,
-      aiNote: 'Manually logged expense. Synced with student budget balance.',
-    };
-
-    setActivities((prev) => [newTxn, ...prev]);
-
-    // Book expense in store to sync balances
+    // Book expense in store to sync balances across all views
     bookExpense({
       amount: parsedAmount,
       merchant: newExpenseMerchant.trim(),
-      category: 'Bubble_Tea_Dining',
+      category: (newExpenseCategory === 'Food & Beverage'
+        ? 'Bubble_Tea_Dining'
+        : newExpenseCategory === 'Education'
+        ? 'Books_Education'
+        : newExpenseCategory === 'Subscriptions'
+        ? 'Entertainment_Sub'
+        : 'Others') as any,
       isNeed: true,
+      source: 'MANUAL',
     });
 
     // Reset and close
@@ -541,7 +591,7 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
                 }
 
                 const isSelected = selectedDay === cell.day;
-                const isNeon16 = cell.day === 16 && currentMonthIndex === 4 && currentYear === 2025;
+                const isNeon16 = cell.day === 16 && currentMonthIndex === 4 && currentYear === 2026;
                 const isToday = cell.day === 8;
                 const upcomingSub = UPCOMING_SUBSCRIPTIONS.find((s) => s.day === cell.day);
 

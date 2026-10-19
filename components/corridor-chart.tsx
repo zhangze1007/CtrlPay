@@ -202,7 +202,7 @@ export function CorridorChart({
           ['--caret-x' as string]: `${caret}%`,
         }}
       >
-        {riskPoint ? (riskPoint.upper >= 100 ? `$${Math.round(riskPoint.upper)}` : formatRM(riskPoint.upper)) : '$240.00'}
+        {riskPoint ? (riskPoint.upper >= 100 ? `RM ${Math.round(riskPoint.upper)}` : formatRM(riskPoint.upper)) : 'RM 240.00'}
       </span>
       </div>
 
@@ -311,7 +311,7 @@ export function CorridorCard({
  * and 45° hatched corridor graph with Sun-Sat columns and Wed dumbbell + white capsule.
  */
 export function ExpenseOverviewCard({
-  amount = '$120.00',
+  amount = 'RM 120.00',
   points,
   riskIndex: defaultRiskIndex = 3, // Default to Wednesday
   onCalendarClick,

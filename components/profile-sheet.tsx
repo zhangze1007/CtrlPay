@@ -114,18 +114,18 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
         <div className="mt-3">
           <p className="text-[11px] font-medium text-white/70">Total Available Balance</p>
           <p className="text-[26px] font-black tracking-tight text-white leading-tight">
-            $56,750.00
+            RM 56,750.00
           </p>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/15 pt-2.5 text-[11px]">
           <div>
             <p className="text-white/70 font-medium">Safe Allowance</p>
-            <p className="font-extrabold text-white text-[13px]">$89.40 / day</p>
+            <p className="font-extrabold text-white text-[13px]">RM 89.40 / day</p>
           </div>
           <div>
             <p className="text-white/70 font-medium">Defense Vault</p>
-            <p className="font-extrabold text-white text-[13px]">$150.00 saved</p>
+            <p className="font-extrabold text-white text-[13px]">RM 150.00 saved</p>
           </div>
         </div>
       </div>
@@ -135,14 +135,14 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between">
           <p className="text-[12px] font-bold text-[#0B1E3F]">Monthly Budget Cap</p>
           <span className="text-[12.5px] font-extrabold text-[#1C7EC8]">
-            ${userLimits.monthlyPayLimit.toLocaleString()}
+            RM {userLimits.monthlyPayLimit.toLocaleString()}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-[12px] font-bold text-[#0B1E3F]">AI Mandate Max Lock</p>
           <span className="text-[12.5px] font-extrabold text-[#1C7EC8]">
-            ${aiMandate.maxLockAmountRM}
+            RM {aiMandate.maxLockAmountRM}
           </span>
         </div>
         <Slider

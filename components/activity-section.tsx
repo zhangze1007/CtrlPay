@@ -21,281 +21,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCtrlPayStore } from '@/lib/store';
+import {
+  type ActivityItem,
+  INITIAL_ACTIVITIES,
+  EXTENDED_ACTIVITIES,
+} from '@/lib/activities';
 
-export interface ActivityItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  amount: string; // Formatted with flanking dashes e.g. "- RM 30.00 -"
-  rawAmount: number;
-  category: string;
-  categoryType: 'food' | 'shopping' | 'subscription' | 'transfer' | 'entertainment' | 'bills';
-  iconBg: string;
-  iconType: 'apple' | 'mcdonalds' | 'spotify' | 'grab' | 'instagram' | 'tng' | 'maybank' | 'publicbank' | 'custom';
-  timestamp: string;
-  paymentMethod: string;
-  referenceId: string;
-  isExtractedFromNotification?: boolean;
-  rawNotificationText?: string;
-  aiCategorizationNote?: string;
-  aiConfidence?: number;
-}
+export type { ActivityItem };
+export { INITIAL_ACTIVITIES, EXTENDED_ACTIVITIES };
 
-const INITIAL_ACTIVITIES: ActivityItem[] = [
-  {
-    id: 'act-1',
-    title: 'Apple service subscription',
-    subtitle: 'App Store, Tinder, and 2+',
-    amount: '- RM 30.00 -',
-    rawAmount: 30.0,
-    category: 'Subscription',
-    categoryType: 'subscription',
-    iconBg: '#000000',
-    iconType: 'apple',
-    timestamp: 'Today, 2:45 PM',
-    paymentMethod: 'Apple Pay · Mastercard *4829',
-    referenceId: 'APL-99482-TXN',
-    aiCategorizationNote: 'Recurring monthly digital subscription detected. Tagged to Fixed Commitments.',
-    aiConfidence: 99,
-  },
-  {
-    id: 'act-2',
-    title: 'Have a lunch with Mike',
-    subtitle: 'Bigmac, Chicken Wings',
-    amount: '- RM 30.00 -',
-    rawAmount: 30.0,
-    category: 'Food & Dining',
-    categoryType: 'food',
-    iconBg: '#DA291C',
-    iconType: 'mcdonalds',
-    timestamp: 'Today, 12:30 PM',
-    paymentMethod: "Touch 'n Go eWallet (DuitNow QR)",
-    referenceId: 'TNG-88319-KOP',
-    isExtractedFromNotification: true,
-    rawNotificationText: "Touch 'n Go eWallet: Payment of RM 30.00 to McDonald's SS15 successful via DuitNow QR.",
-    aiCategorizationNote: "Extracted from Touch 'n Go push notification. Auto-categorized as Food & Dining based on merchant name. Within daily survival floor.",
-    aiConfidence: 98,
-  },
-  {
-    id: 'act-3',
-    title: 'Spotify Family Plan',
-    subtitle: 'Spotify Monthly Subscription',
-    amount: '- RM 12.00 -',
-    rawAmount: 12.0,
-    category: 'Streaming',
-    categoryType: 'subscription',
-    iconBg: '#1DB954',
-    iconType: 'spotify',
-    timestamp: 'Yesterday, 8:00 AM',
-    paymentMethod: 'Maybank MAE · Visa *1042',
-    referenceId: 'MBB-44120-SPT',
-    aiCategorizationNote: 'Zombie Radar active: Flagged as shared family plan eligible for student discount.',
-    aiConfidence: 96,
-  },
-  {
-    id: 'act-4',
-    title: 'Nasi Bebek Guling',
-    subtitle: 'Bebek Guling Surabaya',
-    amount: '- RM 5.00 -',
-    rawAmount: 5.0,
-    category: 'Local Eats',
-    categoryType: 'food',
-    iconBg: '#00B14F',
-    iconType: 'grab',
-    timestamp: 'Yesterday, 7:15 PM',
-    paymentMethod: 'GrabPay Balance',
-    referenceId: 'GP-77291-BEB',
-    isExtractedFromNotification: true,
-    rawNotificationText: 'GrabPay: You paid RM 5.00 to Warung Bebek Guling. Order #8824.',
-    aiCategorizationNote: 'Extracted from GrabPay notification. Tagged to Dining & Food.',
-    aiConfidence: 97,
-  },
-  {
-    id: 'act-5',
-    title: 'Instagram Ads',
-    subtitle: 'Sponsored Boost Campaign',
-    amount: '- RM 24.00 -',
-    rawAmount: 24.0,
-    category: 'Marketing',
-    categoryType: 'bills',
-    iconBg: '#E1306C',
-    iconType: 'instagram',
-    timestamp: '16 Oct, 11:20 AM',
-    paymentMethod: 'Public Bank Visa *3319',
-    referenceId: 'PB-30219-META',
-    aiCategorizationNote: 'Classified under Business/Marketing expense.',
-    aiConfidence: 94,
-  },
-];
 
-// Extended list of transactions for "View more" slide view
-const EXTENDED_ACTIVITIES: ActivityItem[] = [
-  ...INITIAL_ACTIVITIES,
-  {
-    id: 'act-6',
-    title: 'Zus Coffee Mid Valley',
-    subtitle: 'Iced Spanish Latte x2',
-    amount: '- RM 15.50 -',
-    rawAmount: 15.5,
-    category: 'Food & Drinks',
-    categoryType: 'food',
-    iconBg: '#0055B8',
-    iconType: 'tng',
-    timestamp: '15 Oct, 3:15 PM',
-    paymentMethod: "Touch 'n Go eWallet",
-    referenceId: 'TNG-77402-ZUS',
-    isExtractedFromNotification: true,
-    rawNotificationText: "Touch 'n Go eWallet: Payment of RM 15.50 to Zus Coffee successful.",
-    aiCategorizationNote: 'Extracted from TNG push notification. AI categorized as Food & Drinks.',
-    aiConfidence: 99,
-  },
-  {
-    id: 'act-7',
-    title: 'Dinner Steamboat Split',
-    subtitle: 'Mike Wong (DuitNow)',
-    amount: '- RM 45.00 -',
-    rawAmount: 45.0,
-    category: 'Food & Dining',
-    categoryType: 'food',
-    iconBg: '#FFCE00',
-    iconType: 'maybank',
-    timestamp: '14 Oct, 8:45 PM',
-    paymentMethod: 'Maybank MAE',
-    referenceId: 'MAE-55102-SBT',
-    isExtractedFromNotification: true,
-    rawNotificationText: 'Maybank MAE: DuitNow Transfer RM 45.00 to Mike Wong. Ref: Dinner steamboat split.',
-    aiCategorizationNote: 'Extracted from Maybank MAE notification. Peer transfer tagged to Dining.',
-    aiConfidence: 98,
-  },
-  {
-    id: 'act-8',
-    title: 'Campus Bookstore',
-    subtitle: 'Semester Textbooks & Stationery',
-    amount: '- RM 120.00 -',
-    rawAmount: 120.0,
-    category: 'Education & Supplies',
-    categoryType: 'shopping',
-    iconBg: '#4F46E5',
-    iconType: 'custom',
-    timestamp: '12 Oct, 10:30 AM',
-    paymentMethod: 'Mastercard *4829',
-    referenceId: 'BOK-33910-EDU',
-    aiCategorizationNote: 'Matched to semester textbook allocation in CFaR student budget.',
-    aiConfidence: 95,
-  },
-  {
-    id: 'act-9',
-    title: 'GrabCar to Sunway Uni',
-    subtitle: 'Morning Ride · Sunway Velocity',
-    amount: '- RM 14.00 -',
-    rawAmount: 14.0,
-    category: 'Transport',
-    categoryType: 'bills',
-    iconBg: '#00B14F',
-    iconType: 'grab',
-    timestamp: '11 Oct, 8:20 AM',
-    paymentMethod: 'GrabPay Balance',
-    referenceId: 'GP-99210-RIDE',
-    aiCategorizationNote: 'Tagged under Campus Transport.',
-    aiConfidence: 96,
-  },
-  {
-    id: 'act-10',
-    title: 'FamilyMart SS15',
-    subtitle: 'Matcha Softserve & Oden',
-    amount: '- RM 18.20 -',
-    rawAmount: 18.2,
-    category: 'Food & Snacks',
-    categoryType: 'food',
-    iconBg: '#0055B8',
-    iconType: 'tng',
-    timestamp: '10 Oct, 9:15 PM',
-    paymentMethod: "Touch 'n Go eWallet",
-    referenceId: 'TNG-22910-FM',
-    aiCategorizationNote: 'Auto-categorized under Food & Snacks.',
-    aiConfidence: 97,
-  },
-  {
-    id: 'act-11',
-    title: 'Netflix Premium 4K',
-    subtitle: 'Monthly Family Entertainment',
-    amount: '- RM 25.86 -',
-    rawAmount: 25.86,
-    category: 'Streaming',
-    categoryType: 'subscription',
-    iconBg: '#000000',
-    iconType: 'apple',
-    timestamp: '08 Oct, 9:00 AM',
-    paymentMethod: 'Apple Pay · Mastercard *4829',
-    referenceId: 'NFLX-88190-SUB',
-    aiCategorizationNote: 'Recurring digital subscription. Verified active.',
-    aiConfidence: 99,
-  },
-  {
-    id: 'act-12',
-    title: 'Allowance from Mom',
-    subtitle: 'DuitNow Instant Transfer',
-    amount: '+ RM 300.00 +',
-    rawAmount: 300.0,
-    category: 'Income / Allowance',
-    categoryType: 'transfer',
-    iconBg: '#FFCE00',
-    iconType: 'maybank',
-    timestamp: '05 Oct, 11:00 AM',
-    paymentMethod: 'Maybank MAE Account',
-    referenceId: 'MAE-11029-INC',
-    aiCategorizationNote: 'Inbound family allowance. Added to monthly survival liquidity.',
-    aiConfidence: 99,
-  },
-  {
-    id: 'act-13',
-    title: 'Unifi Home Fiber 100Mbps',
-    subtitle: 'Monthly Internet Utility',
-    amount: '- RM 89.00 -',
-    rawAmount: 89.0,
-    category: 'Utilities',
-    categoryType: 'bills',
-    iconBg: '#CC0000',
-    iconType: 'publicbank',
-    timestamp: '03 Oct, 2:10 PM',
-    paymentMethod: 'Public Bank Auto-Debit',
-    referenceId: 'PB-44019-UNIFI',
-    aiCategorizationNote: 'Fixed commitment utility bill. Cleared.',
-    aiConfidence: 98,
-  },
-  {
-    id: 'act-14',
-    title: 'Watsons Pharmacy',
-    subtitle: 'Personal Care & Vitamins',
-    amount: '- RM 22.50 -',
-    rawAmount: 22.5,
-    category: 'Health & Care',
-    categoryType: 'shopping',
-    iconBg: '#00A099',
-    iconType: 'grab',
-    timestamp: '01 Oct, 5:40 PM',
-    paymentMethod: 'GrabPay Balance',
-    referenceId: 'GP-10294-WAT',
-    aiCategorizationNote: 'Categorized as Health & Personal Care.',
-    aiConfidence: 94,
-  },
-  {
-    id: 'act-15',
-    title: 'Steam Summer Game',
-    subtitle: 'Indie Game Bundle',
-    amount: '- RM 42.00 -',
-    rawAmount: 42.0,
-    category: 'Entertainment',
-    categoryType: 'entertainment',
-    iconBg: '#171A21',
-    iconType: 'custom',
-    timestamp: '28 Sep, 10:15 PM',
-    paymentMethod: 'Mastercard *4829',
-    referenceId: 'STM-77301-GAM',
-    aiCategorizationNote: 'Discretionary gaming expenditure.',
-    aiConfidence: 96,
-  },
-];
 
 export function BrandIcon({ type }: { type: ActivityItem['iconType'] }) {
   switch (type) {
@@ -371,7 +106,7 @@ export function ActivitySection({
   className,
   title = 'Latest Transaction',
 }: ActivitySectionProps) {
-  const [activities, setActivities] = React.useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const activities = useCtrlPayStore((s) => s.activities);
   const [selectedItem, setSelectedItem] = React.useState<ActivityItem | null>(null);
   const [isViewMoreOpen, setIsViewMoreOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -446,32 +181,12 @@ export function ActivitySection({
     });
 
     setTimeout(() => {
-      const newTxn: ActivityItem = {
-        id: `act-live-${Date.now()}`,
-        title: p.merchant,
-        subtitle: p.subtitle,
-        amount: `- RM ${p.amount.toFixed(2)} -`,
-        rawAmount: p.amount,
-        category: p.category,
-        categoryType: p.categoryType,
-        iconBg: p.iconBg,
-        iconType: p.iconType,
-        timestamp: 'Just now',
-        paymentMethod: `${p.bank} · DuitNow`,
-        referenceId: `AUT-${Math.floor(10000 + Math.random() * 90000)}-LIVE`,
-        isExtractedFromNotification: true,
-        rawNotificationText: p.text,
-        aiCategorizationNote: p.note,
-        aiConfidence: 99,
-      };
-
-      setActivities((prev) => [newTxn, ...prev]);
       bookExpense({
         merchant: p.merchant,
         amount: p.amount,
-        category: 'Bubble_Tea_Dining',
+        category: p.category as any,
         isNeed: true,
-        source: 'SANDBOX',
+        source: 'NOTIFICATION',
       });
 
       setIsSimulating(false);

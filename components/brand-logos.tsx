@@ -14,7 +14,8 @@ export type BrandId =
   | 'google'
   | 'claude'
   | 'figma'
-  | 'grab';
+  | 'grab'
+  | 'starbucks';
 
 export function BrandLogo({
   brand,
@@ -201,6 +202,21 @@ export function BrandLogo({
             <path d="M8 7h4v4H8a2 2 0 1 1 0-4z" fill="#A259FF" />
             <path d="M12 7h4a2 2 0 1 1 0 4h-4V7z" fill="#1ABCFE" />
             <path d="M8 11h4v2a2 2 0 1 1-4 0v-2z" fill="#0ACF83" />
+          </svg>
+        </div>
+      );
+
+    case 'starbucks':
+      return (
+        <div
+          className={cn(
+            'grid place-items-center rounded-full bg-[#006241] text-white shadow-xs shrink-0 overflow-hidden',
+            className ?? 'h-10 w-10 p-2'
+          )}
+          aria-label="Starbucks"
+        >
+          <svg viewBox="0 0 24 24" className="h-full w-full" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c4.41 0 8 3.59 8 8 0 1.85-.63 3.55-1.69 4.9-.3-.54-.87-1.4-1.81-2.15.54-.42.9-.99.9-1.75 0-1.1-.9-2-2-2s-2 .9-2 2c0 .76.36 1.33.9 1.75-.94.75-1.51 1.61-1.81 2.15-.3-.54-.87-1.4-1.81-2.15.54-.42.9-.99.9-1.75 0-1.1-.9-2-2-2s-2 .9-2 2c0 .76.36 1.33.9 1.75-.94.75-1.51 1.61-1.81 2.15C6.63 17.55 6 15.85 6 14c0-4.41 3.59-8 8-8zm0 5c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-4.5 4c.48 0 .91.22 1.2.56-.25.5-.4 1.07-.45 1.69-.5-.35-.75-.95-.75-1.75 0-.28 0-.5.0-.5zm9 0c0 .28 0 .5 0 .5 0 .8-.25 1.4-.75 1.75-.05-.62-.2-1.19-.45-1.69.29-.34.72-.56 1.2-.56z" />
           </svg>
         </div>
       );
