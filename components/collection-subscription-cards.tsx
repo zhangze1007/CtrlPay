@@ -187,7 +187,7 @@ export function CollectionSubscriptionCards({
   );
 
   return (
-    <div className="space-y-3.5 pt-2">
+    <div className="space-y-3 -mt-2">
       {/* 1. Header matching Image 2 right phone: "My collections +" */}
       <div className="flex items-center justify-between px-1">
         <h3 className="text-[24px] font-black tracking-tight text-[#0B1E3F]">

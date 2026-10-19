@@ -7,6 +7,7 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeftRight,
+  ArrowRight,
   ArrowUpRight,
   BarChart2,
   BatteryFull,
@@ -22,6 +23,7 @@ import {
   ChevronUp,
   CircleDot,
   Clapperboard,
+  Copy,
   CreditCard,
   CupSoda,
   Filter,
@@ -45,6 +47,7 @@ import {
   ShoppingBag,
   SlidersHorizontal,
   Sparkles,
+  Tag,
   Timer,
   TrendingUp,
   User,
@@ -54,6 +57,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { BrandIcon, type ActivityItem } from '@/components/activity-section';
 import { useCtrlPayStore, type SandboxEvent } from '@/lib/store';
 import type { SpendCategory } from '@/lib/types';
 import {
@@ -94,6 +98,11 @@ import { ActivitySection } from '@/components/activity-section';
 import { CentroHeroCard } from '@/components/centro-hero-card';
 import { SubscriptionTab } from '@/components/subscription-tab';
 import { RemindersTimeline } from '@/components/reminders-timeline';
+import { CampusCashDashboard } from '@/components/dashboard/campus-cash-dashboard';
+import { ModernSettingsView } from '@/components/profile/modern-settings-view';
+import { ModernCalendarView } from '@/components/calendar/modern-calendar';
+import { BudgetDetailsView } from '@/components/dashboard/budget-details-view';
+import { AllTransactionsSlideView } from '@/components/transactions/all-transactions-slide-view';
 import { ArcRing } from '@/components/arc-ring';
 import { FolderTabCard } from '@/components/folder-tab-card';
 import { StudentDowngradeDrawer } from '@/components/student-downgrade-drawer';
@@ -105,6 +114,8 @@ import { SteppedLogo, UnequalMenuIcon } from '@/components/ui/design-icons';
 import { ProfileSheet } from '@/components/profile-sheet';
 import { NotificationsSheet } from '@/components/notifications-sheet';
 import { CopilotTab } from '@/components/copilot-tab';
+import { ReceiptAiFlowModal } from '@/components/ocr/receipt-ai-flow-modal';
+import { PiggyDefenseVaultTab } from '@/components/vault/piggy-defense-vault-tab';
 
 export type MobileTab = 'home' | 'timeline' | 'subscription' | 'agent' | 'radar' | 'vault';
 
@@ -118,7 +129,9 @@ type SheetId =
   | 'audit'
   | 'commitments'
   | 'ai'
-  | 'sandbox';
+  | 'sandbox'
+  | 'budgetDetails'
+  | 'allTransactions';
 type AiSegment = 'OCR' | 'VOICE' | 'COPILOT';
 
 export interface MobileAppShellProps {
@@ -246,7 +259,7 @@ const DOCK_ITEMS: Array<{ id: MobileTab; label: string; icon: React.ElementType 
   { id: 'home', label: 'Home', icon: HomeIcon },
   { id: 'timeline', label: 'Timeline', icon: CalendarDays },
   { id: 'subscription', label: 'Subscription', icon: CreditCard },
-  { id: 'agent', label: 'Agent', icon: Bot },
+  { id: 'vault', label: 'Vault', icon: PiggyBank },
 ];
 
 function DockButton({
@@ -273,93 +286,240 @@ function DockButton({
   );
 }
 
-function AiOrb({
-  listening,
+function SlidingNavigationPlusOrb({
   onTap,
-  onHold,
-  onRelease,
+  onSelectOcr,
+  onSelectCopilot,
 }: {
-  listening: boolean;
   onTap: () => void;
-  onHold: () => void;
-  onRelease: () => void;
+  onSelectOcr: () => void;
+  onSelectCopilot: () => void;
 }) {
-  const hold = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const started = React.useRef(0);
-  const longFired = React.useRef(false);
-  const pointerHandled = React.useRef(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [hoveredAction, setHoveredAction] = React.useState<'ocr' | 'copilot' | null>(null);
 
-  const clearHold = React.useCallback(() => {
-    if (hold.current) {
-      clearTimeout(hold.current);
-      hold.current = null;
+  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPosRef = React.useRef<{ x: number; y: number } | null>(null);
+  const isDraggingRef = React.useRef(false);
+  const isExpandedRef = React.useRef(false);
+  isExpandedRef.current = isExpanded;
+
+  const clearTimer = React.useCallback(() => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
     }
   }, []);
 
-  React.useEffect(() => clearHold, [clearHold]);
+  React.useEffect(() => clearTimer, [clearTimer]);
 
-  function onPointerDown() {
-    pointerHandled.current = true;
-    longFired.current = false;
-    started.current = Date.now();
-    clearHold();
-    // Long press threshold: 280ms opens the voice drawer.
-    hold.current = setTimeout(() => {
-      longFired.current = true;
-      onHold();
-    }, 280);
-  }
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    isDraggingRef.current = true;
+    setHoveredAction(null);
 
-  function onPointerUp() {
-    clearHold();
-    const held = Date.now() - started.current;
-    if (longFired.current) {
-      onRelease();
-      return;
+    clearTimer();
+    // Long press threshold: 220ms triggers slide-out of OCR & Copilot
+    holdTimerRef.current = setTimeout(() => {
+      setIsExpanded(true);
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(20);
+      }
+    }, 220);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!isDraggingRef.current || !startPosRef.current) return;
+    const deltaX = e.clientX - startPosRef.current.x;
+
+    if (isExpandedRef.current) {
+      if (deltaX < -22) {
+        setHoveredAction('ocr');
+      } else if (deltaX > 22) {
+        setHoveredAction('copilot');
+      } else {
+        setHoveredAction(null);
+      }
     }
-    // Short tap: under 250ms opens the OCR scanner.
-    if (held < 250) onTap();
-  }
+  };
 
-  function onCancel() {
-    clearHold();
-    longFired.current = false;
-    onRelease();
-  }
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
 
-  function onClick() {
-    // Keyboard / programmatic activation skips pointer events — treat as a tap.
-    if (pointerHandled.current) {
-      pointerHandled.current = false;
-      return;
+    clearTimer();
+    const wasExpanded = isExpandedRef.current;
+    const action = hoveredAction;
+    isDraggingRef.current = false;
+    startPosRef.current = null;
+
+    if (wasExpanded) {
+      if (action === 'ocr') {
+        setIsExpanded(false);
+        setHoveredAction(null);
+        onSelectOcr();
+        return;
+      }
+      if (action === 'copilot') {
+        setIsExpanded(false);
+        setHoveredAction(null);
+        onSelectCopilot();
+        return;
+      }
+      // Held long enough and released in center without sliding: keep open for direct tap
+    } else {
+      // Short tap: under 220ms triggers quick expense
+      onTap();
     }
-    onTap();
-  }
+  };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLButtonElement>) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+    clearTimer();
+    isDraggingRef.current = false;
+    startPosRef.current = null;
+  };
 
   return (
-    <button
-      type="button"
-      className="ct-orb shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-holst-200"
-      data-listening={listening}
-      aria-label="Multimodal AI — tap for receipt OCR, hold to talk"
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onCancel}
-      onPointerLeave={onCancel}
-      onContextMenu={(e) => e.preventDefault()}
-      onClick={onClick}
-    >
-      {listening ? (
-        <>
-          <span className="ct-wave" />
-          <span className="ct-wave ct-wave-2" />
-          <span className="ct-wave ct-wave-3" />
-          <Sparkles className="relative z-10 h-6 w-6 text-white" />
-        </>
-      ) : (
-        <Plus className="relative z-10 h-6 w-6 stroke-[2.5] text-white" />
+    <div className="relative shrink-0 flex items-center justify-center">
+      {/* Dim backdrop to dismiss when tapped outside */}
+      {isExpanded && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => {
+            setIsExpanded(false);
+            setHoveredAction(null);
+          }}
+        />
       )}
-    </button>
+
+      {/* Satellite Buttons: Left (OCR) and Right (Copilot) floating above dock */}
+      <AnimatePresence>
+        {isExpanded && (
+          <>
+            {/* Left Satellite: OCR Scan (Camera) */}
+            <motion.div
+              initial={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              animate={{
+                opacity: 1,
+                x: -64,
+                y: -52,
+                scale: hoveredAction === 'ocr' ? 1.18 : 1.0,
+              }}
+              exit={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 26 }}
+              className="absolute z-40 pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setHoveredAction(null);
+                  onSelectOcr();
+                }}
+                className={cn(
+                  'relative h-[48px] w-[48px] rounded-full flex items-center justify-center transition-all',
+                  'bg-gradient-to-br from-[#10606F] via-[#0A3D4A] to-[#04222B] text-white border-[3.5px] border-white',
+                  'shadow-[0_12px_28px_-4px_rgba(4,34,43,0.45),0_0_16px_-2px_rgba(29,139,148,0.4)]',
+                  hoveredAction === 'ocr' &&
+                    'ring-4 ring-[#1D8B94] ring-offset-2 ring-offset-white shadow-[0_0_24px_rgba(29,139,148,0.7)]'
+                )}
+                aria-label="Scan OCR Receipt"
+              >
+                <Camera className="h-5 w-5 text-white" />
+                <span
+                  className={cn(
+                    'absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-black shadow-md transition-all',
+                    hoveredAction === 'ocr'
+                      ? 'bg-[#10606F] text-white scale-110'
+                      : 'bg-[#04222B] text-white'
+                  )}
+                >
+                  Scan OCR
+                </span>
+              </button>
+            </motion.div>
+
+            {/* Right Satellite: Copilot AI (Bot) */}
+            <motion.div
+              initial={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              animate={{
+                opacity: 1,
+                x: 64,
+                y: -52,
+                scale: hoveredAction === 'copilot' ? 1.18 : 1.0,
+              }}
+              exit={{ opacity: 0, x: 0, y: 0, scale: 0.4 }}
+              transition={{ type: 'spring', stiffness: 450, damping: 26 }}
+              className="absolute z-40 pointer-events-auto"
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setIsExpanded(false);
+                  setHoveredAction(null);
+                  onSelectCopilot();
+                }}
+                className={cn(
+                  'relative h-[48px] w-[48px] rounded-full flex items-center justify-center transition-all',
+                  'bg-gradient-to-br from-[#10606F] via-[#0A3D4A] to-[#04222B] text-white border-[3.5px] border-white',
+                  'shadow-[0_12px_28px_-4px_rgba(4,34,43,0.45),0_0_16px_-2px_rgba(29,139,148,0.4)]',
+                  hoveredAction === 'copilot' &&
+                    'ring-4 ring-[#1D8B94] ring-offset-2 ring-offset-white shadow-[0_0_24px_rgba(29,139,148,0.7)]'
+                )}
+                aria-label="Copilot AI Agent"
+              >
+                <Bot className="h-5 w-5 text-white" />
+                <span
+                  className={cn(
+                    'absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-black shadow-md transition-all',
+                    hoveredAction === 'copilot'
+                      ? 'bg-[#10606F] text-white scale-110'
+                      : 'bg-[#04222B] text-white'
+                  )}
+                >
+                  Copilot AI
+                </span>
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Center + Button */}
+      <button
+        type="button"
+        className={cn(
+          'ct-orb shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-holst-200 z-40 transition-transform duration-200 select-none',
+          isExpanded && 'scale-95 shadow-[0_0_20px_rgba(29,139,148,0.5)]'
+        )}
+        aria-label="Navigation quick action: tap for expense, press & slide left for OCR, right for Copilot"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onClick={() => {
+          if (isExpanded) {
+            setIsExpanded(false);
+            setHoveredAction(null);
+          }
+        }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <Plus
+          className={cn(
+            'relative z-10 h-6 w-6 stroke-[2.5] text-white transition-transform duration-200',
+            isExpanded && 'rotate-45'
+          )}
+        />
+      </button>
+    </div>
   );
 }
 
@@ -607,43 +767,29 @@ function LimitRow({ label, value }: { label: string; value: number }) {
 function HomeTab({
   onOpenSheet,
   onGoTab,
+  onOpenTransaction,
+  onOpenCfar,
 }: {
   onOpenSheet: (s: SheetId) => void;
   onGoTab: (t: MobileTab) => void;
+  onOpenTransaction: (item: ActivityItem) => void;
+  onOpenCfar?: () => void;
 }) {
-  const profile = useCtrlPayStore((s) => s.profile);
-  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
-  const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
-  const floor = ESCROW_RULES.minDailySurvivalFloorRM;
-
   return (
-    <div className="animate-fade-in -mx-1 pb-4">
-      {/* 1. Centro Vibrant Hero Card + 3 Category Progress Cards (Image 1) */}
-      <CentroHeroCard
-        userName={profile.fullName?.split(' ')[0] || 'Ashley'}
-        avatarUrl={profile.avatar || '/avatar.jpg'}
-        balance={150850}
-        onAddIncome={() => onOpenSheet('sandbox')}
-        onAddExpense={() => onOpenSheet('expense')}
-        onOpenPortfolio={() => onOpenSheet('payments')}
-        onOpenGoal={() => onGoTab('timeline')}
-        onOpenNotifications={() => onOpenSheet('notifications')}
-        onOpenProfile={() => onOpenSheet('profile')}
-      />
-
-      {/* 3. Middle Section: Expenses Segmented Sausage Donut Chart matching Image 3 with dynamic hover animation */}
-      <div className="relative mt-4">
-        <CircularExpenseDonut onAddExpense={() => onOpenSheet('expense')} />
-      </div>
-
-      {/* 4. Activity Section matching user reference image */}
-      <div className="relative mt-4">
-        <ActivitySection
-          onOpenAnalytics={() => onOpenSheet('payments')}
-          onOpenItem={() => onOpenSheet('notifications')}
-        />
-      </div>
-    </div>
+    <CampusCashDashboard
+      onOpenProfile={() => onOpenSheet('profile')}
+      onOpenTimeline={() => onGoTab('timeline')}
+      onOpenExpense={() => onOpenSheet('expense')}
+      onOpenSimulator={() => {
+        onOpenCfar?.();
+        onGoTab('agent');
+      }}
+      onOpenAnalytics={() => onOpenSheet('payments')}
+      onOpenNotifications={() => onOpenSheet('notifications')}
+      onOpenBudgetDetails={() => onOpenSheet('budgetDetails')}
+      onOpenAllTransactions={() => onOpenSheet('allTransactions')}
+      onOpenItem={onOpenTransaction}
+    />
   );
 }
 
@@ -1538,6 +1684,19 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
   const [listening, setListening] = React.useState(false);
   const [downgradeId, setDowngradeId] = React.useState<string | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
+  const [isReceiptFlowOpen, setIsReceiptFlowOpen] = React.useState(false);
+  const [aiPushNotification, setAiPushNotification] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+  } | null>(null);
+  const [activeCopilotProposal, setActiveCopilotProposal] = React.useState<{
+    merchant: string;
+    amount: number;
+    category: string;
+  } | null>(null);
+  const [activeCopilotCfar, setActiveCopilotCfar] = React.useState(false);
+  const [selectedTransaction, setSelectedTransaction] = React.useState<ActivityItem | null>(null);
 
   const goals = useGoals();
   const activeGoal = goals.find((g) => g.id === goalId) ?? null;
@@ -1576,11 +1735,86 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
     >
       <StatusBar onOpenSandbox={() => openSheet('sandbox')} />
 
+      {/* In-Phone Push Notification Banner */}
+      <AnimatePresence>
+        {aiPushNotification && (
+          <motion.div
+            initial={{ y: -80, opacity: 0, scale: 0.94 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -80, opacity: 0, scale: 0.94 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            className="absolute top-12 inset-x-3 z-50 rounded-[22px] bg-[#04222B]/95 text-white backdrop-blur-2xl border border-white/20 p-3 shadow-[0_16px_40px_rgba(4,34,43,0.5),0_0_20px_rgba(16,96,111,0.3)] select-none cursor-pointer group"
+            onClick={() => {
+              const data = aiPushNotification;
+              setAiPushNotification(null);
+              setActiveCopilotProposal(data);
+              setTab('agent');
+            }}
+          >
+            <div className="flex items-start gap-3">
+              {/* Bot Icon with glowing pulse ring */}
+              <div className="relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-gradient-to-tr from-[#10606F] to-[#1D8B94] text-white shadow-md">
+                <Bot className="h-5 w-5" />
+                <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#10B981] border-2 border-[#04222B]" />
+                </span>
+              </div>
+
+              {/* Text info */}
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-cyan-300" />
+                    CtrlPay AI Copilot
+                  </span>
+                  <span className="text-[10px] text-gray-400 font-medium">Just now</span>
+                </div>
+                <h4 className="text-[13px] font-black text-white leading-tight mt-0.5 truncate">
+                  Budget Analysis Ready
+                </h4>
+                <p className="text-[11px] text-gray-300 mt-0.5 leading-snug line-clamp-2">
+                  RM {aiPushNotification.amount.toFixed(2)} recorded for{' '}
+                  <span className="font-bold text-white">{aiPushNotification.merchant}</span>. Tap to
+                  transfer to AI Copilot for budget proposal &amp; visual adjustment.
+                </p>
+              </div>
+
+              {/* Action pill & Dismiss button */}
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAiPushNotification(null);
+                  }}
+                  className="grid h-5 w-5 place-items-center rounded-full text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+                <div className="mt-1 flex items-center gap-1 rounded-full bg-gradient-to-r from-[#10606F] to-[#10B981] px-2.5 py-1 text-[10.5px] font-extrabold text-white shadow-sm group-hover:scale-105 transition-transform">
+                  <span>Transfer</span>
+                  <ArrowRight className="h-3 w-3" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative flex-1 overflow-hidden">
         <div className="h-full overflow-y-auto no-scrollbar px-4 pb-[104px] pt-1">
-          {tab === 'home' && <HomeTab onOpenSheet={openSheet} onGoTab={setTab} />}
+          {tab === 'home' && (
+            <HomeTab
+              onOpenSheet={openSheet}
+              onGoTab={setTab}
+              onOpenTransaction={setSelectedTransaction}
+              onOpenCfar={() => setActiveCopilotCfar(true)}
+            />
+          )}
           {tab === 'timeline' && (
-            <RemindersTimeline onBack={() => setTab('home')} onOpenSheet={(s) => openSheet(s as SheetId)} />
+            <ModernCalendarView onBack={() => setTab('home')} onOpenSheet={(s) => openSheet(s as SheetId)} />
           )}
           {tab === 'subscription' && (
             <SubscriptionTab
@@ -1590,8 +1824,16 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
           )}
           {tab === 'agent' && (
             <CopilotTab
+              onBack={() => {
+                setTab('home');
+                setActiveCopilotCfar(false);
+              }}
               onOpenSheet={(s) => openSheet(s as SheetId)}
-              onOpenWhatIf={() => openSheet('sandbox')}
+              onOpenWhatIf={() => setActiveCopilotCfar(true)}
+              initialCfarActive={activeCopilotCfar}
+              onClearCfar={() => setActiveCopilotCfar(false)}
+              initialProposal={activeCopilotProposal}
+              onClearProposal={() => setActiveCopilotProposal(null)}
             />
           )}
           {tab === 'radar' && (
@@ -1600,11 +1842,11 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
               onOpenSheet={openSheet}
             />
           )}
-          {tab === 'vault' && <VaultTab onOpenAudit={() => openSheet('audit')} />}
+          {tab === 'vault' && <PiggyDefenseVaultTab onOpenAudit={() => openSheet('audit')} />}
         </div>
       </div>
 
-      {/* Floating white capsule dock: home timeline (+) subscription agent */}
+      {/* Floating white capsule dock: home timeline (+) subscription vault */}
       <nav className="ct-dock" aria-label="Primary">
         <button
           type="button"
@@ -1626,11 +1868,10 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
           <CalendarDays className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
-        <AiOrb
-          listening={listeningActive}
+        <SlidingNavigationPlusOrb
           onTap={() => openSheet('expense')}
-          onHold={openVoice}
-          onRelease={releaseVoice}
+          onSelectOcr={() => setIsReceiptFlowOpen(true)}
+          onSelectCopilot={() => setTab('agent')}
         />
         <button
           type="button"
@@ -1645,11 +1886,11 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         <button
           type="button"
           className="ct-dock-btn"
-          aria-current={tab === 'agent' ? 'page' : undefined}
-          aria-label="Agent"
-          onClick={() => setTab('agent')}
+          aria-current={tab === 'vault' ? 'page' : undefined}
+          aria-label="Vault"
+          onClick={() => setTab('vault')}
         >
-          <Bot className="h-5 w-5" />
+          <PiggyBank className="h-5 w-5" />
           <span className="ct-dock-dot" />
         </button>
       </nav>
@@ -1686,11 +1927,47 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="absolute inset-0 z-50 flex flex-col bg-gradient-to-b from-[#F0F5FF] via-[#E8F1FD] to-[#FCE7F3] overflow-hidden"
+            className="absolute inset-0 z-50 flex flex-col bg-[#F3F4F1] overflow-hidden"
           >
             <div className="flex-1 overflow-y-auto no-scrollbar">
-              <ClinicalProfileView onClose={closeSheet} />
+              <ModernSettingsView
+                onClose={closeSheet}
+                onOpenSandbox={() => openSheet('sandbox')}
+                onOpenAudit={() => openSheet('audit')}
+              />
             </div>
+          </motion.div>
+        )}
+        {sheet === 'budgetDetails' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F8FAF8] overflow-hidden"
+          >
+            <BudgetDetailsView
+              onClose={closeSheet}
+              onOpenTimeline={() => {
+                closeSheet();
+                setTab('timeline');
+              }}
+              onOpenSimulator={() => openSheet('payments')}
+            />
+          </motion.div>
+        )}
+
+        {sheet === 'allTransactions' && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+            className="absolute inset-0 z-50 flex flex-col bg-[#F8FAF8] overflow-hidden"
+          >
+            <AllTransactionsSlideView
+              onClose={closeSheet}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1701,7 +1978,15 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
         title="Notifications"
         subtitle="Proactive Alerts & Signals"
       >
-        <NotificationsSheet onClose={closeSheet} />
+        <NotificationsSheet
+          onClose={closeSheet}
+          aiNotification={aiPushNotification || { merchant: 'The Coffee Bean & Tea Leaf', amount: 24.64, category: 'Food & Beverage' }}
+          onSelectProposal={(prop) => {
+            closeSheet();
+            setActiveCopilotProposal(prop);
+            setTab('agent');
+          }}
+        />
       </PhoneSheet>
 
       <PhoneSheet open={sheet === 'summary'} onClose={closeSheet} title="Daily summary" subtitle="12:00 PM snapshot">
@@ -1746,6 +2031,135 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
       />
 
       <PaymentInterceptorModal />
+
+      {/* 4-Step OCR & AI Financial Intelligence Flow Modal */}
+      <ReceiptAiFlowModal
+        isOpen={isReceiptFlowOpen}
+        onClose={() => setIsReceiptFlowOpen(false)}
+        onSaveSuccess={(data) => {
+          setIsReceiptFlowOpen(false);
+          // Trigger in-phone push notification after realistic 1.2s delay
+          setTimeout(() => {
+            setAiPushNotification(data);
+          }, 1200);
+        }}
+        onComplete={() => {
+          setIsReceiptFlowOpen(false);
+        }}
+      />
+
+      {/* Global Transaction Detail Drawer strictly inside the phone frame (like View More) */}
+      <AnimatePresence>
+        {selectedTransaction && (
+          <div
+            className="absolute inset-0 z-50 flex items-end justify-center p-0 bg-black/50 backdrop-blur-xs animate-fade-in"
+            onClick={() => setSelectedTransaction(null)}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 340, damping: 32 }}
+              className="w-full max-w-[390px] rounded-t-[32px] sm:rounded-[32px] bg-white p-5 shadow-[0_20px_60px_rgba(4,34,43,0.3)] border border-white/90 animate-rise-in max-h-[85vh] overflow-y-auto no-scrollbar font-sans"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="grid h-8 w-8 place-items-center rounded-full shadow-sm shrink-0"
+                    style={{ backgroundColor: selectedTransaction.iconBg }}
+                  >
+                    <BrandIcon type={selectedTransaction.iconType} />
+                  </div>
+                  <span className="text-[13px] font-black text-[#04222B]">Transaction Detail</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTransaction(null)}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-slate-100 text-[#04222B] hover:bg-slate-200 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Receipt Hero */}
+              <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+                  TOTAL AMOUNT PAID
+                </span>
+                <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
+                  {selectedTransaction.amount}
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
+                  <CheckCircle2 className="h-3 w-3 text-[#10B981]" />
+                  Successful · {selectedTransaction.timestamp}
+                </span>
+              </div>
+
+              {/* Meta Table */}
+              <div className="space-y-2.5 text-[12px]">
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Merchant</span>
+                  <span className="font-bold text-[#04222B]">{selectedTransaction.title}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Category</span>
+                  <span className="font-bold text-[#04222B] flex items-center gap-1">
+                    <Tag className="h-3 w-3 text-[#1D8B94]" />
+                    {selectedTransaction.category}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Payment Method</span>
+                  <span className="font-bold text-[#04222B]">{selectedTransaction.paymentMethod}</span>
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-slate-100">
+                  <span className="text-[#64748B]">Reference ID</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(selectedTransaction.referenceId);
+                      alert('Reference ID copied to clipboard!');
+                    }}
+                    className="font-mono font-bold text-[#10606F] flex items-center gap-1 hover:underline"
+                  >
+                    <span>{selectedTransaction.referenceId}</span>
+                    <Copy className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Auto-Categorization Insight Box */}
+              <div className="mt-3.5 rounded-2xl bg-[#E2F4F0]/60 p-3 border border-[#98D8D0]/40">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Sparkles className="h-3.5 w-3.5 text-[#10B981]" />
+                  <span className="text-[11px] font-black text-[#04222B]">
+                    AI Auto-Extractor Note
+                  </span>
+                  <span className="text-[9.5px] font-bold text-[#10606F] ml-auto">
+                    {selectedTransaction.aiConfidence ?? 98}% Confidence
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#0A3D4A] leading-relaxed">
+                  {selectedTransaction.aiCategorizationNote ??
+                    'Parsed automatically from background system notifications. Categorized according to the Campus CFaR student framework.'}
+                </p>
+              </div>
+
+              {/* Dismiss Button */}
+              <button
+                type="button"
+                onClick={() => setSelectedTransaction(null)}
+                className="mt-4 w-full py-3 rounded-xl bg-[#04222B] text-white text-[12.5px] font-bold hover:bg-[#0A3D4A] active:scale-[0.98] transition-all"
+              >
+                Done
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
