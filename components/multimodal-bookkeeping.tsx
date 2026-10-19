@@ -50,11 +50,13 @@ export function MultimodalBookkeeping({
   defaultMode = 'CHAT',
   autoStartVoice = false,
   onOpenReceiptFlow,
+  onBooked,
 }: {
   defaultOpen?: boolean;
   defaultMode?: Mode;
   autoStartVoice?: boolean;
   onOpenReceiptFlow?: () => void;
+  onBooked?: (data: { merchant: string; amount: number; category: string }) => void;
 }) {
   const bookExpense = useCtrlPayStore((s) => s.bookExpense);
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
@@ -176,6 +178,12 @@ export function MultimodalBookkeeping({
       isNeed: draft.isNeed,
       source: draft.source,
     });
+    const bookedData = {
+      merchant: draft.merchant,
+      amount: draft.amountRM,
+      category: draft.category.replaceAll('_', ' '),
+    };
+    onBooked?.(bookedData);
     setNotice(`Booked ${formatRM(draft.amountRM)} at ${draft.merchant}. The receipt image was discarded.`);
     setChatText('');
     resetDraft();

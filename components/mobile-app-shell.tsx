@@ -1928,6 +1928,33 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
             closeSheet();
             setIsReceiptFlowOpen(true);
           }}
+          onBooked={(data) => {
+            closeSheet();
+            const s = useCtrlPayStore.getState();
+            const categoryBudgets: Record<string, number> = {
+              'Dining & Food': 400,
+              'Food & Dining': 400,
+              'Bubble Tea Dining': 400,
+              'Living & Home': 300,
+              'Transport': 150,
+              'Shopping': 150,
+              'Entertainment': 100,
+              'Bills & Utilities': 100,
+            };
+            const catCap = categoryBudgets[data.category] || 300;
+            const catSpent = s.categoryExpenses[data.category] || data.amount;
+            const isOverCategory = catSpent > catCap;
+            setTimeout(() => {
+              setExpenseSuccessModal({
+                merchant: data.merchant,
+                amount: data.amount,
+                category: data.category,
+                dailyRunway: s.dynamicDailyAllowance(),
+                isOverBudget: isOverCategory,
+                overAmount: Math.max(0, catSpent - catCap),
+              });
+            }, 300);
+          }}
         />
       </PhoneSheet>
 
@@ -2071,24 +2098,17 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
           const isOverWeekly = s.spentThisWeek > s.userLimits.weeklyPayLimit;
           const hasImpact = isOverCategory || isNearLimit || isOverWeekly;
 
-          // As user requested:
-          // "说说 AI analyze 那个东西有没有过 budget 还是什么这样子咯。如果没有影响到的话就不会弹出来咯，这样子。不要直接 direct 去 AI chat"
-          if (hasImpact) {
-            setTimeout(() => {
-              setBudgetImpactCard({
-                merchant: data.merchant,
-                amount: data.amount,
-                category: data.category,
-                categorySpent: catSpent,
-                categoryCap: catCap,
-                percentUsed: Math.round((catSpent / catCap) * 100),
-                isOverBudget: isOverCategory,
-                overAmount: Math.max(0, catSpent - catCap),
-                dailyRunway: s.dynamicDailyAllowance(),
-                isOverWeekly,
-              });
-            }, 350);
-          }
+          // User requested: "记录好了会弹出这个" (Bottom sheet success confirmation modal)
+          setTimeout(() => {
+            setExpenseSuccessModal({
+              merchant: data.merchant,
+              amount: data.amount,
+              category: data.category,
+              dailyRunway: s.dynamicDailyAllowance(),
+              isOverBudget: isOverCategory,
+              overAmount: Math.max(0, catSpent - catCap),
+            });
+          }, 300);
         }}
         onComplete={() => {
           setIsReceiptFlowOpen(false);
