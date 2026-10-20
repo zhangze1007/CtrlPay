@@ -16,12 +16,20 @@ export async function GET(req: Request) {
   const groqEnvNames = Object.keys(process.env)
     .filter((name) => /groq/i.test(name))
     .sort();
+  const aiEnvNames = Object.keys(process.env)
+    .filter((name) => /(GROQ|GEMINI|GOOGLE|OPENAI|ANTHROPIC|CLAUDE|LLM|AI_)/i.test(name))
+    .sort();
+  const ctrlpayEnvNames = Object.keys(process.env)
+    .filter((name) => /^CTRLPAY/i.test(name))
+    .sort();
 
   return Response.json(
     {
       groqConfigured: Boolean(resolveGroqApiKey()),
       model: resolveGroqModel(),
       groqEnvNames,
+      aiEnvNames,
+      ctrlpayEnvNames,
       signingSecretConfigured: Boolean(process.env.CTRLPAY_SIGNING_SECRET),
       nodeEnv: process.env.NODE_ENV,
     },
