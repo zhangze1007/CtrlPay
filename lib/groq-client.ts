@@ -12,6 +12,14 @@ export const GROQ_API_ENDPOINT =
   'https://api.groq.com/openai/v1/chat/completions';
 
 /**
+ * Vercel AI Gateway, used only when the deployment has an AI Gateway key but
+ * no direct Groq key. It exposes the same OpenAI Chat Completions shape and
+ * routes the request to Groq first, so the app still runs the same model.
+ */
+export const AI_GATEWAY_ENDPOINT =
+  'https://ai-gateway.vercel.sh/v1/chat/completions';
+
+/**
  * Model used when GROQ_MODEL is not set.
  *
  * Groq retired `llama-3.3-70b-versatile` for the Free/Developer tier on
@@ -68,6 +76,31 @@ export function resolveGroqApiKey(): string | undefined {
     if (typeof value === 'string' && value.trim()) return value.trim();
   }
   return undefined;
+}
+
+/**
+ * Prefer a direct Groq key. If the deployment only has a Vercel AI Gateway
+ * credential, use that gateway and pin the request to the Groq provider. The
+ * application therefore never falls back to a different model family just
+ * because the direct key is absent.
+ */
+export function resolveAiApiKey(): string | undefined {
+  const direct = resolveGroqApiKey();
+  if (direct) return direct;
+  return (
+    process.env.AI_GATEWAY_API_KEY?.trim() ||
+    process.env.VERCEL_AI_GATEWAY_API_KEY?.trim() ||
+    undefined
+  );
+}
+
+export function resolveAiEndpoint(apiKey: string): string {
+  const gatewayKey =
+    process.env.AI_GATEWAY_API_KEY?.trim() ||
+    process.env.VERCEL_AI_GATEWAY_API_KEY?.trim();
+  return gatewayKey && apiKey === gatewayKey
+    ? AI_GATEWAY_ENDPOINT
+    : GROQ_API_ENDPOINT;
 }
 
 /* ------------------------------------------------------------------ *
@@ -284,6 +317,8 @@ export interface CreateGroqCompletionArgs {
   maxCompletionTokens?: number;
   /** OpenAI-compatible `response_format` (e.g. Groq Strict Structured Outputs). */
   responseFormat?: Record<string, unknown>;
+  /** Override the provider endpoint (defaults to direct Groq unless using the gateway key). */
+  endpoint?: string;
 }
 
 /**
@@ -298,7 +333,10 @@ export async function createGroqCompletion({
   temperature = 0.5,
   maxCompletionTokens = 4096,
   responseFormat,
+  endpoint,
 }: CreateGroqCompletionArgs): Promise<GroqMessage> {
+  const resolvedEndpoint = endpoint ?? resolveAiEndpoint(apiKey);
+  const isGateway = resolvedEndpoint === AI_GATEWAY_ENDPOINT;
   const body: Record<string, unknown> = {
     model,
     messages,
@@ -314,8 +352,13 @@ export async function createGroqCompletion({
     body.tools = tools;
     body.tool_choice = 'auto';
   }
+  if (isGateway) {
+    // Gateway extension: try Groq first, then use another host only if Groq is
+    // unavailable. The model stays openai/gpt-oss-120b.
+    body.providerOptions = { gateway: { order: ['groq'] } };
+  }
 
-  const res = await fetch(GROQ_API_ENDPOINT, {
+  const res = await fetch(resolvedEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

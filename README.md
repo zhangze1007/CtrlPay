@@ -47,7 +47,8 @@ npm run dev                     # http://localhost:3000
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `GROQ_API_KEY` | For the live AI | Groq key for the agent chat, OCR receipt check and payment advice. Without it the AI routes return **503** and the dashboard, Zombie Radar, timeline and audit log still work fully. |
+| `GROQ_API_KEY` | For the live AI | Direct Groq key for the agent chat, OCR receipt check and payment advice. Without it the AI routes return **503** and the dashboard, Zombie Radar, timeline and audit log still work fully. |
+| `AI_GATEWAY_API_KEY` | Optional fallback | Used only when `GROQ_API_KEY` is absent. Requests go through Vercel AI Gateway, pinned to the Groq provider, with the same `openai/gpt-oss-120b` model. |
 | `GROQ_MODEL` | Optional | Overrides the default `openai/gpt-oss-120b`. Retired Llama 3.x overrides automatically fall back to the current model. |
 | `CTRLPAY_SIGNING_SECRET` | Production only | Server secret used to HMAC-SHA256–sign proposals. A labelled dev fallback is used when unset. |
 

@@ -39,16 +39,19 @@ describe('POST /api/ai-analyze', () => {
   beforeEach(() => {
     process.env.GROQ_API_KEY = 'test-key';
     delete process.env.GROQ_MODEL;
+    delete process.env.AI_GATEWAY_API_KEY;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
     delete process.env.GROQ_API_KEY;
     delete process.env.GROQ_MODEL;
+    delete process.env.AI_GATEWAY_API_KEY;
   });
 
   it('returns 503 before calling the provider when no key is configured', async () => {
     delete process.env.GROQ_API_KEY;
+    delete process.env.AI_GATEWAY_API_KEY;
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 

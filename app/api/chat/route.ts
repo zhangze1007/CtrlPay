@@ -42,7 +42,7 @@ import {
   extractGroqText,
   extractGroqToolCalls,
   groqToolDefinition,
-  resolveGroqApiKey,
+  resolveAiApiKey,
   resolveGroqModel,
   toSafeAgentError,
   type GroqMessage,
@@ -161,7 +161,7 @@ function extractPendingToolResults(messages: RawMessage[]): PendingToolResult[] 
 }
 
 export async function POST(req: Request) {
-  const apiKey = resolveGroqApiKey();
+  const apiKey = resolveAiApiKey();
   if (!apiKey) {
     return Response.json(
       {

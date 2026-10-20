@@ -12,7 +12,7 @@ import { auditLog } from '@/lib/audit-logger';
 import { toISODateTime } from '@/lib/utils';
 import {
   quickAiAnalysis,
-  resolveGroqApiKey,
+  resolveAiApiKey,
   resolveGroqModel,
 } from '@/lib/groq-client';
 
@@ -169,7 +169,7 @@ function parseAiResponse(raw: string): AiAnalyzeResponse {
 }
 
 export async function POST(req: Request) {
-  const apiKey = resolveGroqApiKey();
+  const apiKey = resolveAiApiKey();
   if (!apiKey) {
     return Response.json(
       {

@@ -1,4 +1,8 @@
-import { resolveGroqApiKey, resolveGroqModel } from '@/lib/groq-client';
+import {
+  resolveAiApiKey,
+  resolveGroqApiKey,
+  resolveGroqModel,
+} from '@/lib/groq-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +29,12 @@ export async function GET(req: Request) {
 
   return Response.json(
     {
-      groqConfigured: Boolean(resolveGroqApiKey()),
+      groqConfigured: Boolean(resolveAiApiKey()),
+      provider: resolveGroqApiKey()
+        ? 'groq-direct'
+        : process.env.AI_GATEWAY_API_KEY
+          ? 'vercel-ai-gateway'
+          : 'none',
       model: resolveGroqModel(),
       groqEnvNames,
       aiEnvNames,
