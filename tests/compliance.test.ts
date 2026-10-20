@@ -50,13 +50,20 @@ describe('AI SDK version pin (Section 2.2)', () => {
     const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
     expect(pkg.dependencies.ai).toMatch(/^~4\./);
     expect(pkg.dependencies['@ai-sdk/react']).toMatch(/^~1\./);
-    expect(pkg.dependencies['@ai-sdk/google']).toMatch(/^~1\./);
   });
 
-  it('declares tool schemas with the v4 `parameters:` key', () => {
+  it('declares tool schemas with explicit `parameters` and no v5 `inputSchema`', () => {
     const route = readFileSync(join(ROOT, 'app/api/chat/route.ts'), 'utf8');
-    expect(route).toContain('parameters:');
+    const client = readFileSync(join(ROOT, 'lib/gemini-interactions.ts'), 'utf8');
+    expect(route).toContain('functionDeclaration(');
+    expect(client).toContain('parameters');
     expect(route).not.toMatch(/\binputSchema\s*:/);
+  });
+
+  it('defaults the live agent to the current Gemini 3.8 Flash model', () => {
+    const client = readFileSync(join(ROOT, 'lib/gemini-interactions.ts'), 'utf8');
+    expect(client).toContain("DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'");
+    expect(client).not.toMatch(/DEFAULT_GEMINI_MODEL\s*=\s*['"]gemini-2\./);
   });
 });
 

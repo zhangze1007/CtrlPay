@@ -88,7 +88,6 @@ Rule: the unit count is always computed by the engine (`Math.floor(amount / unit
   "dependencies": {
     "ai": "~4.3.16",
     "@ai-sdk/react": "~1.2.12",
-    "@ai-sdk/google": "~1.2.22",
     "zod": "^3.23.8"
   }
 }
@@ -103,8 +102,8 @@ Rule: the unit count is always computed by the engine (`Math.floor(amount / unit
 | Tool schema key | `parameters: z.object({...})` | `inputSchema` |
 | Rendering tool UI | `message.parts` → `part.type === 'tool-invocation'` → `part.toolInvocation` (`state`, `toolName`, `toolCallId`, `args`, `result`) | `part.type === 'tool-<name>'`, `part.input`, `part.output` |
 | Client tool result | `addToolResult({ toolCallId, result })` from `useChat` | `addToolOutput` |
-| Streaming response | `result.toDataStreamResponse()` | `toUIMessageStreamResponse()` |
-| Multi-step | `maxSteps` on `useChat` and `streamText` | `stopWhen` |
+| Streaming response | `createDataStreamResponse` + `formatDataStreamPart` (server) | `toUIMessageStreamResponse()` |
+| Multi-step | `maxSteps` on `useChat`; server agent loop for the Interactions API | `stopWhen` |
 | Hook import | `import { useChat } from '@ai-sdk/react'` | `DefaultChatTransport` |
 
 Add a lint-style check in Phase 6: `grep -rE "inputSchema|addToolOutput|toUIMessageStreamResponse|stopWhen" app components lib` must return nothing.
@@ -897,51 +896,12 @@ STYLE:
 | `propose_escrow` | T3 | **No** | card → `addToolResult` |
 | `propose_sweep` | T3 | **No** | card → `addToolResult` |
 
-Route skeleton (v4 syntax):
-
-```typescript
-// app/api/chat/route.ts
-import { streamText, tool } from 'ai';
-import { google } from '@ai-sdk/google';
-import { RunWhatIfInputSchema, ProposeQuarantineInputSchema, ProposeEscrowInputSchema, ProposeSweepInputSchema } from '@/lib/types';
-import { SYSTEM_PROMPT } from '@/lib/system-prompt';
-import { redactMessages } from '@/lib/privacy-guard';
-import { runWhatIfForUser } from '@/lib/server-tools';
-
-export async function POST(req: Request) {
-  const { messages, ledgerSnapshot } = await req.json();
-  const userId = await getUserIdFromSession(req); // never from the body or the LLM
-
-  const result = streamText({
-    model: google('gemini-2.0-flash'),
-    system: SYSTEM_PROMPT,
-    messages: redactMessages(messages),
-    maxSteps: 5,
-    tools: {
-      run_what_if_simulation: tool({
-        description: 'Simulate the effect of a purchase on month-end cash flow. Returns engine numbers.',
-        parameters: RunWhatIfInputSchema,
-        execute: async (args) => runWhatIfForUser(userId, ledgerSnapshot, args), // audit-logged, tier T0
-      }),
-      propose_quarantine: tool({
-        description: 'Propose a 24h commitment Quarantine for an impulse WANT purchase. Only when risk is HIGH/CRITICAL.',
-        parameters: ProposeQuarantineInputSchema, // NO execute: resolved by the client card
-      }),
-      propose_escrow: tool({
-        description: 'Propose a WANTS-category budget Escrow. Only when risk is HIGH/CRITICAL.',
-        parameters: ProposeEscrowInputSchema,     // NO execute
-      }),
-      propose_sweep: tool({
-        description: 'Propose a student downgrade or cancellation for a registry subscription.',
-        parameters: ProposeSweepInputSchema,      // NO execute
-      }),
-      // analyze_zombies, get_budget_insights, draft_cancellation, generate_roast: same pattern with execute
-    },
-  });
-
-  return result.toDataStreamResponse();
-}
-```
+Implementation note (updated 2026-10): Gemini 2.x Flash models are retired for
+new API keys. The live route now uses `lib/gemini-interactions.ts` with the
+Gemini Interactions API and `gemini-3.8-flash`; the AI SDK v4 browser client is
+fed by `createDataStreamResponse`. T0–T2 tools still execute server-side and are
+audit-logged. T3 tools return a card and resume the same interaction through
+`addToolResult`, exactly as described above.
 
 Sandbox note: because the sandbox ledger lives in the browser, the client posts a `ledgerSnapshot` that the server treats as **user-supplied data**. The server recomputes every derived figure and signs proposals itself; production would read the ledger from a server database. (Residual risk listed in Section 10.)
 
@@ -983,7 +943,7 @@ Build sequentially. Do not start a phase until the previous one passes its **Don
 - **Done when:** fast-forwarding 24h flips a quarantine to `READY_TO_DECIDE`; crossing a billing date verifies a pending sweep and only then credits `defenseVault`; reward claim before 24h is impossible; total ledger always reconciles (no money created: `defenseVault` growth ≤ verified sweep savings).
 
 ### Phase 4 — Chat Route & Tool Pipeline
-- **`app/api/chat/route.ts`**: system prompt (Section 8.1), tool registry (Section 8.2), `assertTier`, redaction, `maxSteps: 5`, number verifier on the final text, v4 `toDataStreamResponse`.
+- **`app/api/chat/route.ts`**: system prompt (Section 8.1), tool registry (Section 8.2), `assertTier`, redaction, T0–T2 server tool loop, T3 card resumption via the Interactions API, number verifier on the final text, AI SDK v4 `createDataStreamResponse` bridge.
 - **`app/api/proposals/route.ts`** and **`app/api/proposals/[id]/decision/route.ts`**: create/sign/verify proposals.
 - **Done when:** a prompt like "can I buy RM 180 shoes?" calls the simulation first; at LOW risk no contract is proposed; at HIGH risk a `propose_quarantine`/`propose_escrow` call is emitted; schema violations (extra keys, NEEDS category lock, a `deepLinkUrl` key) are rejected.
 

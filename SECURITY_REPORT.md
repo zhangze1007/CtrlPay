@@ -2,7 +2,7 @@
 
 **Project:** CtrlPay — *Stop Paying Blindly. Let AI Control the Flow.*
 **Topic:** A · Proactive Defensive Personal-Finance Agent
-**Platform:** Web sandbox (Next.js 14 App Router, AI SDK v4 + Gemini)
+**Platform:** Web sandbox (Next.js 14 App Router, AI SDK v4 client stream + Gemini 3.8 Flash Interactions API)
 **Scope note:** CtrlPay is a **sandbox**. It moves **no real funds**. Every "balance", "vault", "escrow" and "reward" is a labelled local ledger bucket. This report states both the controls we implement **and** the residual risk we do not claim to remove.
 
 ---
@@ -69,7 +69,7 @@
   - `tests/privacy-guard.test.ts` — PII fixtures masked (`TRANSFER TO AHMAD BIN ALI 0123456789` → `TRANSFER TO [PERSON] [ACCOUNT]`); a number-verifier test with an injected fake RM figure is rejected.
   - `tests/session.test.ts` — tenant isolation; cross-user access returns nothing.
   - `tests/proposals.test.ts` — schema violations (extra keys, NEEDS lock, a `deepLinkUrl` key) are rejected.
-- **Residual risk:** regex redaction can miss unusual formats; the LLM provider still sees **redacted** transaction text; browser speech recognition may send audio to the cloud (disclosed in the UI); the verifier checks **numbers**, not the semantic correctness of advice.
+- **Residual risk:** regex redaction can miss unusual formats; the LLM provider still sees **redacted** transaction text; browser speech recognition may send audio to the cloud (disclosed in the UI); the verifier checks **numbers**, not the semantic correctness of advice. The Gemini Interactions API is called with `store: true` so a T3 card can resume the same server-side interaction after approval; Google retains that interaction for its documented provider window (1 day on the free tier). Inputs are redacted first, the payload is sandbox data, and no signing secret or raw credential is sent.
 
 ### (5) Identity & Student Privilege Verification — 身份与学生资格验证
 

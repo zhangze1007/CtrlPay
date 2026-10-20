@@ -14,7 +14,6 @@ submission; the authoritative ranges are in `package.json`.
 |---|---|---|---|
 | `ai` | 4.3.19 | Apache-2.0 | Vercel AI SDK core (streaming, tools) |
 | `@ai-sdk/react` | 1.2.12 | Apache-2.0 | `useChat` React hook |
-| `@ai-sdk/google` | 1.2.22 | Apache-2.0 | Google Gemini provider |
 | `zod` | 3.25.76 | MIT | Strict schema validation (tool I/O, proposals) |
 | `next` | 14.2.35 | MIT | React framework (App Router) |
 | `react` | 18.3.1 | MIT | UI runtime |

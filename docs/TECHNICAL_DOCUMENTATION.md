@@ -21,7 +21,7 @@ CtrlPay deliberately separates *language* from *arithmetic*:
 
 | Brain | Where it lives | Responsibility | What it must never do |
 |---|---|---|---|
-| **Language brain** | `app/api/chat/route.ts` (Google Gemini via the Vercel AI SDK) | Understand the user, extract intent + identifiers, call tools, write prose | Compute or invent any money figure, see the signing secret, or hold autonomous credentials |
+| **Language brain** | `app/api/chat/route.ts` + `lib/gemini-interactions.ts` (Google Gemini 3.8 Flash, Interactions API; AI SDK v4 stream bridge) | Understand the user, extract intent + identifiers, call tools, write prose | Compute or invent any money figure, see the signing secret, or hold autonomous credentials |
 | **Arithmetic brain** | `lib/quant-engine.ts` (pure TypeScript) | Compute every RM figure, probability, ratio and classification deterministically | Call the network or the LLM |
 
 The LLM can only reference a subscription by the `subscriptionId` enum (`lib/subscription-registry.ts`);
@@ -101,7 +101,7 @@ money leaves the account.
 
 | Route | Verb | Purpose |
 |---|---|---|
-| `/api/chat` | POST | AI SDK v4 `streamText` (Gemini), T0–T2 tools with `execute`, T3 tools without `execute`, `maxSteps: 5`, post-LLM number verifier in `onFinish` |
+| `/api/chat` | POST | Gemini 3.8 Flash via the Interactions API; T0–T2 tools executed server-side, T3 tools returned as cards and resumed with `addToolResult`; AI SDK v4 data stream; post-LLM number verifier |
 | `/api/proposals` | POST | Create + HMAC-sign a proposal (server computes all terms) |
 | `/api/proposals/[id]/decision` | POST | Decide a proposal; verifies integrity, tenant, expiry, T3 gate, escrow floor and AI mandate. Accepts the echoed signed proposal for **stateless** verification |
 | `/api/audit` | GET | Returns server-side AGENT audit entries for the caller's tenant |
@@ -514,10 +514,10 @@ proposal table so replay protection survives cold starts.
   that clears before the day-25 allowance lands (and the inverse case), weekend stratification,
   Laibson β/1.43× telemetry with a capped risk-elastic reward, the Stone-Geary floor fields, the
   sinking-fund maturity gate and the pre-auth latency budget.
-- **Compliance guard.** A test asserts the AI SDK v4 identifier set (`parameters`,
-  `toDataStreamResponse`, `addToolResult`, `maxSteps`) and the *absence* of v5 identifiers
-  (`inputSchema`, `addToolOutput`, `toUIMessageStreamResponse`, `stopWhen`), and that free-tier
-  safety never reads the `plan` flag.
+- **Compliance guard.** A test asserts the AI SDK v4 client identifiers (`addToolResult`,
+  `maxSteps`), explicit `parameters` function declarations, the *absence* of v5 identifiers
+  (`inputSchema`, `addToolOutput`, `toUIMessageStreamResponse`, `stopWhen`), the Gemini 3.8
+  default, and that free-tier safety never reads the `plan` flag.
 - **Evidence.** The judge walkthrough is reproducible via the sandbox execution-evidence generator
   (see `docs/SANDBOX_EXECUTION_EVIDENCE.md` and `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`). The
   in-app **Audit Log → Export evidence** button also downloads the live hash chain as JSON.

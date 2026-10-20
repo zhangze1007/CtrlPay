@@ -171,7 +171,7 @@ export function AgentChat({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">AI SDK v4 · Gemini</Badge>
+            <Badge variant="outline">Gemini 3.8 Flash · live</Badge>
             <div className="flex items-center gap-1">
               <span className="mr-1 text-[11px] text-muted-foreground">Roast tone</span>
               <Button

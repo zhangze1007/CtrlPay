@@ -32,7 +32,6 @@ const FORBIDDEN = [
 const EXPECTED_PINS = [
   { name: 'ai', prefix: '~4.' },
   { name: '@ai-sdk/react', prefix: '~1.' },
-  { name: '@ai-sdk/google', prefix: '~1.' },
 ];
 
 const violations = [];
