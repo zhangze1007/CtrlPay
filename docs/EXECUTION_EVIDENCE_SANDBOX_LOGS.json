@@ -212,7 +212,7 @@
         "verified": true,
         "entryCount": 11,
         "genesisPrevHash": "GENESIS",
-        "finalEntryHash": "fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74"
+        "finalEntryHash": "761782c8007ffaea7ff84d88bdaf67c07e68b865e683cdae5645d36a452b6afe"
       }
     }
   ],
@@ -273,9 +273,9 @@
       "data_accessed": [],
       "authorization_ref": "TIER_GATE_REJECTED",
       "proposal_hash": null,
-      "status": "DECLINED",
+      "status": "BLOCKED",
       "prevHash": "GENESIS",
-      "entryHash": "3adfcb04a4b13a5c599bd5da2663b2e3a23f36b17325cc2e48dc116fe62779d6"
+      "entryHash": "17463c32c79c6a43657b16941913d4d1dadbbe5b6f9ea084e2085a0681c56f87"
     },
     {
       "logId": "log_mmn8luo0_2_f9tfnfse",
@@ -292,8 +292,8 @@
       "authorization_ref": "MANDATE_DEFAULT_T0",
       "proposal_hash": null,
       "status": "EXECUTED",
-      "prevHash": "3adfcb04a4b13a5c599bd5da2663b2e3a23f36b17325cc2e48dc116fe62779d6",
-      "entryHash": "01eff1ce0514134ea4923825a05bf4d8a04ae272a3350ecde99503b92ce52b68"
+      "prevHash": "17463c32c79c6a43657b16941913d4d1dadbbe5b6f9ea084e2085a0681c56f87",
+      "entryHash": "5af7db4d79c195ca13db4c9430826ecb63dd0c955ef865e367119f610241aa55"
     },
     {
       "logId": "log_mmn8luo0_3_f9tfnfse",
@@ -308,8 +308,8 @@
       "authorization_ref": "USER_TOGGLE_MASTER_ON",
       "proposal_hash": null,
       "status": "MODIFIED",
-      "prevHash": "01eff1ce0514134ea4923825a05bf4d8a04ae272a3350ecde99503b92ce52b68",
-      "entryHash": "5a7db43cbeb9dda5db41c01f3c00bafebb2f46c701d00cce5840b66315db1ee0"
+      "prevHash": "5af7db4d79c195ca13db4c9430826ecb63dd0c955ef865e367119f610241aa55",
+      "entryHash": "5292e167b6265b8db4f981adaadbba423097f0d1bca47c46e7a3c7360c908d28"
     },
     {
       "logId": "log_mmn8luo0_4_f9tfnfse",
@@ -324,8 +324,8 @@
       "authorization_ref": "USER_TOGGLE_T3_ON",
       "proposal_hash": null,
       "status": "MODIFIED",
-      "prevHash": "5a7db43cbeb9dda5db41c01f3c00bafebb2f46c701d00cce5840b66315db1ee0",
-      "entryHash": "4f9589dedac8cb345a1e7c68547dee2e4e89e7fee7440c7e0f807de557c6c23f"
+      "prevHash": "5292e167b6265b8db4f981adaadbba423097f0d1bca47c46e7a3c7360c908d28",
+      "entryHash": "c7df7c3c2f3504a259a92df313e6cccddd291c349bfe3512f3e1dbe9350742b5"
     },
     {
       "logId": "log_mmn8luo0_5_f9tfnfse",
@@ -341,8 +341,8 @@
       "authorization_ref": "USER_CLICK_APPROVE_PROPOSAL_0001",
       "proposal_hash": "994a41ac47c6262425f0d8ce983f2d4ba2bcf59d4362c10a5818d15c055153c0",
       "status": "APPROVED",
-      "prevHash": "4f9589dedac8cb345a1e7c68547dee2e4e89e7fee7440c7e0f807de557c6c23f",
-      "entryHash": "241daa8231799f178b05d1766d60a587eaf9432dd04013ae031f617a88b50259"
+      "prevHash": "c7df7c3c2f3504a259a92df313e6cccddd291c349bfe3512f3e1dbe9350742b5",
+      "entryHash": "e2c580a84fb6c93b81da34c6aa5afde063ab77e3f7bb9a79a1fca43820a12c79"
     },
     {
       "logId": "log_mmn8luo0_6_f9tfnfse",
@@ -357,8 +357,8 @@
       "authorization_ref": "USER_SIMULATION_TOOLBAR",
       "proposal_hash": null,
       "status": "EXECUTED",
-      "prevHash": "241daa8231799f178b05d1766d60a587eaf9432dd04013ae031f617a88b50259",
-      "entryHash": "7b02d940229ec7494c734508958224c4be731f968ebe7e162563965aeab4ffbd"
+      "prevHash": "e2c580a84fb6c93b81da34c6aa5afde063ab77e3f7bb9a79a1fca43820a12c79",
+      "entryHash": "7b86f989939c899b773d0277990fc13a6c7b8e989016d32da00a0a432093a50e"
     },
     {
       "logId": "log_mmn8luo0_7_f9tfnfse",
@@ -375,8 +375,8 @@
       "authorization_ref": "USER_CLICK_CLAIM_REWARD_0001",
       "proposal_hash": null,
       "status": "EXECUTED",
-      "prevHash": "7b02d940229ec7494c734508958224c4be731f968ebe7e162563965aeab4ffbd",
-      "entryHash": "5b8f96f7660ab0c306b8ff6933e1fa44f74b868ccd4d084fd194cb94a9cf63ae"
+      "prevHash": "7b86f989939c899b773d0277990fc13a6c7b8e989016d32da00a0a432093a50e",
+      "entryHash": "e3b651ab14e1f507e847826ab6023ab7cca95ee9cbea7a06b30daa47212830a6"
     },
     {
       "logId": "log_mmn8luo0_8_f9tfnfse",
@@ -392,8 +392,8 @@
       "authorization_ref": "USER_SUBMIT_STUDENT_OTP",
       "proposal_hash": null,
       "status": "MODIFIED",
-      "prevHash": "5b8f96f7660ab0c306b8ff6933e1fa44f74b868ccd4d084fd194cb94a9cf63ae",
-      "entryHash": "38f63026c1152d5ca9e96eec9a0e87c6be1081010d03f996486530eb196de1e1"
+      "prevHash": "e3b651ab14e1f507e847826ab6023ab7cca95ee9cbea7a06b30daa47212830a6",
+      "entryHash": "60ea18440c179a4d63c8963e35e33d65bf5f195980542a8a9ddb52cd4399c293"
     },
     {
       "logId": "log_mmn8luo0_9_f9tfnfse",
@@ -409,8 +409,8 @@
       "authorization_ref": "USER_CLICK_APPROVE_PROPOSAL_0001",
       "proposal_hash": "4f042f0ebb574f5ec653ca3a32c6d87c334735d85ea2b111061358fb1e96e863",
       "status": "APPROVED",
-      "prevHash": "38f63026c1152d5ca9e96eec9a0e87c6be1081010d03f996486530eb196de1e1",
-      "entryHash": "e12fd5d490f89dbff0a0ac89958b30236013bd4c7cebb4dfe88f59a419fad364"
+      "prevHash": "60ea18440c179a4d63c8963e35e33d65bf5f195980542a8a9ddb52cd4399c293",
+      "entryHash": "f57ebeb5abf6c304eb1f309545b765db2dda6efc6e1c29acf42429022b74edab"
     },
     {
       "logId": "log_mmn8luo0_a_f9tfnfse",
@@ -425,8 +425,8 @@
       "authorization_ref": "USER_SIMULATION_TOOLBAR",
       "proposal_hash": null,
       "status": "EXECUTED",
-      "prevHash": "e12fd5d490f89dbff0a0ac89958b30236013bd4c7cebb4dfe88f59a419fad364",
-      "entryHash": "5a5ecd232c004339f932d4a07d64f2ec8f377502efafd131b510d109810039e7"
+      "prevHash": "f57ebeb5abf6c304eb1f309545b765db2dda6efc6e1c29acf42429022b74edab",
+      "entryHash": "5a546bc45be2a332937d28ee1e757c944fec704c271d4be782f6b0cd02245d81"
     },
     {
       "logId": "log_mmn8luo0_b_f9tfnfse",
@@ -443,8 +443,8 @@
       "authorization_ref": "USER_AUTHORIZED_BACKTAP_TRANSFER",
       "proposal_hash": null,
       "status": "EXECUTED",
-      "prevHash": "5a5ecd232c004339f932d4a07d64f2ec8f377502efafd131b510d109810039e7",
-      "entryHash": "fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74"
+      "prevHash": "5a546bc45be2a332937d28ee1e757c944fec704c271d4be782f6b0cd02245d81",
+      "entryHash": "761782c8007ffaea7ff84d88bdaf67c07e68b865e683cdae5645d36a452b6afe"
     }
   ]
 }

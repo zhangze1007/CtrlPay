@@ -129,7 +129,7 @@ describe('sandbox execution evidence generator', () => {
         data_accessed: [],
         authorization_ref: 'TIER_GATE_REJECTED',
         proposal_hash: null,
-        status: 'DECLINED',
+        status: 'BLOCKED',
       },
       USER,
     );

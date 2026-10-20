@@ -100,3 +100,12 @@ export const SUBSCRIPTION_REGISTRY: Readonly<Record<SubscriptionId, RegistryEntr
 export const ALL_SUBSCRIPTION_IDS: readonly SubscriptionId[] = Object.freeze(
   SubscriptionIdSchema.options,
 );
+
+/**
+ * Reserved example domains (RFC 2606) identify DEMONSTRATION placeholder
+ * addresses, not real merchant mailboxes. The UI must label these explicitly so
+ * no judge or user mistakes a sandbox address for a production support channel.
+ */
+export function isDemoPlaceholderAddress(address: string): boolean {
+  return /\.example$/i.test(address.trim());
+}

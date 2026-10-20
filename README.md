@@ -169,6 +169,7 @@ protective core is **never paywalled or gated** (enforced by `tests/compliance.t
 ## Security & compliance
 
 - 🔐 **Security Self-Assessment Report:** [`SECURITY_REPORT.md`](./SECURITY_REPORT.md) (Section 10)
+- 🧪 **Red-team test matrix (T-01 … T-10):** [`docs/RED_TEAM_TEST_MATRIX.md`](./docs/RED_TEAM_TEST_MATRIX.md)
 - 📦 **Third-party licenses:** [`THIRD_PARTY_LICENSES.md`](./THIRD_PARTY_LICENSES.md)
 - 📐 **Design blueprint:** [`plan.md`](./plan.md)
 

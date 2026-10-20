@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { SUBSCRIPTION_REGISTRY, ALL_SUBSCRIPTION_IDS } from '@/lib/subscription-registry';
+import {
+  SUBSCRIPTION_REGISTRY,
+  ALL_SUBSCRIPTION_IDS,
+  isDemoPlaceholderAddress,
+} from '@/lib/subscription-registry';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -23,6 +27,13 @@ describe('SUBSCRIPTION_REGISTRY', () => {
       if (tpl === null) continue;
       expect(EMAIL_RE.test(tpl.to), `${id} mailto recipient must be a valid email`).toBe(true);
     }
+  });
+
+  it('marks reserved .example recipients as demo placeholders (never a real mailbox)', () => {
+    const tpl = SUBSCRIPTION_REGISTRY.anytime_fitness_my.mailtoTemplate;
+    expect(tpl).not.toBeNull();
+    expect(isDemoPlaceholderAddress(tpl!.to)).toBe(true);
+    expect(isDemoPlaceholderAddress('support@spotify.com')).toBe(false);
   });
 
   it('every entry is either deep-linkable or has a mailto template', () => {

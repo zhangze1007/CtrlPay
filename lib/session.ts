@@ -12,7 +12,16 @@ const DEV_FALLBACK_SECRET = 'ctrlpay-sandbox-dev-secret-not-for-production';
 export const SESSION_COOKIE = 'ctrlpay_session';
 
 function getSecret(): string {
-  return process.env.CTRLPAY_SIGNING_SECRET || DEV_FALLBACK_SECRET;
+  const secret = process.env.CTRLPAY_SIGNING_SECRET;
+  if (secret && secret.length > 0) return secret;
+  // FAIL CLOSED in production: the dev fallback is public in this repository.
+  // Running production with it would let anyone forge session cookies.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      '[SECURITY] CTRLPAY_SIGNING_SECRET is required in production; refusing the public dev fallback.',
+    );
+  }
+  return DEV_FALLBACK_SECRET;
 }
 
 function sig(userId: string): string {

@@ -434,7 +434,11 @@ telemetry when a downgrade is prepared.
 enforcement point. It runs inside every API route before a tool executes, and again inside the
 decision route with the user's click reference. The Master AI Autonomy Switch **defaults to OFF**,
 so the out-of-the-box state is T0 advisory only. The T3 gate requires *both* the Master switch ON
-*and* the click reference — creating a proposal is preparation, never authorization.
+*and* the click reference — creating a proposal is preparation, never authorization. The
+client-submitted autonomy payload is validated with `TierStateSchema` before `assertTier`; a
+malformed payload receives HTTP 400 instead of crashing or silently enabling a tier. T3 gate
+refusals are written to the audit chain with status **BLOCKED** and a reason-coded `actionType`
+(e.g. `T3_GATE_REJECTED_MASTER_AUTONOMY_OFF`).
 
 ### 3.2 Dual Limit Architecture
 
@@ -443,8 +447,9 @@ Two independent limits protect the user:
 - **`UserSpendingLimit`** — the *user's own* declared weekly/monthly pay limits. Breaching either
   raises the risk level to at least HIGH and can trigger an intervention.
 - **`AiMandate`** — the *user's* ceiling on what the agent may even *propose*:
-  `maxLockAmountRM`, `maxLockDurationDays` and the allowed lock categories. It is validated at
-  proposal creation, re-validated at decision time, and can never be raised by the LLM.
+  `maxLockAmountRM` and `maxLockDurationDays`. Lock categories are separately restricted to WANTS:
+  NEEDS can never be escrowed or quarantined. The mandate is validated at proposal creation,
+  re-validated at decision time, and can never be raised by the LLM.
 
 ### 3.3 Three-Stage Privacy & Hallucination Guardrails
 
@@ -483,6 +488,13 @@ verify the `integrityHash` before any state change. The proposal must be pending
 the escrow floor / AI mandate are re-checked server-side. A single-byte change to any term (for
 example `premiumReward + 0.01`) is rejected with `INTEGRITY_HASH_MISMATCH`.
 
+The API boundary also enforces the NEEDS invariant independently of the LLM: a direct
+`POST /api/proposals` carrying a NEEDS category for a Quarantine is rejected with
+`NEEDS_NOT_QUARANTINABLE` (HTTP 400), and unknown escrow categories are rejected as `INVALID_INPUT`
+rather than surfacing an uncaught schema error. Proposal **status** (pending/settled) is held in
+memory in this single-instance sandbox; production replaces it with a durable, tenant-scoped
+proposal table so replay protection survives cold starts.
+
 ---
 
 ## 4. Determinism, Testing & Reproducibility
@@ -494,6 +506,9 @@ example `premiumReward + 0.01`) is rejected with `INTEGRITY_HASH_MISMATCH`.
 - **Test suite.** Vitest covers the engine, PRNG, signing/verification, SHA-256 (against
   `node:crypto`), canonicalisation, audit chaining, permissions, privacy guard, zombie radar,
   proposals, stateless decision, store/clock behaviour, tool schemas, bookkeeping and compliance.
+  `tests/red-team.test.ts` exercises the real API routes for T-01 (Master OFF → 403 + BLOCKED
+  audit), malformed autonomy → 400, direct NEEDS-Quarantine → 400 and unknown escrow categories →
+  400; `docs/RED_TEAM_TEST_MATRIX.md` maps all ten red-team checks to executable tests.
   `tests/fintech-hardening.test.ts` (Phase 8) additionally locks: ES95 ≥ CFaR95 coherence across
   scenarios, the pinned sandbox regression values, intra-month barrier detection of a day-2 bill
   that clears before the day-25 allowance lands (and the inverse case), weekend stratification,

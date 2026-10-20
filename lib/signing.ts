@@ -9,9 +9,11 @@ const DEV_FALLBACK_SECRET = 'ctrlpay-sandbox-dev-secret-not-for-production';
 function getServerSecret(): string {
   const secret = process.env.CTRLPAY_SIGNING_SECRET;
   if (secret && secret.length > 0) return secret;
+  // FAIL CLOSED in production: the dev fallback is public in this repository.
+  // Running production with it would let anyone forge proposal signatures.
   if (process.env.NODE_ENV === 'production') {
-    console.warn(
-      '[SECURITY] CTRLPAY_SIGNING_SECRET is not set. Using the insecure dev fallback. Set it in production.',
+    throw new Error(
+      '[SECURITY] CTRLPAY_SIGNING_SECRET is required in production; refusing the public dev fallback.',
     );
   }
   return DEV_FALLBACK_SECRET;

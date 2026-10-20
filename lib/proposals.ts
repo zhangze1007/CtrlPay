@@ -21,11 +21,12 @@ import { buildWhatIfInput, upcomingFixedBills, type LedgerSnapshot } from './led
 import {
   EscrowTermsSchema,
   QuarantineTermsSchema,
+  SpendCategorySchema,
   SweepTermsSchema,
+  WantsCategorySchema,
   type CardDecision,
   type ProposalTerms,
   type SignedProposal,
-  type SpendCategory,
 } from './types';
 import { round2, remainingDaysInMonth } from './utils';
 
@@ -75,11 +76,21 @@ export function createProposal({ kind, input, snapshot, userId }: CreateProposal
   let terms: ProposalTerms;
 
   if (kind === 'QUARANTINE') {
-    const targetItem = String(input.targetItem ?? '');
+    const targetItem = String(input.targetItem ?? '').trim();
     const itemPrice = Number(input.itemPrice);
-    const category = input.category as SpendCategory;
-    if (!targetItem || !Number.isFinite(itemPrice) || itemPrice <= 0) {
-      throw new ProposalError('INVALID_INPUT', 'targetItem and positive itemPrice are required');
+    // API-BOUNDARY INVARIANT: NEEDS can never be quarantined. The LLM tool schema
+    // already restricts the category, but a direct POST must be rejected here too.
+    const categoryParse = WantsCategorySchema.safeParse(input.category ?? 'Shopping');
+    if (!categoryParse.success) {
+      throw new ProposalError(
+        'NEEDS_NOT_QUARANTINABLE',
+        'Quarantine is available only for WANT categories. NEEDS purchases can never be quarantined.',
+        400,
+      );
+    }
+    const category = categoryParse.data;
+    if (!targetItem || targetItem.length > 80 || !Number.isFinite(itemPrice) || itemPrice <= 0) {
+      throw new ProposalError('INVALID_INPUT', 'targetItem (1-80 chars) and positive itemPrice are required', 400);
     }
     if (itemPrice > snapshot.aiMandate.maxLockAmountRM) {
       throw new ProposalError(
@@ -114,12 +125,26 @@ export function createProposal({ kind, input, snapshot, userId }: CreateProposal
       riskLevel: result.riskLevel,
     });
   } else if (kind === 'ESCROW') {
-    const targetItem = String(input.targetItem ?? '');
+    const targetItem = String(input.targetItem ?? '').trim();
     const itemPrice = Number(input.itemPrice);
     const lockedCategories = input.lockedCategories as string[];
     const durationDays = Number(input.durationDays);
-    if (!targetItem || !Number.isFinite(itemPrice) || !Array.isArray(lockedCategories) || !Number.isInteger(durationDays)) {
-      throw new ProposalError('INVALID_INPUT', 'targetItem, itemPrice, lockedCategories, durationDays are required');
+    if (
+      !targetItem ||
+      targetItem.length > 80 ||
+      !Number.isFinite(itemPrice) ||
+      itemPrice <= 0 ||
+      !Array.isArray(lockedCategories) ||
+      lockedCategories.length < 1 ||
+      lockedCategories.length > 4 ||
+      !lockedCategories.every((c) => SpendCategorySchema.safeParse(c).success) ||
+      !Number.isInteger(durationDays)
+    ) {
+      throw new ProposalError(
+        'INVALID_INPUT',
+        'targetItem, positive itemPrice, 1-4 known lockedCategories and integer durationDays are required',
+        400,
+      );
     }
 
     const bills = upcomingFixedBills(snapshot.sandboxClock, snapshot.subscriptions, snapshot.amortizeAnnualFees);

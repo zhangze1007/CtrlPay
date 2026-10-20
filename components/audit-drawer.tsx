@@ -116,7 +116,7 @@ export function AuditDrawer() {
             <div key={e.logId} className="rounded-2xl bg-holst-50/70 p-2.5 text-xs ring-1 ring-inset ring-holst-950/5">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{e.permissionTier}</Badge>
-                <Badge variant={e.status === 'DECLINED' ? 'danger' : 'secondary'}>{e.status}</Badge>
+                <Badge variant={e.status === 'DECLINED' || e.status === 'BLOCKED' ? 'danger' : 'secondary'}>{e.status}</Badge>
                 <span className="font-medium">{e.actionType}</span>
                 <span className="text-muted-foreground">{e.actor}</span>
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground">

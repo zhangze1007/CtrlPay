@@ -196,7 +196,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
   "verified": true,
   "entryCount": 11,
   "genesisPrevHash": "GENESIS",
-  "finalEntryHash": "fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74"
+  "finalEntryHash": "761782c8007ffaea7ff84d88bdaf67c07e68b865e683cdae5645d36a452b6afe"
 }
 ```
 
@@ -219,7 +219,7 @@ machine-readable log is in `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`.
 ## Final SHA-256 audit-chain digest
 
 - Genesis `prevHash`: `GENESIS`
-- Final `entryHash`: `fb95c5a6b6965b75e9a0bb4109d1283c58ac29ee02319af67f259d487847ba74`
+- Final `entryHash`: `761782c8007ffaea7ff84d88bdaf67c07e68b865e683cdae5645d36a452b6afe`
 - `verifyChain(userId)`: **true**
 
 The chain is `entryHash = SHA-256(canonicalJson(entry))` with `prevHash` binding each

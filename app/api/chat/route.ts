@@ -10,6 +10,7 @@ import {
   ProposeQuarantineInputSchema,
   ProposeSweepInputSchema,
   RunWhatIfInputSchema,
+  TierStateSchema,
 } from '@/lib/types';
 import { SYSTEM_PROMPT } from '@/lib/system-prompt';
 import { redactMessages, verifyNumbers } from '@/lib/privacy-guard';
@@ -68,10 +69,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const autonomy: TierState = body.autonomy ?? {
+  // The autonomy payload is untrusted input. Validate its exact shape: a missing
+  // payload defaults to the safe T0-only posture; a malformed one is rejected.
+  let autonomy: TierState = {
     masterAutonomyEnabled: false,
     enabledTiers: { T0: true, T1: false, T2: false, T3: false },
   };
+  if (body.autonomy !== undefined) {
+    const parsedAutonomy = TierStateSchema.safeParse(body.autonomy);
+    if (!parsedAutonomy.success) {
+      return Response.json(
+        { error: 'INVALID_AUTONOMY', issues: parsedAutonomy.error.issues.map((i) => i.message) },
+        { status: 400 },
+      );
+    }
+    autonomy = parsedAutonomy.data;
+  }
+
+  // Deterministic tool outputs for the post-LLM number verifier.
+  const engineOutputs: unknown[] = [];
 
   // Guard helper for the server-executed tools. T3 tools have NO execute here.
   const guard = (toolName: string) => (args: unknown) => {
@@ -86,7 +102,7 @@ export async function POST(req: Request) {
           data_accessed: [],
           authorization_ref: 'TIER_GATE_REJECTED',
           proposal_hash: null,
-          status: 'DECLINED',
+          status: 'BLOCKED',
         },
         userId,
       );
@@ -112,7 +128,9 @@ export async function POST(req: Request) {
         parameters: RunWhatIfInputSchema,
         execute: async (args) => {
           guard('run_what_if_simulation')(args);
-          return runWhatIfForUser(userId, snapshot, args);
+          const out = runWhatIfForUser(userId, snapshot, args);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       get_budget_insights: tool({
@@ -120,7 +138,9 @@ export async function POST(req: Request) {
         parameters: GetBudgetInsightsInputSchema,
         execute: async (args) => {
           guard('get_budget_insights')(args);
-          return getBudgetInsightsForUser(userId, snapshot);
+          const out = getBudgetInsightsForUser(userId, snapshot);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       analyze_zombies: tool({
@@ -129,7 +149,9 @@ export async function POST(req: Request) {
         parameters: AnalyzeZombiesInputSchema,
         execute: async (args) => {
           guard('analyze_zombies')(args);
-          return analyzeZombiesForUser(userId, snapshot);
+          const out = analyzeZombiesForUser(userId, snapshot);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       flag_suspected_zombie: tool({
@@ -137,7 +159,9 @@ export async function POST(req: Request) {
         parameters: FlagSuspectedZombieInputSchema,
         execute: async (args) => {
           guard('flag_suspected_zombie')(args);
-          return flagSuspectedZombieForUser(userId, snapshot, args);
+          const out = flagSuspectedZombieForUser(userId, snapshot, args);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       draft_cancellation: tool({
@@ -146,7 +170,9 @@ export async function POST(req: Request) {
         parameters: DraftCancellationInputSchema,
         execute: async (args) => {
           guard('draft_cancellation')(args);
-          return draftCancellationForUser(userId, snapshot, args);
+          const out = draftCancellationForUser(userId, snapshot, args);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       generate_roast: tool({
@@ -155,7 +181,9 @@ export async function POST(req: Request) {
         parameters: GenerateRoastInputSchema,
         execute: async (args) => {
           guard('generate_roast')(args);
-          return generateRoastForUser(userId, snapshot, args);
+          const out = generateRoastForUser(userId, snapshot, args);
+          engineOutputs.push(out);
+          return out;
         },
       }),
       // ---- T3 contract tools: NO `execute`. The client card resolves them. ----
@@ -176,8 +204,9 @@ export async function POST(req: Request) {
       }),
     },
     onFinish: ({ text }) => {
-      // Post-LLM numerical hallucination verifier.
-      const verification = verifyNumbers(text, snapshot, snapshot);
+      // Post-LLM numerical hallucination verifier. Engine tool outputs AND the
+      // user's ledger are the only allowed sources of RM figures.
+      const verification = verifyNumbers(text, engineOutputs, snapshot);
       auditLog.append(
         {
           sandboxClock: toISODateTime(snapshot.sandboxClock),

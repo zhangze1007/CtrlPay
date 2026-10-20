@@ -16,15 +16,17 @@
   - Master Autonomy Switch is **default OFF** (`lib/store.ts`).
   - Four permission tiers **T0–T3** (`lib/permissions.ts`, `TOOL_TIERS`).
   - `assertTier()` runs **server-side** before every tool executes (`app/api/chat/route.ts`) **and** again in the proposal decision route (`app/api/proposals/[id]/decision/route.ts`).
+  - The client-submitted autonomy object is **schema-validated** (`TierStateSchema`, `lib/types.ts`). A malformed payload receives HTTP **400** and can never reach `assertTier()` or silently enable a tier.
   - **T3 (Quarantine / Escrow / Sweep)** additionally requires a per-action click authorization ref matching `USER_CLICK_APPROVE_PROPOSAL_*` (`lib/permissions.ts` → `CLICK_AUTH_RE`). Proposal **creation** is preparation only; the decision itself is gated.
   - Dual Mandates: the **User Spending Limit** and the **AI Mandate Limit** (`maxLockAmountRM`, `maxLockDurationDays`) are enforced inside `validateEscrowFloor` and proposal creation.
-  - **NEEDS** categories can never be locked; escrow is capped by the **40 % rule** and a **duty-of-care daily survival floor** (RM 15).
+  - **NEEDS** categories can never be locked; escrow is capped by the **40 % rule** and a **duty-of-care daily survival floor** (RM 15). The proposal API independently rejects a **NEEDS-category Quarantine**, even when a caller bypasses the LLM tool schema.
 - **Verification**
   - `tests/permissions.test.ts` — tier gating, master-switch off blocks T1–T3, T3 without a valid click ref is rejected.
   - `tests/quant-engine.test.ts` — NEEDS rejected from escrow; 40 % cap and RM 15 floor enforced; AI mandate violation rejected.
   - `tests/tool-resolution.test.ts` — every contract card path resolves its tool call.
-  - Live demo: toggle the master switch; attempt a T3 action without clicking → `TIER_GATE_REJECTED` is written to the audit log.
-- **Residual risk:** the sandbox session is **not strongly authenticated** (a signed cookie stands in for a real login). Production needs real identity, **step-up authentication** and device binding. A user can still approve a harmful-but-allowed contract; this is mitigated by the floors and caps, not eliminated.
+  - `tests/red-team.test.ts` — route-level T-01 (Master OFF → **403** + **BLOCKED** audit), malformed autonomy → **400**, direct NEEDS-Quarantine → **400**, unknown escrow category → **400**.
+  - Live demo: toggle the master switch; attempt a T3 action without clicking → a **BLOCKED** audit entry with a reason-coded `actionType` (e.g. `T3_GATE_REJECTED_MASTER_AUTONOMY_OFF`) is written.
+- **Residual risk:** the sandbox session is **not strongly authenticated** (a signed cookie stands in for a real login). Production needs real identity, **step-up authentication** and device binding. A user can still approve a harmful-but-allowed contract; this is mitigated by the floors and caps, not eliminated. In the sandbox, the Master Switch, tier toggles and AI mandate are **user-owned client state** sent with each request: the server validates their shape and defaults to OFF when absent, but a user-controlled client can assert its own settings — production must bind them to server-side account settings. Proposal status/replay protection is **in-memory**: a stateless cold start still re-verifies the HMAC signature, but it cannot know whether another instance already settled the proposal; production needs a durable, tenant-scoped proposal table.
 
 ### (2) Network, Environment & Pop-up Safety — 网络环境与弹窗安全
 
@@ -47,6 +49,7 @@
   - Append-only, **hash-chained** log (`lib/audit-logger.ts`) with fields `logId, timestamp, actor, actionType, permissionTier, data_accessed (field names only), authorization_ref, proposal_hash, status`.
   - An **"immutable trace drawer"** for users (`components/audit-drawer.tsx`) with a **chain-verified** indicator.
   - Every tool call, block, decision and clock mutation writes an audit entry; the post-LLM number verifier logs its own PASSED/BLOCKED record.
+  - Authorization refusals are recorded with status **BLOCKED** (not `DECLINED`) and a reason-coded `actionType`, e.g. `T3_GATE_REJECTED_MASTER_AUTONOMY_OFF` or `T3_GATE_REJECTED_T3_REQUIRES_EXPLICIT_USER_CLICK`.
 - **Verification**
   - `tests/audit-logger.test.ts` — `verifyChain()` detects tampering; an edited entry breaks the chain.
   - Demo: open the Audit Drawer and show `data_accessed`, `authorization_ref` and the chain-verified badge.
@@ -61,6 +64,7 @@
   - **(c) Zod `.strict()` schemas + a post-LLM RM number verifier** tied to engine/ledger outputs (`verifyNumbers`); unknown figures are flagged and the turn is audit-logged as `NUMBER_VERIFIER_BLOCKED`.
   - **Receipt OCR images are never written to disk** — processed in memory, discarded after structured extraction + user confirmation.
   - **Server-side authority:** the LLM extracts intent + identifiers only; all money figures are computed by `lib/quant-engine.ts` and returned as a **signed proposal**; the LLM never sees `serverSecret`.
+  - **Fail-closed secrets:** `lib/signing.ts` and `lib/session.ts` throw in production if `CTRLPAY_SIGNING_SECRET` is missing; they never fall back to the public development secret on a deployed instance.
 - **Verification**
   - `tests/privacy-guard.test.ts` — PII fixtures masked (`TRANSFER TO AHMAD BIN ALI 0123456789` → `TRANSFER TO [PERSON] [ACCOUNT]`); a number-verifier test with an injected fake RM figure is rejected.
   - `tests/session.test.ts` — tenant isolation; cross-user access returns nothing.
@@ -92,7 +96,7 @@
   - `tests/subscription-registry.test.ts` — every deep link is HTTPS and every mailto recipient is valid.
   - `tests/proposals.test.ts` — a tool call carrying `deepLinkUrl` is rejected.
   - Code search for Gmail send scopes returns nothing.
-- **Residual risk:** registry entries can go **stale** if merchants change URLs (needs a maintenance + verification process); the user can edit the draft before sending; the mail client is outside our control.
+- **Residual risk:** registry entries can go **stale** if merchants change URLs (needs a maintenance + verification process); the user can edit the draft before sending; the mail client is outside our control. One registry recipient (`membership@anytimefitness.example`) is a reserved **`.example` sandbox placeholder**; the cancellation sheet labels it **“Demo sandbox address — not a real merchant mailbox”** and it must be replaced with a verified club address before production.
 
 ---
 
@@ -123,7 +127,7 @@ These decisions map directly onto enforceable controls:
 
 ### 10.2.1 Sandbox data & commercial-model disclosures
 
-- **Registry snapshot.** Prices, cancellation links and mailto recipients in `SUBSCRIPTION_REGISTRY` are a **sandbox snapshot (last verified 2026-03-01)**. Production would synchronise them through merchant official APIs or a scheduled compliance review.
+- **Registry snapshot.** Prices, cancellation links and mailto recipients in `SUBSCRIPTION_REGISTRY` are a **sandbox snapshot (last verified 2026-03-01)**. Production would synchronise them through merchant official APIs or a scheduled compliance review. The single Anytime Fitness mailto recipient uses the reserved `.example` TLD and is visibly labelled as a **demo sandbox address** in the UI; it is not presented as a real merchant mailbox.
 - **Pro pricing is a hypothesis.** The Pro tier (RM 9.90/month, RM 49 student first year) is a **team business-model hypothesis**, not a live price.
 - **Ethical freemium.** Every defensive control — overspend alerts, payment interception, the T0–T3 switches and the audit log — is **permanently free** and never reads the `plan` flag; `tests/compliance.test.ts` enforces this.
 

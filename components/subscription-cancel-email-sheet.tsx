@@ -10,7 +10,11 @@ import {
   X,
 } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
-import { SUBSCRIPTION_REGISTRY, type SubscriptionId } from '@/lib/subscription-registry';
+import {
+  SUBSCRIPTION_REGISTRY,
+  isDemoPlaceholderAddress,
+  type SubscriptionId,
+} from '@/lib/subscription-registry';
 import { calculateSubscriptionMetrics } from '@/lib/quant-engine';
 import { buildMailto, requestProposal, submitDecision } from '@/lib/api-client';
 import { approveProposal, passkeyAuthorizationRef } from '@/lib/tool-resolution';
@@ -233,6 +237,12 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
                         <span className="font-bold text-[#04222B]/50">To: </span>
                         {entry.mailtoTemplate.to}
                       </p>
+                      {isDemoPlaceholderAddress(entry.mailtoTemplate.to) && (
+                        <p className="rounded-md bg-[#FFF7E6] px-2 py-1 text-[9.5px] font-semibold leading-relaxed text-[#8A5408]">
+                          Demo sandbox address — not a real merchant mailbox. Production replaces it
+                          with the verified club address.
+                        </p>
+                      )}
                       <p>
                         <span className="font-bold text-[#04222B]/50">Subject: </span>
                         {entry.mailtoTemplate.subject

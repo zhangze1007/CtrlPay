@@ -16,7 +16,7 @@ import { CURRENT_USER_ID } from './mock-data';
 
 export type AuditActor = 'AGENT' | 'USER';
 export type AuditTier = 'T0' | 'T1' | 'T2' | 'T3';
-export type AuditStatus = 'PROPOSED' | 'APPROVED' | 'DECLINED' | 'MODIFIED' | 'EXECUTED';
+export type AuditStatus = 'PROPOSED' | 'APPROVED' | 'DECLINED' | 'MODIFIED' | 'EXECUTED' | 'BLOCKED';
 
 export interface AuditEntry {
   logId: string;
@@ -235,7 +235,7 @@ export const auditLog = {
         data_accessed: [],
         authorization_ref: 'TIER_GATE_REJECTED',
         proposal_hash: null,
-        status: 'DECLINED',
+        status: 'BLOCKED',
       },
       {
         sandboxClock: '2026-03-12T09:05:00.000Z',

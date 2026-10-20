@@ -128,6 +128,22 @@ describe('sandbox clock & state model', () => {
     expect(s.defenseVault).toBe(9);
   });
 
+  it('is idempotent: a second claim cannot drain the rewardPool again', () => {
+    const q = signProposal(quarantineTerms, USER);
+    useCtrlPayStore.getState().applyDecision(q, 'APPROVED');
+    useCtrlPayStore.getState().advanceClock(24);
+    useCtrlPayStore.getState().claimQuarantineReward(q.proposalId);
+    const afterFirst = useCtrlPayStore.getState();
+    const vaultAfterFirst = afterFirst.defenseVault;
+    const poolAfterFirst = afterFirst.rewardPool;
+
+    useCtrlPayStore.getState().claimQuarantineReward(q.proposalId);
+    const afterSecond = useCtrlPayStore.getState();
+    expect(afterSecond.defenseVault).toBe(vaultAfterFirst);
+    expect(afterSecond.rewardPool).toBe(poolAfterFirst);
+    expect(afterSecond.quarantines[0].status).toBe('CLAIMED');
+  });
+
   it('pays no reward when the user proceeds with the purchase', () => {
     const q = signProposal(quarantineTerms, USER);
     useCtrlPayStore.getState().applyDecision(q, 'APPROVED');
@@ -196,6 +212,20 @@ describe('sandbox clock & state model', () => {
     const roast = events.find((e) => e.type === 'MONTH_END_ROAST');
     expect(roast).toBeTruthy();
     expect((roast!.payload as { wastedMonthly: number }).wastedMonthly).toBeGreaterThan(0);
+  });
+
+  it('is idempotent: a second Jump to Month-End does not move the clock or credit again', () => {
+    useCtrlPayStore.getState().jumpToMonthEnd();
+    const first = useCtrlPayStore.getState();
+    const clock = first.sandboxClock;
+    const vault = first.defenseVault;
+    const pool = first.rewardPool;
+
+    useCtrlPayStore.getState().jumpToMonthEnd();
+    const second = useCtrlPayStore.getState();
+    expect(second.sandboxClock).toBe(clock);
+    expect(second.defenseVault).toBe(vault);
+    expect(second.rewardPool).toBe(pool);
   });
 
   it('tier toggles only work while Master Autonomy is ON', () => {

@@ -207,6 +207,25 @@ export const AiMandateSchema = z
   })
   .strict();
 
+/**
+ * Permission state submitted with chat / proposal-decision requests.
+ * VALIDATED AT THE API BOUNDARY: malformed payloads are rejected with HTTP 400
+ * instead of silently defaulting (or crashing `assertTier` on a missing tier map).
+ */
+export const TierStateSchema = z
+  .object({
+    masterAutonomyEnabled: z.boolean(),
+    enabledTiers: z
+      .object({
+        T0: z.boolean(),
+        T1: z.boolean(),
+        T2: z.boolean(),
+        T3: z.boolean(),
+      })
+      .strict(),
+  })
+  .strict();
+
 /* ------------------------------------------------------------------ *
  * Inferred types
  * ------------------------------------------------------------------ */

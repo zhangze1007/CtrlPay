@@ -3,7 +3,7 @@ import { parseLedgerSnapshot } from '@/lib/ledger';
 import { decideProposal, getStoredProposal, ProposalError } from '@/lib/proposals';
 import { assertTier, type TierState } from '@/lib/permissions';
 import { auditLog } from '@/lib/audit-logger';
-import { CardDecisionSchema, SignedProposalSchema, type SignedProposal } from '@/lib/types';
+import { CardDecisionSchema, SignedProposalSchema, TierStateSchema, type SignedProposal } from '@/lib/types';
 import { toISODateTime } from '@/lib/utils';
 
 export const runtime = 'nodejs';
@@ -62,10 +62,22 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     );
   }
 
-  const autonomy: TierState = body.autonomy ?? {
+  // The autonomy payload is untrusted input. Validate its exact shape: a missing
+  // payload defaults to the safe T0-only posture; a malformed one is rejected.
+  let autonomy: TierState = {
     masterAutonomyEnabled: false,
     enabledTiers: { T0: true, T1: false, T2: false, T3: false },
   };
+  if (body.autonomy !== undefined) {
+    const parsedAutonomy = TierStateSchema.safeParse(body.autonomy);
+    if (!parsedAutonomy.success) {
+      return Response.json(
+        { error: 'INVALID_AUTONOMY', issues: parsedAutonomy.error.issues.map((i) => i.message) },
+        { status: 400 },
+      );
+    }
+    autonomy = parsedAutonomy.data;
+  }
 
   // Optional stateless fallback: verify the echoed proposal's shape (hash is verified in decideProposal).
   let echoedProposal: SignedProposal | undefined;
@@ -83,16 +95,20 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const toolName = source ? TOOL_FOR_KIND[source.terms.kind] ?? 'propose_quarantine' : 'propose_quarantine';
     const check = assertTier(toolName, autonomy, { authorizationRef: decision.authorizationRef });
     if (!check.ok) {
+      const reasonCode = (check.reason ?? 'TIER_GATE_REJECTED')
+        .split(':')[0]
+        .replace(/[^A-Z0-9_]/gi, '_')
+        .toUpperCase();
       auditLog.append(
         {
           sandboxClock: toISODateTime(snapshot.sandboxClock),
           actor: 'USER',
-          actionType: 'T3_GATE_REJECTED',
+          actionType: `T3_GATE_REJECTED_${reasonCode}`,
           permissionTier: 'T3',
           data_accessed: ['proposals'],
           authorization_ref: decision.authorizationRef,
           proposal_hash: null,
-          status: 'DECLINED',
+          status: 'BLOCKED',
         },
         userId,
       );
