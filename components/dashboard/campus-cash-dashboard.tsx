@@ -174,21 +174,21 @@ export function CampusCashDashboard({
           onClick={onOpenProfile}
           className="flex items-center gap-3 cursor-pointer group active:scale-95 transition-all"
         >
-          <div className="relative h-11 w-11 rounded-full overflow-hidden ring-2 ring-white/90 shadow-xs shrink-0 group-hover:ring-emerald-400 transition-all">
+          <div className="relative h-12 w-12 rounded-full overflow-hidden ring-2 ring-white/90 shadow-xs shrink-0 group-hover:ring-emerald-400 transition-all">
             <Image
               src="/alex-smith.jpg"
               alt="Alex Smith"
               fill
               className="object-cover"
-              sizes="44px"
+              sizes="48px"
               priority
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-[11px] font-normal text-[#94A3B8] leading-none">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-[12px] font-medium text-[#64748B] leading-none tracking-[0.01em]">
               Welcome
             </span>
-            <h1 className="text-[16px] font-semibold tracking-normal text-[#0F172A] leading-snug mt-0.5 group-hover:text-emerald-700 transition-colors">
+            <h1 className="text-[17px] font-semibold tracking-normal text-[#0F172A] leading-snug mt-1 group-hover:text-emerald-700 transition-colors">
               Alex Smith
             </h1>
           </div>

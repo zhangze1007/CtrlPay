@@ -48,25 +48,61 @@ export async function POST(req: Request) {
   const billingDelay = body.billingDelayDays ?? 14;
   const proposedAmount = body.proposedAmount ?? (scenarioPreset === 'mild' ? 80 : scenarioPreset === 'severe' ? 350 : 180);
 
+  // Run the deterministic quant simulation first. Both the chart and the
+  // follow-up Q&A below quote these engine outputs; the language model is never
+  // asked to invent a CFaR figure.
+  let engineResult;
+  try {
+    engineResult = runWhatIfForUser(userId, snapshot, {
+      targetItem: 'Scenario Simulator',
+      itemPrice: proposedAmount,
+      category: 'Shopping',
+    });
+  } catch {
+    engineResult = {
+      cfar95: 312.5 + proposedAmount * 2.1,
+      dynamicDailyAllowance: Math.max(12, 35.5 * (1 - expenseSurge / 100)),
+      shortfallProbability: 28.5,
+      riskLevel: 'HIGH' as const,
+      pathsRun: 1000,
+    };
+  }
+
   // If this is a follow-up Q&A query
   if (body.query) {
     const q = body.query.toLowerCase();
-    let reply = `Based on your simulated 30-day projection, maintaining a daily allowance of RM ${(35.5 * (1 - expenseSurge / 100)).toFixed(2)} will keep your survival runway intact until the next billing cycle.`;
+    const allowance = engineResult.dynamicDailyAllowance;
+    const cfar = engineResult.cfar95;
+    const shortfall = engineResult.shortfallProbability;
+    const risk = engineResult.riskLevel;
 
-    if (q.includes('dinner') || q.includes('eat') || q.includes('afford')) {
-      reply = `🍽️ **Affordability Analysis**:\nYour baseline safe spend is RM ${(35.5 * (1 - expenseSurge / 100)).toFixed(2)}/day. If dinner exceeds RM 45.00 tonight, it will shorten your projected runway by 1.8 days. Opting for a campus meal preserves your Day 18 safety cushion.`;
-    } else if (q.includes('avoid') || q.includes('breach') || q.includes('fix') || q.includes('day 18')) {
-      reply = `🎯 **Breach Avoidance Recommendations**:\n1. Pause non-essential shopping for 10 days (+RM 180.00 saved).\n2. Claim your Spotify Student discount (+RM 7.40/mo).\n3. Keep your dining ceiling capped at RM 25/day. This pushes your breach date past Day 30!`;
-    } else if (q.includes('subscription') || q.includes('downgrade')) {
-      reply = `📱 **Subscription Impact**:\nYou have active fixed bills totaling RM 223.20 this month. Amortizing annual fees avoids the sharp liquidity cliff on Day 18.`;
-    } else if (q.includes('explain') || q.includes('cfar') || q.includes('how')) {
-      reply = `💡 **Cash-Flow-at-Risk (CFaR 95%)** represents the maximum shortfall you could face by month-end with 95% statistical confidence.\n\nUnlike traditional backward-looking budgets, CFaR runs 1,000 randomized Monte Carlo paths based on your historical daily spending volatility. Under this stressed scenario, your 95% worst-case cash gap expands to RM ${(312.5 + proposedAmount * 2.1).toFixed(2)}.`;
-    } else if (q.includes('arm') || q.includes('shield') || q.includes('lock')) {
-      reply = `🛡️ **Autonomous Protection Armed!**\n\nCtrlPay will automatically intercept discretionary payment requests exceeding RM ${(35.5 * (1 - expenseSurge / 100)).toFixed(2)}/day, locking them in 24-hour quarantine escrow to ensure your cash reserve remains safely above the RM 150.00 floor.`;
-    } else if (q.includes('graph') || q.includes('chart') || q.includes('curve') || q.includes('line')) {
-      reply = `📈 **30-Day Liquidity Curve Insight**:\nThe soft indigo line models your historical baseline trajectory, while the red dashed curve accounts for the +${expenseSurge}% expense surge and scheduled fixed bills. Notice the red curve dips below the RM 150 survival floor on Day 18 without spending adjustments.`;
-    } else if (q.includes('compare') || q.includes('scenario')) {
-      reply = `⚖️ **Scenario Comparison**:\n• Mild (5% drop, 10% surge): 0 breach days, runway 30+ days.\n• Moderate (15% drop, 20% surge): Day 18 breach, runway ~13.2 days.\n• Severe (30% drop, 40% surge): Day 9 breach, runway ~6.5 days.`;
+    // Word-boundary matching is mandatory for short English words. Without it,
+    // "Create a budget plan" matches `eat` and "how are you" matches `how`.
+    const hasWord = (word: string) =>
+      new RegExp(`(?:^|[^a-z0-9])${word}(?:$|[^a-z0-9])`, 'i').test(q);
+
+    const asksHowCfarWorks =
+      hasWord('how') &&
+      (hasWord('work') || hasWord('calculate') || hasWord('mean') || hasWord('explain'));
+
+    let reply = `I can help with this What-If scenario. Ask about the 95% CFaR, shortfall probability, safe daily allowance, a specific purchase, or the projected breach day. Current run: ${risk} risk, CFaR RM ${cfar.toFixed(2)}, allowance RM ${allowance.toFixed(2)}.`;
+
+    if (hasWord('dinner') || hasWord('eat') || hasWord('meal') || q.includes('afford')) {
+      reply = `🍽️ **Affordability Analysis**:\nYour deterministic safe daily allowance is RM ${allowance.toFixed(2)}. Under this scenario, 95% CFaR is RM ${cfar.toFixed(2)} and shortfall probability is ${shortfall.toFixed(1)}%. A meal is affordable only if it fits inside the allowance without pushing the projected balance below your savings goal.`;
+    } else if (hasWord('budget') || hasWord('plan') || q.includes('saving')) {
+      reply = `🎯 **Budget Plan**:\nThe deterministic engine gives you RM ${allowance.toFixed(2)} of safe daily spending after this scenario, while protecting a monthly savings goal of RM ${snapshot.monthlySavingsGoal.toFixed(2)}. Keep discretionary spending inside that daily allowance and review the chart for the projected breach day.`;
+    } else if (hasWord('avoid') || hasWord('breach') || hasWord('fix')) {
+      reply = `🎯 **Breach Avoidance**:\nThe engine currently flags ${risk} risk with a 95% CFaR of RM ${cfar.toFixed(2)}. Reduce discretionary spending, protect the RM ${allowance.toFixed(2)} daily allowance, and use the chart to see the projected breach day.`;
+    } else if (hasWord('subscription') || hasWord('downgrade')) {
+      reply = `📱 **Subscription Impact**:\nFixed bills and subscriptions are already included in the deterministic projection. This scenario's 95% CFaR is RM ${cfar.toFixed(2)} and shortfall probability is ${shortfall.toFixed(1)}%. Review the Zombie Radar for student downgrade options.`;
+    } else if (q.includes('cfar') || q.includes('cash-flow-at-risk') || q.includes('cash flow at risk') || asksHowCfarWorks) {
+      reply = `💡 **Cash-Flow-at-Risk (CFaR 95%)** is the 95th-percentile shortfall from the deterministic Monte Carlo engine. It is not a forecast written by the language model. For this scenario, the engine reports a 95% CFaR of RM ${cfar.toFixed(2)} and a shortfall probability of ${shortfall.toFixed(1)}%.`;
+    } else if (hasWord('arm') || hasWord('shield') || hasWord('lock') || hasWord('locked')) {
+      reply = `🛡️ **Protection Status**:\nCtrlPay can intercept discretionary payments above the safe daily allowance of RM ${allowance.toFixed(2)}. Any lock still needs your explicit click and authorization reference; nothing moves automatically.`;
+    } else if (hasWord('graph') || hasWord('chart') || hasWord('curve') || hasWord('line')) {
+      reply = `📈 **30-Day Liquidity Curve**:\nThe chart is generated by the deterministic engine. This scenario's 95% CFaR is RM ${cfar.toFixed(2)}, shortfall probability is ${shortfall.toFixed(1)}%, and the safe daily allowance is RM ${allowance.toFixed(2)}.`;
+    } else if (hasWord('compare') || hasWord('scenario')) {
+      reply = `⚖️ **Scenario Comparison**:\nUse the scenario presets to compare mild, moderate, and severe stress. The current run reports ${risk} risk, 95% CFaR RM ${cfar.toFixed(2)}, and shortfall probability ${shortfall.toFixed(1)}%.`;
     }
 
     auditLog.append(
@@ -84,24 +120,6 @@ export async function POST(req: Request) {
     );
 
     return Response.json({ success: true, reply });
-  }
-
-  // Run deterministic quant simulation
-  let engineResult;
-  try {
-    engineResult = runWhatIfForUser(userId, snapshot, {
-      targetItem: 'Scenario Simulator',
-      itemPrice: proposedAmount,
-      category: 'Shopping',
-    });
-  } catch {
-    engineResult = {
-      cfar95: 312.5 + proposedAmount * 2.1,
-      dynamicDailyAllowance: Math.max(12, 35.5 * (1 - expenseSurge / 100)),
-      shortfallProbability: 28.5,
-      riskLevel: 'HIGH' as const,
-      pathsRun: 1000,
-    };
   }
 
   const baselineCfar = 312.5;

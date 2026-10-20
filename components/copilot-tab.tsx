@@ -33,6 +33,8 @@ import { AgentChat } from '@/components/agent-chat';
 import { MultimodalBookkeeping } from '@/components/multimodal-bookkeeping';
 import { ConversationalCfarSimulator } from '@/components/chat/conversational-cfar-simulator';
 import { AgentExecutionChat } from '@/components/chat/agent-execution-chat';
+import { consumeDataStreamText } from '@/lib/ai-stream';
+import type { SpendCategory } from '@/lib/types';
 
 export interface CopilotTabProps {
   onBack?: () => void;
@@ -48,6 +50,89 @@ export interface CopilotTabProps {
   onClearCfar?: () => void;
 }
 
+const SPEND_CATEGORIES: SpendCategory[] = [
+  'Bills_Utilities',
+  'Campus_Cafeteria_Basic',
+  'Medical',
+  'Transport_Essential',
+  'Food_Delivery_Grab_Foodpanda',
+  'Entertainment',
+  'Bubble_Tea_Dining',
+  'Shopping',
+];
+
+/** Normalise the free-form OCR category into the engine's strict enum. */
+function toSpendCategory(raw: string): SpendCategory {
+  const exact = SPEND_CATEGORIES.find((category) => category.toLowerCase() === raw.toLowerCase());
+  if (exact) return exact;
+
+  const c = raw.toLowerCase();
+  if (c.includes('bill') || c.includes('utilit')) return 'Bills_Utilities';
+  if (c.includes('campus') || c.includes('cafeteria')) return 'Campus_Cafeteria_Basic';
+  if (c.includes('medical') || c.includes('health') || c.includes('pharmacy')) return 'Medical';
+  if (c.includes('transport') || c.includes('grab') || c.includes('ride')) return 'Transport_Essential';
+  if (c.includes('delivery') || c.includes('foodpanda')) return 'Food_Delivery_Grab_Foodpanda';
+  if (c.includes('entertain') || c.includes('stream') || c.includes('game')) return 'Entertainment';
+  if (c.includes('food') || c.includes('dining') || c.includes('cafe') || c.includes('tea')) {
+    return 'Bubble_Tea_Dining';
+  }
+  return 'Shopping';
+}
+
+function buildProposalPrompt(
+  text: string,
+  proposal: { merchant: string; amount: number; category: string },
+): string {
+  return `The user is reviewing this intercepted payment in the CtrlPay sandbox:
+- Merchant: ${proposal.merchant}
+- Amount: RM ${proposal.amount.toFixed(2)}
+- Category: ${proposal.category} (engine category: ${toSpendCategory(proposal.category)})
+- Ledger base currency: MYR
+
+The user's message is: ${text}
+
+Reply directly to the user's message. Use a tool whenever you need a money figure; never invent one. Do not call propose_quarantine, propose_escrow, or propose_sweep in this chat — the user is asking a question, not approving a contract. Keep it warm and concise.`;
+}
+
+function buildDeterministicProposalReply(
+  text: string,
+  proposal: { merchant: string; amount: number; category: string },
+  notice?: string,
+): string {
+  const state = useCtrlPayStore.getState();
+  const snapshot = state.ledgerSnapshot();
+  const result = state.runWhatIf({
+    merchant: proposal.merchant,
+    amount: proposal.amount,
+    category: toSpendCategory(proposal.category),
+    isNeed: false,
+  });
+  const prefix = notice ? `${notice}\n\n` : '';
+  const asksForRisk = /cfar|what.?if|simulat|afford|shortfall|risk|safe|allowance/i.test(text);
+  const asksForBudget = /budget|plan|save|saving/i.test(text);
+
+  if (asksForBudget) {
+    return `${prefix}Deterministic budget snapshot:
+• Safe daily allowance: RM ${state.dynamicDailyAllowance().toFixed(2)}
+• After this payment: RM ${result.dynamicDailyAllowance.toFixed(2)}
+• Monthly savings goal: RM ${snapshot.monthlySavingsGoal.toFixed(2)}
+
+Keep discretionary spending inside the daily allowance and protect the savings goal. Nothing moves without your click.`;
+  }
+
+  if (asksForRisk) {
+    return `${prefix}Here is the deterministic engine snapshot for this payment:
+• 95% CFaR: RM ${result.cfar95.toFixed(2)}
+• Shortfall probability: ${result.shortfallProbability.toFixed(1)}%
+• Risk level: ${result.riskLevel}
+• Safe daily allowance after this payment: RM ${result.dynamicDailyAllowance.toFixed(2)}
+
+Nothing has moved. You remain in control.`;
+  }
+
+  return `${prefix}I couldn't reach the live AI service just now. Your current sandbox balance is RM ${snapshot.currentBalance.toFixed(2)} and today's deterministic allowance is RM ${state.dynamicDailyAllowance().toFixed(2)}. You can still use the What-If simulator; no payment has moved.`;
+}
+
 export function CopilotTab({
   onBack,
   onOpenSheet,
@@ -59,6 +144,10 @@ export function CopilotTab({
 }: CopilotTabProps) {
   const profile = useCtrlPayStore((s) => s.profile);
   const userName = profile.fullName?.split(' ')[0] || 'Jerome';
+  const totalExpenses = useCtrlPayStore((s) => s.totalExpenses);
+  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
+  const categoryExpenses = useCtrlPayStore((s) => s.categoryExpenses);
+  const safeAllowance = useCtrlPayStore((s) => s.dynamicDailyAllowance());
 
   const [proposal, setProposal] = React.useState(initialProposal ?? null);
   const [activeQuery, setActiveQuery] = React.useState<{
@@ -120,12 +209,48 @@ export function CopilotTab({
   };
 
   // Proposal states
-  const [currentDiningBudget, setCurrentDiningBudget] = React.useState(400);
-  const [newDiningBudget, setNewDiningBudget] = React.useState(350);
   const [isAdjustmentConfirmed, setIsAdjustmentConfirmed] = React.useState(false);
   const [extraChatMessages, setExtraChatMessages] = React.useState<
     Array<{ id: string; role: 'user' | 'assistant'; text: string; time?: string }>
   >([]);
+  const [isProposalThinking, setIsProposalThinking] = React.useState(false);
+
+  const proposalRisk = React.useMemo(() => {
+    if (!proposal) return null;
+    return useCtrlPayStore.getState().runWhatIf({
+      merchant: proposal.merchant,
+      amount: proposal.amount,
+      category: toSpendCategory(proposal.category),
+      isNeed: false,
+    });
+  }, [proposal]);
+
+  const categoryRows = React.useMemo(() => {
+    const total = totalExpenses > 0 ? totalExpenses : 1;
+    const palette = ['#F59E0B', '#EC4899', '#0EA5E9', '#10B981'];
+    return Object.entries(categoryExpenses ?? {})
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 4)
+      .map(([name, amount], index) => ({
+        name: name.replace(' & ', ' '),
+        amount,
+        percent: Math.max(0, Math.min(100, Math.round((amount / total) * 100))),
+        color: palette[index] ?? '#94A3B8',
+      }));
+  }, [categoryExpenses, totalExpenses]);
+
+  const topCategory = categoryRows[0] ?? {
+    name: 'Monthly spending',
+    amount: totalExpenses,
+    percent: 100,
+    color: '#F59E0B',
+  };
+  const savingsGoal = useCtrlPayStore.getState().ledgerSnapshot().monthlySavingsGoal;
+  const afterPaymentAllowance = proposalRisk?.dynamicDailyAllowance ?? safeAllowance;
+  const allowanceDrop =
+    safeAllowance > 0
+      ? Math.max(0, Math.round(((safeAllowance - afterPaymentAllowance) / safeAllowance) * 100))
+      : 0;
 
   React.useEffect(() => {
     if (initialProposal) {
@@ -213,51 +338,83 @@ export function CopilotTab({
   };
 
   const handleProposalSend = async (text: string) => {
-    if (!text.trim()) return;
+    const trimmed = text.trim();
+    if (!trimmed || isProposalThinking || !proposal) return;
+
     const userMsg = {
       id: `user-${Date.now()}`,
       role: 'user' as const,
-      text,
+      text: trimmed,
       time: 'Just now',
     };
     setExtraChatMessages((prev) => [...prev, userMsg]);
     setInputText('');
+    setIsProposalThinking(true);
+
+    let unavailableNotice: string | undefined;
 
     try {
-      const res = await fetch('/api/cfar-simulation', {
+      const state = useCtrlPayStore.getState();
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: text,
-          proposedAmount: proposal?.amount || 50,
-          ledgerSnapshot: useCtrlPayStore.getState().ledgerSnapshot(),
+          messages: [
+            {
+              id: `proposal-${Date.now()}`,
+              role: 'user',
+              content: buildProposalPrompt(trimmed, proposal),
+            },
+          ],
+          ledgerSnapshot: state.ledgerSnapshot(),
+          autonomy: {
+            masterAutonomyEnabled: state.masterAutonomyEnabled,
+            enabledTiers: state.enabledTiers,
+          },
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setExtraChatMessages((prev) => [
-          ...prev,
-          {
-            id: `ai-${Date.now()}`,
-            role: 'assistant' as const,
-            text: data.reply,
-            time: 'Just now',
-          },
-        ]);
-        return;
-      }
-    } catch {
-      // fallback
-    }
 
-    let reply = `I've noted that! With your current dining adjustment to RM ${isAdjustmentConfirmed ? '350.00' : '350.00 (recommended)'}, your month-end survival probability stands strong at 94%.`;
-    const lower = text.toLowerCase();
-    if (lower.includes('chart') || lower.includes('spend')) {
-      reply = `Here is your spending analysis: Dining RM 365 (91%), Shopping RM 140 (35%), Utilities RM 89 (22%). By capping daily dining at RM 15, you maintain a 100% safe buffer!`;
-    } else if (lower.includes('plan') || lower.includes('budget')) {
-      reply = `I suggest setting your daily campus meal budget to RM 12–15. This leaves RM 50 safe liquidity in your escrow vault for weekend emergency funds.`;
-    } else if (lower.includes('afford') || lower.includes('dinner')) {
-      reply = `For tonight, you have RM 35.00 remaining in dining. A campus cafeteria dinner (RM 8–12) is completely safe without impacting your runway!`;
+      if (res.ok) {
+        const result = await consumeDataStreamText(res);
+        if (result.text) {
+          setExtraChatMessages((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              role: 'assistant' as const,
+              text: result.text,
+              time: 'Just now',
+            },
+          ]);
+          return;
+        }
+
+        if (result.toolCalls > 0) {
+          setExtraChatMessages((prev) => [
+            ...prev,
+            {
+              id: `ai-${Date.now()}`,
+              role: 'assistant' as const,
+              text: 'The agent prepared a contract proposal for this payment. Please review the card in the payment interceptor; nothing moves without your explicit approval.',
+              time: 'Just now',
+            },
+          ]);
+          return;
+        }
+
+        unavailableNotice = result.error
+          ? `Live AI unavailable: ${result.error}`
+          : 'Live AI returned no text.';
+      } else if (res.status === 503) {
+        unavailableNotice = 'Live AI is not configured in this deployment.';
+      } else {
+        unavailableNotice = `Live AI is unavailable (HTTP ${res.status}).`;
+      }
+    } catch (err) {
+      console.warn('[COPILOT_PROPOSAL_AI]', err);
+      unavailableNotice = 'Live AI is temporarily unreachable.';
+    } finally {
+      setIsProposalThinking(false);
     }
 
     setExtraChatMessages((prev) => [
@@ -265,7 +422,7 @@ export function CopilotTab({
       {
         id: `ai-${Date.now()}`,
         role: 'assistant' as const,
-        text: reply,
+        text: buildDeterministicProposalReply(trimmed, proposal, unavailableNotice),
         time: 'Just now',
       },
     ]);
@@ -273,14 +430,13 @@ export function CopilotTab({
 
   const handleConfirmAdjustment = () => {
     setIsAdjustmentConfirmed(true);
-    setNewDiningBudget(350);
     setTimeout(() => {
       setExtraChatMessages((prev) => [
         ...prev,
         {
           id: `ai-confirm-${Date.now()}`,
           role: 'assistant' as const,
-          text: `✅ Budget Adjustment Confirmed! Your monthly dining threshold has been calibrated to RM 350.00. An estimated +4.5 days of financial runway has been unlocked.`,
+          text: '✅ Snapshot acknowledged. No budget or payment was changed. Use the payment interceptor card to approve, modify, or decline the actual proposal.',
           time: 'Just now',
         },
       ]);
@@ -467,7 +623,8 @@ export function CopilotTab({
                       <span className="font-bold text-[#7C3AED]">{proposal.category}</span>).
                     </p>
                     <p className="mt-1.5 text-[11.5px] text-slate-500">
-                      Your dining spend this week has surged to <span className="font-bold text-amber-600">91%</span> of your monthly allocation.
+                      Your snapshot shows <span className="font-bold text-[#0F172A]">RM {totalExpenses.toFixed(2)}</span> spent this month
+                      and <span className="font-bold text-emerald-700">RM {currentBalance.toFixed(2)}</span> available in the sandbox.
                     </p>
                   </div>
                   {/* Reaction micro-controls matching reference style */}
@@ -504,35 +661,35 @@ export function CopilotTab({
                   <BarChart3 className="h-4 w-4" />
                 </div>
                 <div className="flex-1 space-y-2.5 max-w-[92%]">
-                  {/* VISUAL GRAPH 1: Dining Budget Burn Bar */}
+                  {/* VISUAL GRAPH 1: Top category share of monthly spend */}
                   <div className="rounded-[20px] bg-white/95 backdrop-blur-xl p-3.5 shadow-sm border border-gray-100 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        Dining Budget Utilization
+                        {topCategory.name} · Share of Monthly Spend
                       </span>
                       <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-black text-amber-700 border border-amber-200">
-                        ⚠️ 91% Burned
+                        {topCategory.percent}% of total
                       </span>
                     </div>
 
                     <div className="flex items-baseline justify-between">
                       <div>
-                        <span className="font-sans text-[19px] font-black text-[#04222B]">RM 365.00</span>
-                        <span className="text-[11px] font-bold text-gray-400 ml-1">spent of RM 400.00</span>
+                        <span className="font-sans text-[19px] font-black text-[#04222B]">RM {topCategory.amount.toFixed(2)}</span>
+                        <span className="text-[11px] font-bold text-gray-400 ml-1">of RM {totalExpenses.toFixed(2)}</span>
                       </div>
-                      <span className="text-[10.5px] font-extrabold text-rose-600">RM 35.00 left</span>
+                      <span className="text-[10.5px] font-extrabold text-rose-600">{topCategory.percent}%</span>
                     </div>
 
                     <div className="relative h-2 w-full rounded-full bg-gray-100 overflow-hidden">
                       <motion.div
                         className="h-full rounded-full bg-gradient-to-r from-amber-400 via-rose-500 to-rose-600"
                         initial={{ width: 0 }}
-                        animate={{ width: '91.25%' }}
+                        animate={{ width: `${topCategory.percent}%` }}
                         transition={{ duration: 0.9, ease: 'easeOut' }}
                       />
                     </div>
                     <p className="text-[10px] text-gray-500">
-                      With 13 days remaining in this billing cycle, current velocity puts you at risk of dipping below your survival floor.
+                      This is the actual sandbox category total, not a fabricated budget. The deterministic engine uses its own allowances below.
                     </p>
                   </div>
 
@@ -547,23 +704,15 @@ export function CopilotTab({
                     </div>
 
                     <div className="space-y-1.5">
-                      {[
-                        { name: 'Dining', amount: 365, percent: 91, color: '#F59E0B' },
-                        { name: 'Shopping', amount: 140, percent: 35, color: '#EC4899', spike: '+40% spike' },
-                        { name: 'Utilities', amount: 89, percent: 22, color: '#0EA5E9' },
-                        { name: 'Transport', amount: 65, percent: 16, color: '#10B981' },
-                      ].map((item) => (
+                      {categoryRows.map((item) => (
                         <div key={item.name} className="space-y-0.5">
                           <div className="flex items-center justify-between text-[10.5px] font-bold">
                             <span className="text-gray-700 flex items-center gap-1">
                               {item.name}
-                              {item.spike && (
-                                <span className="text-[8px] font-black text-rose-600 bg-rose-50 px-1 py-0.2 rounded-full">
-                                  {item.spike}
-                                </span>
-                              )}
                             </span>
-                            <span className="text-[#04222B]">RM {item.amount.toFixed(2)}</span>
+                            <span className="text-[#04222B]">
+                              RM {item.amount.toFixed(2)} · {item.percent}%
+                            </span>
                           </div>
                           <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
                             <motion.div
@@ -579,22 +728,22 @@ export function CopilotTab({
                     </div>
                   </div>
 
-                  {/* VISUAL METRIC CARD 3: Potential Savings */}
+                  {/* VISUAL METRIC CARD 3: Protected savings goal */}
                   <div className="rounded-[20px] bg-gradient-to-br from-[#04222B] to-[#0A3D4A] p-3 text-white shadow-xs space-y-1">
                     <div className="flex items-center gap-1.5">
                       <span className="grid h-4.5 w-4.5 place-items-center rounded-full bg-[#10B981] text-white">
                         <TrendingDown className="h-3 w-3" />
                       </span>
                       <span className="text-[9.5px] font-extrabold uppercase tracking-wider text-cyan-200">
-                        Optimization Opportunity
+                        Protected Savings Goal
                       </span>
                     </div>
                     <div className="flex items-baseline justify-between">
-                      <span className="font-sans text-[18px] font-black text-white">Save ~RM 120.00</span>
+                      <span className="font-sans text-[18px] font-black text-white">RM {savingsGoal.toFixed(2)}</span>
                       <span className="text-[10px] font-extrabold text-[#10B981]">/ month</span>
                     </div>
                     <p className="text-[10px] text-gray-300 leading-relaxed">
-                      You could save approximately RM 120 this month if non-essential cafe visits are adjusted to campus options.
+                      This goal is part of the deterministic sandbox snapshot. CtrlPay never spends it for you, and the AI never invents a savings figure.
                     </p>
                   </div>
                 </div>
@@ -624,54 +773,58 @@ export function CopilotTab({
                         <ShieldCheck className="h-3.5 w-3.5" />
                       </span>
                       <span className="text-[10.5px] font-extrabold uppercase tracking-wide text-purple-700">
-                        AI Budget Proposal
+                        Engine Recommendation
                       </span>
                     </div>
 
                     <div>
                       <h3 className="text-[14.5px] font-bold text-[#04222B] leading-tight">
-                        Recalibrate Dining Budget Allocation
+                        Keep this payment inside today&apos;s safe allowance
                       </h3>
                       <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
-                        To stay within your monthly student survival budget, AI suggests adjusting your dining allocation by <span className="font-bold text-[#04222B]">RM 50</span>.
+                        The deterministic engine computes RM {safeAllowance.toFixed(2)} of safe daily spending today; after this RM {proposal.amount.toFixed(2)} payment, the stressed allowance is RM {afterPaymentAllowance.toFixed(2)}.
                       </p>
                     </div>
 
                     {/* Before vs After Display */}
                     <div className="grid grid-cols-2 gap-2 pt-0.5">
                       <div className="rounded-xl bg-gray-50/80 p-2 border border-gray-200/60 text-center">
-                        <span className="text-[9.5px] font-medium text-gray-500">Current Dining</span>
+                        <span className="text-[9.5px] font-medium text-gray-500">Today&apos;s Allowance</span>
                         <p className="font-sans text-[16px] font-bold text-gray-700 mt-0.5">
-                          RM {currentDiningBudget}
+                          RM {safeAllowance.toFixed(2)}
                         </p>
                       </div>
 
                       <div className="rounded-xl bg-[#ECFDF5] p-2 border border-[#A7F3D0] text-center relative overflow-hidden">
-                        <span className="absolute top-1 right-1 rounded-full bg-[#059669] text-white px-1 py-0.1 text-[7px] font-black">
-                          -12.5%
-                        </span>
-                        <span className="text-[9.5px] font-bold text-[#059669]">Proposed Target</span>
+                        {allowanceDrop > 0 && (
+                          <span className="absolute top-1 right-1 rounded-full bg-[#059669] text-white px-1 py-0.1 text-[7px] font-black">
+                            -{allowanceDrop}%
+                          </span>
+                        )}
+                        <span className="text-[9.5px] font-bold text-[#059669]">After Payment</span>
                         <p className="font-sans text-[16px] font-bold text-[#059669] mt-0.5">
-                          RM {newDiningBudget}
+                          RM {afterPaymentAllowance.toFixed(2)}
                         </p>
                       </div>
                     </div>
 
-                    {/* Runway Protection Pill */}
+                    {/* Engine risk pill */}
                     <div className="rounded-xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-100/60 p-2 flex items-center justify-between text-[10.5px]">
                       <span className="font-bold text-purple-800 flex items-center gap-1">
                         <TrendingUp className="h-3 w-3" />
-                        Runway Protection
+                        Engine Risk
                       </span>
-                      <span className="font-extrabold text-[#04222B]">+4.5 days safe survival</span>
+                      <span className="font-extrabold text-[#04222B]">
+                        {proposalRisk?.riskLevel ?? 'LOW'} · CFaR RM {(proposalRisk?.cfar95 ?? 0).toFixed(2)}
+                      </span>
                     </div>
 
-                    {/* Interactive Confirm Button */}
+                    {/* Interactive acknowledgement */}
                     <div className="pt-0.5">
                       {isAdjustmentConfirmed ? (
-                        <div className="w-full rounded-xl bg-[#059669] text-white py-2.5 text-center font-bold text-[12px] shadow-sm flex items-center justify-center gap-1.5 animate-bounce">
+                        <div className="w-full rounded-xl bg-[#059669] text-white py-2.5 text-center font-bold text-[12px] shadow-sm flex items-center justify-center gap-1.5">
                           <Check className="h-4 w-4 stroke-[3]" />
-                          <span>Budget Adjusted to RM 350.00!</span>
+                          <span>Snapshot acknowledged — nothing moved</span>
                         </div>
                       ) : (
                         <button
@@ -680,11 +833,32 @@ export function CopilotTab({
                           className="w-full rounded-xl bg-[#04222B] hover:bg-[#1E1B4B] text-white py-2.5 text-[12px] font-bold shadow-sm active:scale-95 transition-all text-center flex items-center justify-center gap-1.5"
                         >
                           <CheckCircle2 className="h-4 w-4 text-[#10B981]" />
-                          <span>Confirm Budget Adjustment</span>
+                          <span>Acknowledge engine snapshot</span>
                         </button>
                       )}
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Live AI thinking state for proposal follow-ups */}
+            {isProposalThinking && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start gap-2.5"
+              >
+                <div
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#8B5CF6] text-white shadow-xs"
+                >
+                  <Bot className="h-4 w-4 animate-pulse" />
+                </div>
+                <div className="max-w-[85%] rounded-[20px] rounded-tl-sm bg-white/95 px-3.5 py-2.5 text-[11.5px] font-medium text-slate-500 shadow-xs border border-gray-100">
+                  <span className="flex items-center gap-2">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#7C3AED]/25 border-t-[#7C3AED]" />
+                    Checking your ledger with live AI...
+                  </span>
                 </div>
               </motion.div>
             )}
@@ -729,7 +903,8 @@ export function CopilotTab({
                   key={chip}
                   type="button"
                   onClick={() => handleProposalSend(chip)}
-                  className="rounded-full bg-white/90 border border-gray-200/90 px-3 py-1 text-[11px] font-bold text-gray-700 shadow-2xs hover:border-[#6366F1] hover:text-[#6366F1] transition-colors whitespace-nowrap"
+                  disabled={isProposalThinking}
+                  className="rounded-full bg-white/90 border border-gray-200/90 px-3 py-1 text-[11px] font-bold text-gray-700 shadow-2xs hover:border-[#6366F1] hover:text-[#6366F1] transition-colors whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {chip}
                 </button>
@@ -740,7 +915,7 @@ export function CopilotTab({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                handleProposalSend(inputText);
+                if (!isProposalThinking) handleProposalSend(inputText);
               }}
               className={cn(
                 'flex items-center gap-2 rounded-full p-1.5 shadow-sm transition-all',
@@ -757,10 +932,15 @@ export function CopilotTab({
               {inputText.trim() ? (
                 <button
                   type="submit"
-                  className="grid h-8 w-8 place-items-center rounded-full bg-[#4F46E5] text-white shadow-md hover:scale-105 active:scale-90 transition-all shrink-0"
+                  disabled={isProposalThinking}
+                  className="grid h-8 w-8 place-items-center rounded-full bg-[#4F46E5] text-white shadow-md hover:scale-105 active:scale-90 transition-all shrink-0 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Send message"
                 >
-                  <Send className="h-3.5 w-3.5" />
+                  {isProposalThinking ? (
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  ) : (
+                    <Send className="h-3.5 w-3.5" />
+                  )}
                 </button>
               ) : (
                 <button
