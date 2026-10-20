@@ -2,7 +2,7 @@
 
 **Date:** 20 October 2026 (Asia/Shanghai)
 **Production URL:** <https://ctrlpay-new-bee4.vercel.app>
-**Verified commit:** `30049eb` (deployed through the GitHub Actions → Vercel workflow)
+**Verified code commit:** `33fa188` (deployed through the GitHub Actions → Vercel workflow)
 
 The production deployment is public and returns `200` without a Vercel login.
 The response headers include the hardened CSP (`wasm-unsafe-eval` and
@@ -26,7 +26,7 @@ client prefers it automatically; the gateway is only a fallback.
 | Payment interception | A Shopee RM 180 impulse payment triggered the deterministic CFaR panel and a separate live AI Copilot advice card | `production-payment-ai-advice.jpeg` |
 | Money typography / stage background | Main balance uses the same bold Outfit money face as the vault; outer stage uses the white Apple-style studio background | `production-dashboard.jpeg` |
 | Quick Log readability | Amount and merchant fields render dark text on white inputs | `production-quick-log.jpeg` |
-| Signed proposals | `CTRLPAY_SIGNING_SECRET` is present in the production runtime after the workflow provisioned it | `/api/ai-status` diagnostic (removed after verification) |
+| Signed proposals | `CTRLPAY_SIGNING_SECRET` is present in the production runtime after the workflow provisioned it | Verified before the temporary diagnostic was removed; `/api/ai-status` now returns `404` |
 
 The receipt warning and payment advice were **live model calls**, not mocked
 responses. The AI remains advisory: the deterministic engine and signed
@@ -55,4 +55,12 @@ curl -X POST https://ctrlpay-new-bee4.vercel.app/api/ai-analyze \
 ```
 
 The screenshots in this directory were captured from the deployed site at the
-commit above.
+verified code commit above.
+
+## Final validation
+
+- `npm test`: **261 passed** (25 files)
+- `npm run lint`: 0 errors (1 pre-existing `exhaustive-deps` warning)
+- `npm run build`: production build succeeded
+- Live `POST /api/ai-analyze`: OCR and payment advice both returned `200`
+- Live `/api/ai-status`: `404` after removal
