@@ -11,6 +11,10 @@ ringgit** with a tamper-evident audit trail.
 > ⚠️ **Sandbox.** No real funds move. Every balance, vault, escrow and reward is a labelled
 > local ledger bucket. Not a bank, not financial advice.
 
+**Live demo:** <https://ctrlpay-new-bee4.vercel.app>
+**Source:** <https://github.com/zhangze1007/Yi-HUi>
+**Demo account:** none required — the judge sandbox opens with a fresh synthetic student profile.
+
 ---
 
 ## 2026 Shenzhen FinTechathon — Submission Checklist & Evidence Index
