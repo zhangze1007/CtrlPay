@@ -238,7 +238,6 @@ function StatusBar({
         </button>
         <span className="duo-num text-[12px] font-bold">{time}</span>
       </span>
-      <span className="ct-island absolute left-1/2 top-1.5 h-6 w-[92px] -translate-x-1/2 rounded-full" />
       <span className="flex items-center gap-2">
         <button
           type="button"

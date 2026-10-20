@@ -198,11 +198,6 @@
     }
   }
 
-  /* Dynamic island */
-  .ct-island {
-    background: var(--holst-950);
-  }
-
   /* ---------------- Surfaces ---------------- */
   /* Borderless frosted card — replaces the generic bordered bento box. */
   .duo-card {
