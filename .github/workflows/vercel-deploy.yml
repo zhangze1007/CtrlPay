@@ -33,6 +33,45 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      # The Groq key existed on the project but was not visible to Production.
+      # Copy any GROQ* value already stored in Vercel into a production-scoped
+      # GROQ_API_KEY before pulling the build environment. Never print the value.
+      - name: Ensure Groq key is available to Production
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          envs=$(curl -sS \
+            "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?teamId=${VERCEL_ORG_ID}&decrypt=true" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}")
+          key=$(echo "$envs" | jq -r '[.envs[] | select(.key | test("^GROQ"; "i")) | select(.value != null and .value != "")][0].value // empty')
+          if [ -z "$key" ]; then
+            echo "::warning::No non-empty GROQ* environment variable found in the Vercel project."
+            exit 0
+          fi
+
+          env_id=$(echo "$envs" | jq -r '[.envs[] | select(.key == "GROQ_API_KEY")][0].id // empty')
+          if [ -n "$env_id" ]; then
+            targets=$(echo "$envs" | jq -c '[.envs[] | select(.key == "GROQ_API_KEY")][0].target // []')
+            new_targets=$(echo "$targets" | jq -c '. + ["production"] | unique')
+            payload=$(jq -n --arg v "$key" --argjson t "$new_targets" '{value: $v, target: $t}')
+            curl -sS -X PATCH \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env/${env_id}?teamId=${VERCEL_ORG_ID}" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$payload" > /dev/null
+            echo "Updated GROQ_API_KEY targets to include production."
+          else
+            payload=$(jq -n --arg v "$key" '{key: "GROQ_API_KEY", value: $v, type: "encrypted", target: ["production"]}')
+            curl -sS -X POST \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?teamId=${VERCEL_ORG_ID}" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$payload" > /dev/null
+            echo "Created a production-scoped GROQ_API_KEY from the existing Vercel Groq value."
+          fi
+
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
