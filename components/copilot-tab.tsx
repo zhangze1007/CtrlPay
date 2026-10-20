@@ -66,6 +66,7 @@ export function CopilotTab({
     prompt: string;
   } | null>(null);
   const [inputText, setInputText] = React.useState('');
+  const [livePrompt, setLivePrompt] = React.useState<string | null>(null);
   const [isVoiceActive, setIsVoiceActive] = React.useState(false);
   const [isBlinking, setIsBlinking] = React.useState(false);
   const [isCfarSimulating, setIsCfarSimulating] = React.useState<boolean>(Boolean(initialCfarActive));
@@ -73,6 +74,8 @@ export function CopilotTab({
   React.useEffect(() => {
     if (initialCfarActive) {
       setIsCfarSimulating(true);
+      setLivePrompt(null);
+      setActiveQuery(null);
     }
   }, [initialCfarActive]);
 
@@ -128,6 +131,8 @@ export function CopilotTab({
     if (initialProposal) {
       setProposal(initialProposal);
       setIsAdjustmentConfirmed(false);
+      setLivePrompt(null);
+      setActiveQuery(null);
     }
   }, [initialProposal]);
 
@@ -202,10 +207,8 @@ export function CopilotTab({
       handleProposalSend(text.trim());
       return;
     }
-    setActiveQuery({
-      intent: 'general',
-      prompt: text.trim(),
-    });
+    setActiveQuery(null);
+    setLivePrompt(text.trim());
     setInputText('');
   };
 
@@ -770,6 +773,62 @@ export function CopilotTab({
     );
   }
 
+  // Free-form questions use the live Gemini agent. The fixed report/zombie/sweep
+  // suggestions above still use the deterministic engine trace.
+  if (livePrompt) {
+    return (
+      <div className="animate-fade-in -mx-1 pb-16 space-y-3 select-none">
+        <header className="sticky -top-1 z-30 -mx-3 px-4 pt-2.5 pb-2.5 ct-header-glass flex items-center justify-between transition-all">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setLivePrompt(null)}
+              className="grid h-8 w-8 place-items-center rounded-full bg-white/60 hover:bg-white/90 border border-white/80 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
+              aria-label="Back to Copilot"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <div
+              className="grid h-8 w-8 place-items-center rounded-full text-white shadow-xs"
+              style={{
+                background:
+                  'radial-gradient(circle at 35% 28%, #F0ABFC 0%, #C084FC 35%, #818CF8 70%, #4F46E5 100%)',
+              }}
+            >
+              <Bot className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-[16px] font-black tracking-tight text-[#0B1E3F]">
+                CtrlPay Copilot
+              </h2>
+              <p className="text-[11px] font-medium text-[#7C3AED]">
+                Live Gemini · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setLivePrompt(null)}
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/60 hover:bg-white/90 border border-white/80 px-3 py-1.5 text-[11px] font-bold text-[#0B1E3F] shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(255,255,255,0.9)] backdrop-blur-md active:scale-95 transition-all"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>New Chat</span>
+          </button>
+        </header>
+
+        <div className="rounded-[28px] bg-white/90 p-3.5 shadow-sm border border-white/80 backdrop-blur-md min-h-[66vh] flex flex-col">
+          <AgentChat
+            key={livePrompt}
+            initialPrompt={livePrompt}
+            withBookkeeping={false}
+            compact
+          />
+        </div>
+      </div>
+    );
+  }
+
   // If a chat query is active, display the interactive Agent Execution Chat interface
   if (activeQuery) {
     return (
@@ -819,6 +878,10 @@ export function CopilotTab({
           <AgentExecutionChat
             initialQuery={activeQuery}
             onClose={() => setActiveQuery(null)}
+            onFreeformQuery={(text) => {
+              setActiveQuery(null);
+              setLivePrompt(text);
+            }}
             onOpenWhatIf={() => {
               setActiveQuery(null);
               setIsCfarSimulating(true);
@@ -898,6 +961,12 @@ export function CopilotTab({
         <p className="text-[14.5px] font-medium text-slate-500">
           How can I help you today?
         </p>
+        <div className="flex justify-center pt-1">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6366F1]/20 bg-white/70 px-2.5 py-1 text-[9.5px] font-bold text-[#4F46E5] shadow-2xs backdrop-blur-md">
+            <Sparkles className="h-3 w-3" />
+            Live Gemini · free-form answers
+          </span>
+        </div>
       </div>
 
       {/* 3. Centerpiece Glowing AI Orb with Visor Eyes matching screenshot */}
@@ -1017,7 +1086,7 @@ export function CopilotTab({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask me anything..."
+            placeholder="Ask anything — live Gemini..."
             className="flex-1 bg-transparent px-2 text-[13.5px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
 
@@ -1041,6 +1110,9 @@ export function CopilotTab({
             </button>
           )}
         </form>
+        <p className="mt-1.5 text-center text-[9.5px] font-medium text-slate-500">
+          Fixed demo cards use the deterministic engine · free-form chat uses Live Gemini
+        </p>
       </div>
     </div>
   );

@@ -31,6 +31,8 @@ export interface AgentExecutionChatProps {
   onClose?: () => void;
   onOpenWhatIf?: () => void;
   onOpenAudit?: () => void;
+  /** Route a free-form follow-up to the live Gemini Copilot instead of the intent templates. */
+  onFreeformQuery?: (text: string) => void;
 }
 
 interface ChatMessage {
@@ -47,6 +49,7 @@ export function AgentExecutionChat({
   onClose,
   onOpenWhatIf,
   onOpenAudit,
+  onFreeformQuery,
 }: AgentExecutionChatProps) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [inputText, setInputText] = React.useState('');
@@ -198,6 +201,10 @@ export function AgentExecutionChat({
     if (!inputText.trim() || isComputing) return;
     const text = inputText.trim();
     setInputText('');
+    if (onFreeformQuery) {
+      onFreeformQuery(text);
+      return;
+    }
     void executeAgentFlow('general', text);
   };
 
@@ -395,7 +402,13 @@ export function AgentExecutionChat({
             <button
               key={chip.label}
               type="button"
-              onClick={() => void executeAgentFlow(chip.intent, chip.label)}
+              onClick={() => {
+                if (chip.intent === 'general' && onFreeformQuery) {
+                  onFreeformQuery(chip.label);
+                  return;
+                }
+                void executeAgentFlow(chip.intent, chip.label);
+              }}
               className="rounded-full bg-white/90 border border-gray-200/90 px-3 py-1 text-[11px] font-bold text-gray-700 shadow-2xs hover:border-[#6366F1] hover:text-[#6366F1] transition-colors whitespace-nowrap"
             >
               {chip.label}
@@ -412,7 +425,7 @@ export function AgentExecutionChat({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask Copilot or test tool calling..."
+            placeholder="Ask anything — live Gemini..."
             className="flex-1 bg-transparent px-3 text-[13px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
           <button

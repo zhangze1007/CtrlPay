@@ -83,9 +83,12 @@ function ToolSummary({ inv }: { inv: LooseToolInvocation }) {
 export function AgentChat({
   withBookkeeping = true,
   initialPrompt,
+  compact = false,
 }: {
   withBookkeeping?: boolean;
   initialPrompt?: string;
+  /** Hide the duplicate card header when the chat is embedded inside the Copilot shell. */
+  compact?: boolean;
 } = {}) {
   const roastTone = useCtrlPayStore((s) => s.roastTone);
   const setRoastTone = useCtrlPayStore((s) => s.setRoastTone);
@@ -156,38 +159,46 @@ export function AgentChat({
 
   return (
     <Card className="flex h-full flex-col border-0 bg-transparent shadow-none ring-0 backdrop-blur-none">
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-4 w-4" /> CtrlPay Agent
-          </CardTitle>
-          <CardDescription>
-            Numbers come from the server-side engine, never the model. You approve every state change.
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">AI SDK v4 · Gemini</Badge>
-          <div className="flex items-center gap-1">
-            <span className="mr-1 text-[11px] text-muted-foreground">Roast tone</span>
-            <Button
-              size="sm"
-              variant={roastTone === 'GENTLE' ? 'secondary' : 'ghost'}
-              onClick={() => setRoastTone('GENTLE')}
-            >
-              Gentle
-            </Button>
-            <Button
-              size="sm"
-              variant={roastTone === 'SPICY' ? 'secondary' : 'ghost'}
-              onClick={() => setRoastTone('SPICY')}
-            >
-              Spicy
-            </Button>
+      {!compact && (
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Bot className="h-4 w-4" /> CtrlPay Agent
+            </CardTitle>
+            <CardDescription>
+              Numbers come from the server-side engine (base ledger MYR), never the model. You approve
+              every state change.
+            </CardDescription>
           </div>
-        </div>
-      </CardHeader>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">AI SDK v4 · Gemini</Badge>
+            <div className="flex items-center gap-1">
+              <span className="mr-1 text-[11px] text-muted-foreground">Roast tone</span>
+              <Button
+                size="sm"
+                variant={roastTone === 'GENTLE' ? 'secondary' : 'ghost'}
+                onClick={() => setRoastTone('GENTLE')}
+              >
+                Gentle
+              </Button>
+              <Button
+                size="sm"
+                variant={roastTone === 'SPICY' ? 'secondary' : 'ghost'}
+                onClick={() => setRoastTone('SPICY')}
+              >
+                Spicy
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      )}
 
-      <CardContent className="flex flex-1 flex-col gap-3 overflow-hidden">
+      <CardContent
+        className={cn(
+          'flex flex-1 flex-col gap-3 overflow-hidden',
+          compact && 'pt-3',
+        )}
+      >
         {verifier === 'BLOCKED' && (
           <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
             Post-LLM number verifier blocked an ungrounded RM figure in the last reply. The guardrail is
