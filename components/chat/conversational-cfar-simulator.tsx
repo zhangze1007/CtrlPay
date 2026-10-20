@@ -32,6 +32,8 @@ export interface ConversationalCfarSimulatorProps {
   onBack?: () => void;
   onClose?: () => void;
   initialScenario?: 'moderate' | 'mild' | 'severe';
+  /** Route a free-form question to the live Gemini Copilot instead of the CFaR template. */
+  onFreeformQuery?: (text: string) => void;
 }
 
 export type ScenarioPreset = 'mild' | 'moderate' | 'severe';
@@ -39,6 +41,7 @@ export type ScenarioPreset = 'mild' | 'moderate' | 'severe';
 export function ConversationalCfarSimulator({
   onBack,
   onClose,
+  onFreeformQuery,
 }: ConversationalCfarSimulatorProps) {
   const currentBalance = useCtrlPayStore((s) => s.currentBalance);
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
@@ -364,6 +367,10 @@ export function ConversationalCfarSimulator({
     if (!inputText.trim()) return;
     const text = inputText.trim();
     setInputText('');
+    if (onFreeformQuery) {
+      onFreeformQuery(text);
+      return;
+    }
     void sendQueryToApi(text);
   };
 
@@ -1128,7 +1135,11 @@ export function ConversationalCfarSimulator({
       {/* ============================================================== *
        * BOTTOM INTERACTIVE INPUT BAR FOR FOLLOW-UP QUESTIONS
        * ============================================================== */}
-      <div className="pt-2 space-y-2">
+      <div className="pt-2 space-y-2 pb-16">
+        <p className="px-1 text-[9.5px] font-medium text-slate-500">
+          Free-form questions use Live Gemini · scenario cards stay deterministic
+        </p>
+
         {/* Quick Follow-up Question Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
           {[
@@ -1139,7 +1150,13 @@ export function ConversationalCfarSimulator({
             <button
               key={chip}
               type="button"
-              onClick={() => void sendQueryToApi(chip)}
+              onClick={() => {
+                if (onFreeformQuery) {
+                  onFreeformQuery(chip);
+                  return;
+                }
+                void sendQueryToApi(chip);
+              }}
               className="rounded-full bg-white/90 border border-gray-200/90 px-3 py-1 text-[11px] font-bold text-gray-700 shadow-2xs hover:border-[#6366F1] hover:text-[#6366F1] transition-colors whitespace-nowrap"
             >
               {chip}
@@ -1156,7 +1173,7 @@ export function ConversationalCfarSimulator({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask a follow-up question about this simulation..."
+            placeholder="Ask anything — live Gemini..."
             className="flex-1 bg-transparent px-3 text-[13px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
           <button

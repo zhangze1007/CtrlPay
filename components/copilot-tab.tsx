@@ -350,6 +350,12 @@ export function CopilotTab({
               setIsCfarSimulating(false);
               onClearCfar?.();
             }}
+            onFreeformQuery={(text) => {
+              setIsCfarSimulating(false);
+              onClearCfar?.();
+              setActiveQuery(null);
+              setLivePrompt(text);
+            }}
           />
         </div>
       </div>
