@@ -158,21 +158,22 @@ export function QuickLogBackTapModal({
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <div>
+              <div className="min-w-0">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
                   Amount (RM)
                 </label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.01"
                   min="0.01"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
-                  className="w-full rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] font-bold text-white outline-none focus:border-[#F5B84D]"
+                  className="w-full min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] font-bold text-white outline-none focus:border-[#F5B84D]"
                   required
                 />
               </div>
-              <div className="col-span-2">
+              <div className="col-span-2 min-w-0">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-white/50">
                   Merchant / Note
                 </label>
@@ -180,7 +181,7 @@ export function QuickLogBackTapModal({
                   type="text"
                   value={merchantOrTitle}
                   onChange={(e) => setMerchantOrTitle(e.target.value)}
-                  className="w-full rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] text-white outline-none focus:border-[#F5B84D]"
+                  className="w-full min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] text-white outline-none focus:border-[#F5B84D]"
                   placeholder="e.g. GrabFood / Campus Meal"
                   required
                 />

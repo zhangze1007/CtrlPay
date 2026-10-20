@@ -17,6 +17,7 @@ import {
 } from '@/lib/mock-data';
 import { analyzeZombies } from '@/lib/zombie-radar';
 import { auditLog } from '@/lib/audit-logger';
+import { round2 } from '@/lib/utils';
 import type { ProposalTerms } from '@/lib/types';
 
 const USER = 'student_usm_001';
@@ -262,5 +263,66 @@ describe('sandbox clock & state model', () => {
     useCtrlPayStore.getState().setAmortize(true);
     const after = useCtrlPayStore.getState().dynamicDailyAllowance();
     expect(after).not.toBe(before);
+  });
+});
+
+describe('Back-Tap quick logging', () => {
+  beforeEach(() => {
+    resetStore();
+    useCtrlPayStore.setState({ activities: [], totalExpenses: 0, categoryExpenses: {} });
+  });
+
+  it('shows an expense in the Latest Transactions feed with its merchant and signed amount', () => {
+    const before = useCtrlPayStore.getState();
+    before.quickLogTransaction({
+      type: 'EXPENSE',
+      amount: 23.45,
+      merchant: 'Tealive & Campus Lunch',
+      category: 'Bubble_Tea_Dining',
+      isNeed: false,
+      subCategory: 'Food & Dining',
+      paymentAccount: 'Touch n Go eWallet',
+    });
+    const s = useCtrlPayStore.getState();
+    expect(s.currentBalance).toBe(round2(before.currentBalance - 23.45));
+    expect(s.activities[0]).toMatchObject({
+      title: 'Tealive & Campus Lunch',
+      amount: '- RM 23.45 -',
+      rawAmount: 23.45,
+    });
+    expect(s.totalExpenses).toBe(23.45);
+    expect(s.events[0].payload).toMatchObject({
+      merchant: 'Tealive & Campus Lunch',
+      amount: 23.45,
+      entryType: 'EXPENSE',
+    });
+  });
+
+  it('shows an income in the feed with its merchant, without inflating spending totals', () => {
+    const before = useCtrlPayStore.getState();
+    before.quickLogTransaction({
+      type: 'INCOME',
+      amount: 250,
+      merchant: 'Tuition Refund',
+      category: 'Campus_Cafeteria_Basic',
+      isNeed: true,
+      subCategory: 'Allowance',
+      paymentAccount: 'WeBank / Bank Savings',
+    });
+    const s = useCtrlPayStore.getState();
+    expect(s.currentBalance).toBe(round2(before.currentBalance + 250));
+    expect(s.activities[0]).toMatchObject({
+      title: 'Tuition Refund',
+      amount: '+ RM 250.00 +',
+      rawAmount: 250,
+      category: 'Income',
+    });
+    expect(s.totalExpenses).toBe(0);
+    expect(s.categoryExpenses).toEqual({});
+    expect(s.events[0].payload).toMatchObject({
+      merchant: 'Tuition Refund',
+      amount: 250,
+      entryType: 'INCOME',
+    });
   });
 });

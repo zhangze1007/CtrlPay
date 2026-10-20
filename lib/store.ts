@@ -673,37 +673,45 @@ export const useCtrlPayStore = create<CtrlPayState>((set, get) => ({
         },
       }),
     };
+    const catInfo = mapToDashboardCategory(String(t.category), t.merchant);
     if (isExpense) {
-      // Keep the dashboard aggregations (totalExpenses / categoryExpenses /
-      // activities feed) in sync with Back-Tap quick logs, mirroring bookExpense.
-      const catInfo = mapToDashboardCategory(String(t.category), t.merchant);
+      // Keep the dashboard aggregations (totalExpenses / categoryExpenses) in
+      // sync with Back-Tap quick logs, mirroring bookExpense.
       patch.totalExpenses = round2((s.totalExpenses ?? INITIAL_TOTAL_EXPENSES) + amount);
       patch.categoryExpenses = {
         ...(s.categoryExpenses ?? INITIAL_CATEGORY_EXPENSES),
         [catInfo.categoryName]: round2((s.categoryExpenses?.[catInfo.categoryName] ?? 0) + amount),
       };
-      patch.activities = [
-        {
-          id: `act-backtap-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          title: t.merchant,
-          subtitle: `${catInfo.categoryName} · Back-Tap Quick Log`,
-          amount: `- RM ${amount.toFixed(2)} -`,
-          rawAmount: amount,
-          category: catInfo.categoryName,
-          categoryType: catInfo.categoryType,
-          iconBg: catInfo.iconBg,
-          iconType: catInfo.iconType,
-          timestamp: 'Just now',
-          paymentMethod: t.paymentAccount,
-          referenceId: `BTAP-${Date.now().toString().slice(-5)}`,
-          isExtractedFromNotification: false,
-          rawNotificationText: `iOS Back-Tap quick log of RM ${amount.toFixed(2)} at ${t.merchant}.`,
-          aiCategorizationNote: `Back-Tap quick log categorized under ${catInfo.categoryName}. Balance and expenses synced.`,
-          aiConfidence: 99,
-        },
-        ...(s.activities ?? EXTENDED_ACTIVITIES),
-      ];
     }
+    // Every Back-Tap entry — expense or income — must be visible in the
+    // Latest Transactions feed with its merchant/note and signed amount.
+    patch.activities = [
+      {
+        id: `act-backtap-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        title: t.merchant,
+        subtitle: isExpense
+          ? `${catInfo.categoryName} · Back-Tap Quick Log`
+          : `${t.subCategory} · Back-Tap Income`,
+        amount: isExpense ? `- RM ${amount.toFixed(2)} -` : `+ RM ${amount.toFixed(2)} +`,
+        rawAmount: amount,
+        category: isExpense ? catInfo.categoryName : 'Income',
+        categoryType: isExpense ? catInfo.categoryType : 'transfer',
+        iconBg: isExpense ? catInfo.iconBg : '#31C48D',
+        iconType: isExpense ? catInfo.iconType : 'custom',
+        timestamp: 'Just now',
+        paymentMethod: t.paymentAccount,
+        referenceId: `BTAP-${Date.now().toString().slice(-5)}`,
+        isExtractedFromNotification: false,
+        rawNotificationText: isExpense
+          ? `iOS Back-Tap quick log of RM ${amount.toFixed(2)} at ${t.merchant}.`
+          : `iOS Back-Tap income of RM ${amount.toFixed(2)} from ${t.merchant}.`,
+        aiCategorizationNote: isExpense
+          ? `Back-Tap quick log categorized under ${catInfo.categoryName}. Balance and expenses synced.`
+          : 'Back-Tap income recorded. Balance synced; spending totals unchanged.',
+        aiConfidence: 99,
+      },
+      ...(s.activities ?? EXTENDED_ACTIVITIES),
+    ];
     set(patch);
     audit(s, {
       actor: 'USER',
