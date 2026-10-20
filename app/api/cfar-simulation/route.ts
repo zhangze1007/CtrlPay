@@ -1,5 +1,5 @@
 import { getUserIdFromSession } from '@/lib/session';
-import { parseLedgerSnapshot, upcomingFixedBills } from '@/lib/ledger';
+import { buildLedgerSnapshot, parseLedgerSnapshot, upcomingFixedBills } from '@/lib/ledger';
 import { auditLog } from '@/lib/audit-logger';
 import { toISODateTime } from '@/lib/utils';
 import { runWhatIfForUser } from '@/lib/server-tools';
@@ -31,14 +31,16 @@ export async function POST(req: Request) {
   try {
     snapshot = parseLedgerSnapshot(body.ledgerSnapshot);
   } catch {
-    snapshot = parseLedgerSnapshot({
+    // Build a complete demo snapshot rather than hand-writing a partial object.
+    // A partial object fails LedgerSnapshotSchema and used to turn a missing
+    // snapshot into an opaque HTTP 500.
+    snapshot = buildLedgerSnapshot({
       userId,
       sandboxClock: Date.now(),
       currentBalance: 7540,
       defenseVault: 500,
       rewardPool: 50,
       amortizeAnnualFees: true,
-      userLimits: { dailyCap: 50, wantsRatio: 0.3 },
     });
   }
 
