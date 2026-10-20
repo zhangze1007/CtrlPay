@@ -68,9 +68,10 @@ jobs:
             echo "Created a production-scoped CTRLPAY_SIGNING_SECRET."
           fi
 
-      # The Groq key existed on the project but was not visible to Production.
-      # Copy any GROQ* value already stored in Vercel into a production-scoped
-      # GROQ_API_KEY before pulling the build environment. Never print the value.
+      # If a direct Groq key is supplied later (GitHub secret or Vercel env),
+      # copy it into a production-scoped GROQ_API_KEY before pulling the build
+      # environment. When absent, the app uses the existing AI Gateway key and
+      # pins requests to the Groq provider. Never print the key value.
       - name: Ensure Groq key is available to Production
         continue-on-error: true
         env:
