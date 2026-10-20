@@ -47,8 +47,8 @@ npm run dev                     # http://localhost:3000
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `GOOGLE_GENERATIVE_AI_API_KEY` | For the agent chat | Gemini key for the live Interactions API route. Without it the route returns **503** and the dashboard, Zombie Radar, timeline and audit log still work fully. |
-| `GEMINI_MODEL` | Optional | Overrides the default `gemini-3.8-flash`. Use `gemini-4-argon` only if your key has paid access. |
+| `GROQ_API_KEY` | For the live AI | Groq key for the agent chat, OCR receipt check and payment advice. Without it the AI routes return **503** and the dashboard, Zombie Radar, timeline and audit log still work fully. |
+| `GROQ_MODEL` | Optional | Overrides the default `openai/gpt-oss-120b`. Retired Llama 3.x overrides automatically fall back to the current model. |
 | `CTRLPAY_SIGNING_SECRET` | Production only | Server secret used to HMAC-SHA256–sign proposals. A labelled dev fallback is used when unset. |
 
 ---
@@ -71,7 +71,7 @@ npm run generate:evidence   # regenerate docs/SANDBOX_EXECUTION_EVIDENCE.md (det
 Two brains, one rule: **the model never computes money.**
 
 ```
-LLM (Gemini)  ──extracts intent + identifiers only──▶  tool call
+LLM (Groq GPT-OSS 120B) ──extracts intent + identifiers only──▶  tool call
                                                         │
 SERVER  lib/quant-engine.ts ──deterministically computes ALL figures──▶ SIGNED proposal
                                                         │
@@ -131,7 +131,9 @@ protective core is **never paywalled or gated** (enforced by `tests/compliance.t
 | `lib/privacy-guard.ts` | PII masking + `verifyNumbers` | 
 | `lib/audit-logger.ts` | Hash-chained, append-only audit log |
 | `lib/proposals.ts` | Server-side proposal creation / decision (signs + re-verifies) |
-| `app/api/chat/route.ts` | Gemini 3.8 Interactions API agent loop, tool registry, AI SDK v4 data stream |
+| `app/api/chat/route.ts` | Groq Chat Completions agent loop, tool registry, AI SDK v4 data stream |
+| `lib/groq-client.ts` | Server-only Groq client, model resolution/retirement guard, OpenAI-compatible tool schemas |
+| `app/api/ai-analyze/route.ts` | Advisory OCR red-flag check + payment-interceptor advice |
 | `app/api/proposals/**` | Signed proposal + decision routes |
 | `lib/tool-resolution.ts` | Contract-card resolution + dangling-tool-call guard |
 | `components/agent-chat.tsx` | `useChat` (v4) + the three interactive contract cards |

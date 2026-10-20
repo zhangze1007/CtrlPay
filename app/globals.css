@@ -1,4 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@400;600;700;800&display=swap');
+/* Self-hosted Outfit variable font: no third-party font request, no CSP hole. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/outfit-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/outfit-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
 @tailwind base;
 @tailwind components;
@@ -136,12 +157,14 @@
   }
 
   .ct-studio {
-    /* Rich silk-fluid gradient matching the showcase picture */
-    background:
-      radial-gradient(110% 85% at 20% 12%, rgba(255, 255, 255, 0.55) 0%, transparent 45%),
-      radial-gradient(90% 70% at 85% 15%, rgba(147, 197, 253, 0.5) 0%, transparent 50%),
-      radial-gradient(120% 90% at 10% 85%, rgba(30, 64, 175, 0.4) 0%, transparent 60%),
-      linear-gradient(135deg, #D4E8FA 0%, #A9CDF4 22%, #5C9AD9 48%, #1D5494 76%, #0B2447 100%);
+    /* Apple-ad studio backdrop: clean white, soft silver falloff, no blue wash. */
+    background-color: #f7f7f9;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(245, 245, 247, 0.12)),
+      url('/apple-studio-bg.svg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   /* ---------------- Phone frame ---------------- */
@@ -308,6 +331,15 @@
   .duo-num {
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
+  }
+
+  /* Canonical money typography — same Outfit 800 voice as the Defense Vault. */
+  .money-font {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-variant-numeric: tabular-nums;
+    /* Matches the Defense Vault money voice exactly (Outfit 900). */
+    font-weight: 900;
+    letter-spacing: -0.035em;
   }
 
   /* Split amount typography — integer solid, decimals at 45% opacity. */

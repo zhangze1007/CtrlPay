@@ -32,7 +32,7 @@ export interface ConversationalCfarSimulatorProps {
   onBack?: () => void;
   onClose?: () => void;
   initialScenario?: 'moderate' | 'mild' | 'severe';
-  /** Route a free-form question to the live Gemini Copilot instead of the CFaR template. */
+  /** Route a free-form question to the live Groq Copilot instead of the CFaR template. */
   onFreeformQuery?: (text: string) => void;
 }
 
@@ -1137,7 +1137,7 @@ export function ConversationalCfarSimulator({
        * ============================================================== */}
       <div className="pt-2 space-y-2 pb-16">
         <p className="px-1 text-[9.5px] font-medium text-slate-500">
-          Free-form questions use Live Gemini · scenario cards stay deterministic
+          Free-form questions use Live Groq · scenario cards stay deterministic
         </p>
 
         {/* Quick Follow-up Question Chips */}
@@ -1173,7 +1173,7 @@ export function ConversationalCfarSimulator({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask anything — live Gemini..."
+            placeholder="Ask anything — live Groq..."
             className="flex-1 bg-transparent px-3 text-[13px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
           <button

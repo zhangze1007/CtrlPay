@@ -31,7 +31,7 @@ export interface AgentExecutionChatProps {
   onClose?: () => void;
   onOpenWhatIf?: () => void;
   onOpenAudit?: () => void;
-  /** Route a free-form follow-up to the live Gemini Copilot instead of the intent templates. */
+  /** Route a free-form follow-up to the live Groq Copilot instead of the intent templates. */
   onFreeformQuery?: (text: string) => void;
 }
 
@@ -425,7 +425,7 @@ export function AgentExecutionChat({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask anything — live Gemini..."
+            placeholder="Ask anything — live Groq..."
             className="flex-1 bg-transparent px-3 text-[13px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
           <button

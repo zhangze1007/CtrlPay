@@ -21,7 +21,7 @@ CtrlPay deliberately separates *language* from *arithmetic*:
 
 | Brain | Where it lives | Responsibility | What it must never do |
 |---|---|---|---|
-| **Language brain** | `app/api/chat/route.ts` + `lib/gemini-interactions.ts` (Google Gemini 3.8 Flash, Interactions API; AI SDK v4 stream bridge) | Understand the user, extract intent + identifiers, call tools, write prose | Compute or invent any money figure, see the signing secret, or hold autonomous credentials |
+| **Language brain** | `app/api/chat/route.ts` + `lib/groq-client.ts` (Groq Chat Completions, GPT-OSS 120B; AI SDK v4 stream bridge) | Understand the user, extract intent + identifiers, call tools, write prose | Compute or invent any money figure, see the signing secret, or hold autonomous credentials |
 | **Arithmetic brain** | `lib/quant-engine.ts` (pure TypeScript) | Compute every RM figure, probability, ratio and classification deterministically | Call the network or the LLM |
 
 The LLM can only reference a subscription by the `subscriptionId` enum (`lib/subscription-registry.ts`);
@@ -91,6 +91,7 @@ money leaves the account.
 | `proposals.ts` | **Server-only** proposal creation + `decideProposal` (integrity, tenant, expiry, floor, mandate) |
 | `server-tools.ts` | Server tool implementations (all numbers from `quant-engine`) |
 | `system-prompt.ts` | Locked system prompt + `buildFallbackReply` |
+| `groq-client.ts` | **Server-only** Groq Chat Completions client, model retirement guard, OpenAI-compatible `tools` conversion, T3 call-context codec |
 | `mock-data.ts` | Deterministic sandbox fixtures (balance, subscriptions, transactions, receipts, usage) |
 | `store.ts` | Zustand client state: clock resolution, decisions, sweeps, quarantine, booking, audit writes |
 | `bookkeeping.ts` | `parseBookingText`, `mockReceiptExtraction` (name-only deterministic fixture) |
@@ -101,7 +102,8 @@ money leaves the account.
 
 | Route | Verb | Purpose |
 |---|---|---|
-| `/api/chat` | POST | Gemini 3.8 Flash via the Interactions API; T0–T2 tools executed server-side, T3 tools returned as cards and resumed with `addToolResult`; AI SDK v4 data stream; post-LLM number verifier |
+| `/api/chat` | POST | Groq Chat Completions (GPT-OSS 120B default); T0–T2 tools executed server-side, T3 tools returned as cards and resumed with `addToolResult`; AI SDK v4 data stream; post-LLM number verifier |
+| `/api/ai-analyze` | POST | Advisory AI receipt red-flag check (`ocr_receipt`) and payment-interceptor advice (`payment_advice`); never mutates the ledger |
 | `/api/proposals` | POST | Create + HMAC-sign a proposal (server computes all terms) |
 | `/api/proposals/[id]/decision` | POST | Decide a proposal; verifies integrity, tenant, expiry, T3 gate, escrow floor and AI mandate. Accepts the echoed signed proposal for **stateless** verification |
 | `/api/audit` | GET | Returns server-side AGENT audit entries for the caller's tenant |
@@ -112,7 +114,8 @@ money leaves the account.
 |---|---|
 | `agent-chat.tsx` | AI SDK v4 `useChat`, quick chips, roast-tone toggle, contract-card mounting, verifier banner |
 | `contract-cards.tsx` | Quarantine / Escrow / Sweep cards (Approve / Modify / Decline) + guaranteed tool resolution |
-| `payment-interceptor-modal.tsx` | Payment-intent interceptor with the three T3 options |
+| `payment-interceptor-modal.tsx` | Payment-intent interceptor with the three T3 options and live Groq advisory |
+| `ocr/receipt-ai-flow-modal.tsx` | Receipt OCR → editable review → live AI red-flag check and warning popup |
 | `quarantine-cards.tsx` | Active quarantine list + "Abandon Purchase & Claim Reward" |
 | `vault-panel.tsx` | `defenseVault` + `rewardPool` ledger buckets |
 | `subscription-timeline.tsx` | Upcoming billing timeline |
@@ -516,7 +519,7 @@ proposal table so replay protection survives cold starts.
   sinking-fund maturity gate and the pre-auth latency budget.
 - **Compliance guard.** A test asserts the AI SDK v4 client identifiers (`addToolResult`,
   `maxSteps`), explicit `parameters` function declarations, the *absence* of v5 identifiers
-  (`inputSchema`, `addToolOutput`, `toUIMessageStreamResponse`, `stopWhen`), the Gemini 3.8
+  (`inputSchema`, `addToolOutput`, `toUIMessageStreamResponse`, `stopWhen`), the Groq GPT-OSS 120B
   default, and that free-tier safety never reads the `plan` flag.
 - **Evidence.** The judge walkthrough is reproducible via the sandbox execution-evidence generator
   (see `docs/SANDBOX_EXECUTION_EVIDENCE.md` and `docs/EXECUTION_EVIDENCE_SANDBOX_LOGS.json`). The

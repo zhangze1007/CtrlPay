@@ -33,6 +33,41 @@ export interface ReceiptAiFlowModalProps {
   onNavigateCopilot?: () => void;
 }
 
+type AiSeverity = 'safe' | 'caution' | 'warning' | 'danger';
+
+interface ReceiptAiAnalysis {
+  advice: string;
+  warnings: string[];
+  suggestions: string[];
+  severity: AiSeverity;
+}
+
+const AI_SEVERITY_STYLES: Record<
+  AiSeverity,
+  { card: string; badge: string; label: string }
+> = {
+  safe: {
+    card: 'bg-emerald-50/80 border-emerald-200/70',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    label: 'Looks normal',
+  },
+  caution: {
+    card: 'bg-amber-50/80 border-amber-200/70',
+    badge: 'bg-amber-100 text-amber-800 border-amber-200',
+    label: 'Worth a look',
+  },
+  warning: {
+    card: 'bg-orange-50/90 border-orange-200/80',
+    badge: 'bg-orange-100 text-orange-800 border-orange-200',
+    label: 'Check this',
+  },
+  danger: {
+    card: 'bg-rose-50/90 border-rose-200/80',
+    badge: 'bg-rose-100 text-rose-800 border-rose-200',
+    label: 'Suspicious',
+  },
+};
+
 const CATEGORY_OPTIONS = [
   { value: 'Dining & Food', label: '☕ Food & Drink' },
   { value: 'Living & Home', label: '🏠 Living & Home' },
@@ -73,6 +108,13 @@ export function ReceiptAiFlowModal({
   const [receiptFingerprint, setReceiptFingerprint] = React.useState<string | null>(null);
   const [isNeed, setIsNeed] = React.useState(true);
 
+  // Live AI receipt check (advisory only; deterministic booking still owns the ledger)
+  const [aiAnalysis, setAiAnalysis] = React.useState<ReceiptAiAnalysis | null>(null);
+  const [aiLoading, setAiLoading] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string | null>(null);
+  const [aiWarningOpen, setAiWarningOpen] = React.useState(false);
+  const aiRequestRef = React.useRef(0);
+
   // Edit Sheet Mode in Screen 3
   const [isEditModeOpen, setIsEditModeOpen] = React.useState(false);
 
@@ -85,6 +127,9 @@ export function ReceiptAiFlowModal({
   const committedFingerprintsRef = React.useRef<Set<string>>(new Set());
 
   const bookExpense = useCtrlPayStore((s) => s.bookExpense);
+  const currentBalance = useCtrlPayStore((s) => s.currentBalance);
+  const spentThisWeek = useCtrlPayStore((s) => s.spentThisWeek);
+  const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
 
   // Start / Stop camera when entering or leaving viewfinder
   React.useEffect(() => {
@@ -205,6 +250,76 @@ export function ReceiptAiFlowModal({
     }
   }
 
+  /**
+   * Ask the server-side Groq analyzer about a receipt. This is advisory only:
+   * it never writes to the ledger and it cannot change the extracted numbers.
+   */
+  async function analyzeReceipt(receipt: {
+    merchant: string;
+    amount: number;
+    category: string;
+    date: string;
+  }) {
+    const requestId = aiRequestRef.current + 1;
+    aiRequestRef.current = requestId;
+
+    setAiAnalysis(null);
+    setAiError(null);
+    setAiWarningOpen(false);
+    setAiLoading(true);
+
+    try {
+      const res = await fetch('/api/ai-analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'ocr_receipt',
+          receipt,
+          context: { currentBalance, spentThisWeek, spentThisMonth },
+        }),
+      });
+      const data = (await res.json()) as Partial<ReceiptAiAnalysis> & { message?: string };
+
+      if (requestId !== aiRequestRef.current) return;
+      if (!res.ok) {
+        throw new Error(data.message || 'AI receipt check is unavailable right now.');
+      }
+      if (
+        typeof data.advice !== 'string' ||
+        !Array.isArray(data.warnings) ||
+        !Array.isArray(data.suggestions) ||
+        !data.severity
+      ) {
+        throw new Error('AI receipt check returned an unexpected response.');
+      }
+
+      const analysis: ReceiptAiAnalysis = {
+        advice: data.advice,
+        warnings: data.warnings.filter((item): item is string => typeof item === 'string').slice(0, 3),
+        suggestions: data.suggestions.filter((item): item is string => typeof item === 'string').slice(0, 3),
+        severity: data.severity,
+      };
+      setAiAnalysis(analysis);
+      if (analysis.severity === 'warning' || analysis.severity === 'danger') {
+        setAiWarningOpen(true);
+      }
+    } catch (err) {
+      if (requestId !== aiRequestRef.current) return;
+      console.warn('[RECEIPT_AI_CHECK]', err);
+      setAiError('AI receipt check is temporarily unavailable. Please review the details manually.');
+    } finally {
+      if (requestId === aiRequestRef.current) setAiLoading(false);
+    }
+  }
+
+  function resetAiCheck() {
+    aiRequestRef.current += 1;
+    setAiAnalysis(null);
+    setAiLoading(false);
+    setAiError(null);
+    setAiWarningOpen(false);
+  }
+
   // Real OCR Processing Handler
   async function processFileWithOcr(file: File) {
     if (!file) return;
@@ -218,6 +333,7 @@ export function ReceiptAiFlowModal({
     const objectUrl = URL.createObjectURL(file);
     setPreviewImageUrl(objectUrl);
     setOcrError(null);
+    resetAiCheck();
     setIsScanning(true);
     setStep('crop_preview'); // Advance to Screen 2
 
@@ -240,6 +356,15 @@ export function ReceiptAiFlowModal({
       setConfidence(extracted.confidence || 95);
       setReceiptFingerprint(extracted.fingerprint);
       setIsScanning(false);
+
+      // Run the live AI check after OCR so the user sees advice and any red
+      // flags before they tap Save. No ledger mutation happens here.
+      void analyzeReceipt({
+        merchant: detectedMerchant,
+        amount: Number(detectedAmount),
+        category: detectedCategory,
+        date: detectedDate,
+      });
     } catch (err: any) {
       console.warn('[Real OCR Note]', err);
       setIsScanning(false);
@@ -248,6 +373,7 @@ export function ReceiptAiFlowModal({
       setReceiptCategory('Dining & Food');
       setReceiptDate(new Date().toISOString().slice(0, 10));
       setReferenceCode(`#APL - ${Math.floor(100000 + Math.random() * 900000)}`);
+      setAiError('OCR could not confidently read this receipt, so the AI check was skipped. Please review the details.');
     }
   }
 
@@ -261,7 +387,33 @@ export function ReceiptAiFlowModal({
     setPreviewImageUrl(null);
     setIsScanning(false);
     setOcrError(null);
+    resetAiCheck();
     setStep('viewfinder');
+  }
+
+  function handleClose() {
+    resetAiCheck();
+    onClose();
+  }
+
+  function handleApplyEdits() {
+    setIsEditModeOpen(false);
+    const amount = parseFloat(receiptTotal);
+    // The previous advisory belongs to the previous values — clear it before
+    // re-checking so the card can never describe a receipt the user just edited.
+    setAiAnalysis(null);
+    setAiWarningOpen(false);
+    setAiError(null);
+    if (merchantName.trim() && Number.isFinite(amount) && amount > 0) {
+      void analyzeReceipt({
+        merchant: merchantName.trim(),
+        amount,
+        category: receiptCategory,
+        date: receiptDate,
+      });
+    } else {
+      setAiError('Enter a valid merchant and amount to run the AI check.');
+    }
   }
 
   // Save Expense to CtrlPay Store & parent callback
@@ -405,7 +557,7 @@ export function ReceiptAiFlowModal({
               </span>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="grid h-8 w-8 place-items-center rounded-full bg-white/80 hover:bg-white text-[#04222B] border border-white/80 shadow-xs transition-colors"
                 aria-label="Close Scanner"
               >
@@ -521,7 +673,7 @@ export function ReceiptAiFlowModal({
               </span>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="grid h-8 w-8 place-items-center rounded-full bg-white/80 hover:bg-white text-[#04222B] border border-white/80 shadow-xs transition-colors"
                 aria-label="Close"
               >
@@ -656,6 +808,81 @@ export function ReceiptAiFlowModal({
                   ||||||||||||||||
                 </div>
               </div>
+            </div>
+
+            {/* Live AI Receipt Check (advisory only) */}
+            <div
+              className={cn(
+                'rounded-2xl border p-3.5 space-y-2 shadow-[0_10px_25px_-16px_rgba(4,34,43,0.18)]',
+                aiAnalysis ? AI_SEVERITY_STYLES[aiAnalysis.severity].card : 'bg-white/80 border-white/85',
+              )}
+              aria-live="polite"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#04222B]">
+                  <Sparkles className="h-3.5 w-3.5 text-[#10606F]" />
+                  AI receipt check
+                </span>
+                {aiAnalysis ? (
+                  <span
+                    className={cn(
+                      'rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-wide',
+                      AI_SEVERITY_STYLES[aiAnalysis.severity].badge,
+                    )}
+                  >
+                    {AI_SEVERITY_STYLES[aiAnalysis.severity].label}
+                  </span>
+                ) : aiLoading ? (
+                  <span className="flex items-center gap-1 text-[9.5px] font-bold text-slate-500">
+                    <span className="h-2.5 w-2.5 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                    Checking…
+                  </span>
+                ) : null}
+              </div>
+
+              {aiLoading ? (
+                <p className="text-[11.5px] leading-relaxed text-slate-500">
+                  Checking this receipt for unusual amounts, odd merchants and budget impact…
+                </p>
+              ) : aiAnalysis ? (
+                <>
+                  <p className="text-[11.5px] leading-relaxed font-medium text-[#1E293B]">
+                    {aiAnalysis.advice}
+                  </p>
+                  {aiAnalysis.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      {aiAnalysis.warnings.map((warning, index) => (
+                        <p
+                          key={`ai-warning-${index}`}
+                          className="flex items-start gap-1.5 text-[10.5px] font-semibold text-[#7C2D12]"
+                        >
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                          {warning}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {aiAnalysis.suggestions.length > 0 && (
+                    <div className="space-y-0.5">
+                      {aiAnalysis.suggestions.map((suggestion, index) => (
+                        <p key={`ai-suggestion-${index}`} className="text-[10.5px] text-[#334155]">
+                          💡 {suggestion}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : aiError ? (
+                <p className="text-[10.5px] leading-relaxed text-amber-800">{aiError}</p>
+              ) : (
+                <p className="text-[10.5px] leading-relaxed text-slate-500">
+                  AI check will appear after a receipt is scanned.
+                </p>
+              )}
+
+              <p className="text-[9px] text-slate-400">
+                Advisory only · base ledger MYR · you still confirm every save
+              </p>
             </div>
 
             {/* Merchant Section Card (Frosted Glass duo-card - Light, Not Black!) */}
@@ -882,7 +1109,7 @@ export function ReceiptAiFlowModal({
                   <div className="pt-2">
                     <button
                       type="button"
-                      onClick={() => setIsEditModeOpen(false)}
+                      onClick={handleApplyEdits}
                       className="w-full rounded-xl bg-gradient-to-r from-[#10606F] to-[#1D8B94] text-white py-3 text-[13.5px] font-black hover:opacity-95 transition-all shadow-md"
                     >
                       Apply &amp; Return
@@ -894,6 +1121,127 @@ export function ReceiptAiFlowModal({
           </AnimatePresence>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* AI red-flag popup: only appears when Groq flags warning/danger            */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {aiWarningOpen &&
+          aiAnalysis &&
+          (aiAnalysis.severity === 'warning' || aiAnalysis.severity === 'danger') && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 z-[70] flex items-end justify-center bg-[#04222B]/45 backdrop-blur-[2px]"
+              onClick={() => setAiWarningOpen(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="ai-receipt-warning-title"
+            >
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', stiffness: 340, damping: 30 }}
+                className="w-full rounded-t-[30px] border-t border-white/80 bg-[#FFFDFC] p-5 pb-6 shadow-[0_-24px_60px_rgba(4,34,43,0.22)]"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-4 flex justify-center">
+                  <span className="h-1.5 w-10 rounded-full bg-slate-300" />
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div
+                    className={cn(
+                      'grid h-11 w-11 shrink-0 place-items-center rounded-2xl',
+                      aiAnalysis.severity === 'danger'
+                        ? 'bg-rose-100 text-rose-700'
+                        : 'bg-orange-100 text-orange-700',
+                    )}
+                  >
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[9.5px] font-black uppercase tracking-widest text-slate-400">
+                      AI receipt check
+                    </p>
+                    <h3
+                      id="ai-receipt-warning-title"
+                      className="text-[17px] font-black leading-tight tracking-tight text-[#04222B]"
+                    >
+                      {aiAnalysis.severity === 'danger'
+                        ? 'Hold on — this looks suspicious'
+                        : 'Hold on — AI spotted something'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiWarningOpen(false)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 hover:text-black"
+                    aria-label="Dismiss AI warning"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <p className="mt-3 text-[12.5px] leading-relaxed text-[#1E293B]">{aiAnalysis.advice}</p>
+
+                {aiAnalysis.warnings.length > 0 && (
+                  <div className="mt-3 space-y-1.5 rounded-2xl bg-white/80 p-3 ring-1 ring-slate-200/70">
+                    {aiAnalysis.warnings.map((warning, index) => (
+                      <p
+                        key={`popup-warning-${index}`}
+                        className="flex items-start gap-2 text-[11.5px] font-semibold text-[#7C2D12]"
+                      >
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        {warning}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                {aiAnalysis.suggestions.length > 0 && (
+                  <div className="mt-2.5 space-y-1">
+                    {aiAnalysis.suggestions.map((suggestion, index) => (
+                      <p key={`popup-suggestion-${index}`} className="text-[11.5px] leading-relaxed text-[#334155]">
+                        💡 {suggestion}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                <p className="mt-3 text-[9.5px] text-slate-400">
+                  AI advice is advisory. The extracted receipt and ledger numbers stay unchanged until you save.
+                </p>
+
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiWarningOpen(false);
+                      setStep('scanned_details');
+                    }}
+                    className="flex-1 rounded-full bg-gradient-to-r from-[#10606F] via-[#0A3D4A] to-[#04222B] py-3 text-[13px] font-black text-white shadow-lg active:scale-98"
+                  >
+                    Review details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAiWarningOpen(false);
+                      setStep('scanned_details');
+                      setIsEditModeOpen(true);
+                    }}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-3 text-[12.5px] font-extrabold text-[#04222B] shadow-sm active:scale-98"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+      </AnimatePresence>
     </div>
   );
 }

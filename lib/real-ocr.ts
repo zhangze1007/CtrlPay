@@ -360,6 +360,15 @@ export async function executeRealOcr(
     });
 
     const result = await Tesseract.recognize(imageUrl, 'eng', {
+      // All OCR assets are self-hosted so production CSP can stay first-party:
+      // no CDN importScripts, no third-party language download, no receipt bytes
+      // leaving the browser.
+      // Bump the query when CSP/asset headers change so browsers cannot reuse a
+      // worker response cached under an older Content-Security-Policy.
+      workerPath: '/tesseract/worker.min.js?v=3',
+      workerBlobURL: false,
+      corePath: '/tesseract/tesseract-core-simd-lstm.wasm.js',
+      langPath: '/tesseract/lang',
       logger: (m) => {
         if (m.status === 'recognizing text' && typeof m.progress === 'number') {
           onProgress?.({

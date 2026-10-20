@@ -779,7 +779,7 @@ export function CopilotTab({
     );
   }
 
-  // Free-form questions use the live Gemini agent. The fixed report/zombie/sweep
+  // Free-form questions use the live Groq agent. The fixed report/zombie/sweep
   // suggestions above still use the deterministic engine trace.
   if (livePrompt) {
     return (
@@ -808,7 +808,7 @@ export function CopilotTab({
                 CtrlPay Copilot
               </h2>
               <p className="text-[11px] font-medium text-[#7C3AED]">
-                Live Gemini · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
+                Live Groq · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
               </p>
             </div>
           </div>
@@ -970,7 +970,7 @@ export function CopilotTab({
         <div className="flex justify-center pt-1">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-[#6366F1]/20 bg-white/70 px-2.5 py-1 text-[9.5px] font-bold text-[#4F46E5] shadow-2xs backdrop-blur-md">
             <Sparkles className="h-3 w-3" />
-            Live Gemini · free-form answers
+            Live Groq · free-form answers
           </span>
         </div>
       </div>
@@ -1092,7 +1092,7 @@ export function CopilotTab({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask anything — live Gemini..."
+            placeholder="Ask anything — live Groq..."
             className="flex-1 bg-transparent px-2 text-[13.5px] font-medium text-[#0B1E3F] placeholder:text-slate-400 focus:outline-none"
           />
 
@@ -1117,7 +1117,7 @@ export function CopilotTab({
           )}
         </form>
         <p className="mt-1.5 text-center text-[9.5px] font-medium text-slate-500">
-          Fixed demo cards use the deterministic engine · free-form chat uses Live Gemini
+          Fixed demo cards use the deterministic engine · free-form chat uses Live Groq
         </p>
       </div>
     </div>

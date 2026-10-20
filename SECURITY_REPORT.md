@@ -2,7 +2,7 @@
 
 **Project:** CtrlPay — *Stop Paying Blindly. Let AI Control the Flow.*
 **Topic:** A · Proactive Defensive Personal-Finance Agent
-**Platform:** Web sandbox (Next.js 14 App Router, AI SDK v4 client stream + Gemini 3.8 Flash Interactions API)
+**Platform:** Web sandbox (Next.js 14 App Router, AI SDK v4 client stream + Groq Chat Completions / GPT-OSS 120B)
 **Scope note:** CtrlPay is a **sandbox**. It moves **no real funds**. Every "balance", "vault", "escrow" and "reward" is a labelled local ledger bucket. This report states both the controls we implement **and** the residual risk we do not claim to remove.
 
 ---
@@ -62,14 +62,14 @@
   - **(a) Pre-LLM PII masking** of account numbers, IC, phone numbers and person names (`lib/privacy-guard.ts`).
   - **(b) Per-user tenant isolation** — `userId` comes **only** from the signed session cookie, never the request body or the LLM (`lib/session.ts`).
   - **(c) Zod `.strict()` schemas + a post-LLM RM number verifier** tied to engine/ledger outputs (`verifyNumbers`); unknown figures are flagged and the turn is audit-logged as `NUMBER_VERIFIER_BLOCKED`.
-  - **Receipt OCR images are never written to disk** — processed in memory, discarded after structured extraction + user confirmation.
+  - **Receipt OCR images are never written to disk** — processed in memory, discarded after structured extraction + user confirmation. The Tesseract worker, WebAssembly core and English language data are **self-hosted** under `public/tesseract/`, so CSP stays `script-src 'self'` with only `wasm-unsafe-eval` added for in-browser OCR.
   - **Server-side authority:** the LLM extracts intent + identifiers only; all money figures are computed by `lib/quant-engine.ts` and returned as a **signed proposal**; the LLM never sees `serverSecret`.
   - **Fail-closed secrets:** `lib/signing.ts` and `lib/session.ts` throw in production if `CTRLPAY_SIGNING_SECRET` is missing; they never fall back to the public development secret on a deployed instance.
 - **Verification**
   - `tests/privacy-guard.test.ts` — PII fixtures masked (`TRANSFER TO AHMAD BIN ALI 0123456789` → `TRANSFER TO [PERSON] [ACCOUNT]`); a number-verifier test with an injected fake RM figure is rejected.
   - `tests/session.test.ts` — tenant isolation; cross-user access returns nothing.
   - `tests/proposals.test.ts` — schema violations (extra keys, NEEDS lock, a `deepLinkUrl` key) are rejected.
-- **Residual risk:** regex redaction can miss unusual formats; the LLM provider still sees **redacted** transaction text; browser speech recognition may send audio to the cloud (disclosed in the UI); the verifier checks **numbers**, not the semantic correctness of advice. The Gemini Interactions API is called with `store: true` so a T3 card can resume the same server-side interaction after approval; Google retains that interaction for its documented provider window (1 day on the free tier). Inputs are redacted first, the payload is sandbox data, and no signing secret or raw credential is sent.
+- **Residual risk:** regex redaction can miss unusual formats; the LLM provider still sees **redacted** transaction text; browser speech recognition may send audio to the cloud (disclosed in the UI); the verifier checks **numbers**, not the semantic correctness of advice. Groq is called statelessly: CtrlPay sends the redacted transcript on each turn and resumes T3 cards with an opaque client-supplied tool-call context. The server accepts only the selected T3 call, validates its name, and never executes client-supplied server-tool results; the actual ledger mutation still goes through the signed proposal decision route. Groq may process request data under its own API data policy; no signing secret, raw credential, receipt image or full account number is sent. The OCR/payment advisor receives only merchant, amount, category, date and budget context, never the receipt image.
 
 ### (5) Identity & Student Privilege Verification — 身份与学生资格验证
 

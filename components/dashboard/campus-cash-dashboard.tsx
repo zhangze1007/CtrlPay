@@ -159,7 +159,7 @@ export function CampusCashDashboard({
   });
 
   return (
-    <div className="space-y-2.5 pb-3 animate-fade-in font-['Plus_Jakarta_Sans',sans-serif] select-none relative">
+    <div className="space-y-2.5 pb-3 animate-fade-in font-sans select-none relative">
       {/* Soft ambient canvas glow directly on background matching reference image */}
       <div className="absolute -top-6 -left-4 -right-4 h-[440px] bg-gradient-to-br from-[#E6F3FE]/70 via-[#F5F2FF]/60 to-[#FEECE5]/80 pointer-events-none -z-10 rounded-b-[40px] blur-xl" />
 
@@ -264,7 +264,7 @@ export function CampusCashDashboard({
                 Total Balance
               </p>
               <div className="flex items-center justify-center mt-1">
-                <span className="text-[32px] sm:text-[34px] font-medium text-[#0F172A] tracking-tight leading-none text-center">
+                <span className="money-font text-[34px] sm:text-[36px] text-[#0F172A] leading-none text-center">
                   {formatCurrency(animatedBalance)}
                 </span>
               </div>
@@ -290,7 +290,7 @@ export function CampusCashDashboard({
                 <Wallet className="h-4 w-4 text-[#1E293B] stroke-[1.6] shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Income</p>
-                  <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
+                  <p className="money-font text-[12.5px] sm:text-[13.5px] text-[#0F172A] leading-tight mt-1 whitespace-nowrap">
                     {formatCapsuleCurrency(4650)}
                   </p>
                 </div>
@@ -311,7 +311,7 @@ export function CampusCashDashboard({
                 <CreditCard className="h-4 w-4 text-[#1E293B] stroke-[1.6] shrink-0 group-hover:text-rose-600 transition-colors" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Expenses</p>
-                  <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
+                  <p className="money-font text-[12.5px] sm:text-[13.5px] text-[#0F172A] leading-tight mt-1 whitespace-nowrap">
                     {formatCapsuleCurrency(totalExpenses)}
                   </p>
                 </div>
@@ -329,7 +329,7 @@ export function CampusCashDashboard({
                 <PiggyBank className="h-4 w-4 text-[#1E293B] stroke-[1.6] shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-medium text-[#64748B] leading-none">Savings</p>
-                  <p className="text-[12px] sm:text-[13px] font-bold text-[#0F172A] leading-tight mt-1 tabular-nums whitespace-nowrap">
+                  <p className="money-font text-[12.5px] sm:text-[13.5px] text-[#0F172A] leading-tight mt-1 whitespace-nowrap">
                     {formatCapsuleCurrency(Math.max(0, 1940 - (totalExpenses - 2910)))}
                   </p>
                 </div>
@@ -416,7 +416,7 @@ export function CampusCashDashboard({
                 Total Expenses
               </p>
               <div className="flex items-center justify-center mt-1">
-                <span className="text-[32px] sm:text-[34px] font-medium text-[#0F172A] tracking-tight leading-none text-center">
+                <span className="money-font text-[34px] sm:text-[36px] text-[#0F172A] leading-none text-center">
                   {formatCurrency(totalExpenses)}
                 </span>
               </div>
@@ -474,7 +474,7 @@ export function CampusCashDashboard({
                     <span className="text-[9.5px] font-semibold text-[#94A3B8] uppercase tracking-wider">
                       Total Spent
                     </span>
-                    <span className="text-[15.5px] font-black tracking-tight text-[#0F172A] leading-tight mt-0.5">
+                    <span className="money-font text-[16px] text-[#0F172A] leading-tight mt-0.5">
                       {formatCurrency(totalExpenses)}
                     </span>
                     <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-full border border-rose-200/60 mt-0.5">
@@ -544,7 +544,7 @@ export function CampusCashDashboard({
                     <span className="text-[#475569]">
                       Selected: <strong className="text-[#0F172A]">{activeCategory}</strong>
                     </span>
-                    <span className="font-extrabold text-[#0F172A]">
+                    <span className="money-font text-[11.5px] text-[#0F172A]">
                       {formatCurrency(categories.find((c) => c.name === activeCategory)?.amount ?? 0)}
                     </span>
                   </div>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200" fill="none">
+  <defs>
+    <radialGradient id="topGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(900 90) rotate(90) scale(760 1050)">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.62" stop-color="#FCFCFD"/>
+      <stop offset="1" stop-color="#F4F4F6"/>
+    </radialGradient>
+    <radialGradient id="warmGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(390 300) rotate(22) scale(640 520)">
+      <stop stop-color="#FFF8F2" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFF8F2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="coolGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1440 860) rotate(-28) scale(620 540)">
+      <stop stop-color="#F2F5F9" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#F2F5F9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="900" y1="840" x2="900" y2="1200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F7F9" stop-opacity="0"/>
+      <stop offset="1" stop-color="#E9E9ED" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1800" height="1200" fill="url(#topGlow)"/>
+  <rect width="1800" height="1200" fill="url(#warmGlow)"/>
+  <rect width="1800" height="1200" fill="url(#coolGlow)"/>
+  <rect y="840" width="1800" height="360" fill="url(#floor)"/>
+
+  <!-- Apple-keynote style faint studio rings, barely visible on white -->
+  <ellipse cx="900" cy="640" rx="560" ry="430" stroke="#D9D9DE" stroke-opacity="0.22"/>
+  <ellipse cx="900" cy="640" rx="720" ry="555" stroke="#D9D9DE" stroke-opacity="0.14"/>
+  <ellipse cx="900" cy="640" rx="890" ry="690" stroke="#D9D9DE" stroke-opacity="0.08"/>
+</svg>

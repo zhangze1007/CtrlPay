@@ -36,6 +36,20 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      # Judges must be able to open the production URL without a Vercel login.
+      # Keep preview deployments protected, but expose production. Non-fatal so
+      # a token without project-settings permission cannot block the deploy.
+      - name: Make the production demo publicly reachable
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          response=$(curl -sS -w '\nHTTP_STATUS:%{http_code}' \
+            -X PATCH "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}?teamId=${VERCEL_ORG_ID}" \
+            -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ssoProtection":{"deploymentType":"preview"},"passwordProtection":null}')
+          echo "$response"
+
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 

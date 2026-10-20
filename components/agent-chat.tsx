@@ -171,7 +171,7 @@ export function AgentChat({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="outline">Gemini 3.8 Flash · live</Badge>
+            <Badge variant="outline">Groq GPT-OSS 120B · live</Badge>
             <div className="flex items-center gap-1">
               <span className="mr-1 text-[11px] text-muted-foreground">Roast tone</span>
               <Button
@@ -301,7 +301,7 @@ export function AgentChat({
           {error && (
             <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
               {error.message.includes('MISSING_API_KEY')
-                ? 'Agent chat needs GOOGLE_GENERATIVE_AI_API_KEY in .env.local. The dashboard, Zombie Radar and audit log work without it.'
+                ? 'Agent chat needs GROQ_API_KEY in .env.local (or Vercel environment variables). The dashboard, Zombie Radar and audit log work without it.'
                 : error.message}
             </p>
           )}

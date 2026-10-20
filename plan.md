@@ -103,7 +103,7 @@ Rule: the unit count is always computed by the engine (`Math.floor(amount / unit
 | Rendering tool UI | `message.parts` → `part.type === 'tool-invocation'` → `part.toolInvocation` (`state`, `toolName`, `toolCallId`, `args`, `result`) | `part.type === 'tool-<name>'`, `part.input`, `part.output` |
 | Client tool result | `addToolResult({ toolCallId, result })` from `useChat` | `addToolOutput` |
 | Streaming response | `createDataStreamResponse` + `formatDataStreamPart` (server) | `toUIMessageStreamResponse()` |
-| Multi-step | `maxSteps` on `useChat`; server agent loop for the Interactions API | `stopWhen` |
+| Multi-step | `maxSteps` on `useChat`; server agent loop for Groq Chat Completions | `stopWhen` |
 | Hook import | `import { useChat } from '@ai-sdk/react'` | `DefaultChatTransport` |
 
 Add a lint-style check in Phase 6: `grep -rE "inputSchema|addToolOutput|toUIMessageStreamResponse|stopWhen" app components lib` must return nothing.
@@ -896,12 +896,14 @@ STYLE:
 | `propose_escrow` | T3 | **No** | card → `addToolResult` |
 | `propose_sweep` | T3 | **No** | card → `addToolResult` |
 
-Implementation note (updated 2026-10): Gemini 2.x Flash models are retired for
-new API keys. The live route now uses `lib/gemini-interactions.ts` with the
-Gemini Interactions API and `gemini-3.8-flash`; the AI SDK v4 browser client is
-fed by `createDataStreamResponse`. T0–T2 tools still execute server-side and are
-audit-logged. T3 tools return a card and resume the same interaction through
-`addToolResult`, exactly as described above.
+Implementation note (updated 2026-10): the live route uses `lib/groq-client.ts`
+with the Groq Chat Completions API and `openai/gpt-oss-120b`. Groq has retired
+Llama 3.x models including `llama-3.3-70b-versatile`; `resolveGroqModel()`
+rejects those overrides and falls back to the current production model. The AI
+SDK v4 browser client is fed by `createDataStreamResponse`. T0–T2 tools still
+execute server-side and are audit-logged. T3 tools return a card and resume
+through `addToolResult` with an opaque in-app tool-call context, exactly as
+described above.
 
 Sandbox note: because the sandbox ledger lives in the browser, the client posts a `ledgerSnapshot` that the server treats as **user-supplied data**. The server recomputes every derived figure and signs proposals itself; production would read the ledger from a server database. (Residual risk listed in Section 10.)
 
@@ -943,7 +945,7 @@ Build sequentially. Do not start a phase until the previous one passes its **Don
 - **Done when:** fast-forwarding 24h flips a quarantine to `READY_TO_DECIDE`; crossing a billing date verifies a pending sweep and only then credits `defenseVault`; reward claim before 24h is impossible; total ledger always reconciles (no money created: `defenseVault` growth ≤ verified sweep savings).
 
 ### Phase 4 — Chat Route & Tool Pipeline
-- **`app/api/chat/route.ts`**: system prompt (Section 8.1), tool registry (Section 8.2), `assertTier`, redaction, T0–T2 server tool loop, T3 card resumption via the Interactions API, number verifier on the final text, AI SDK v4 `createDataStreamResponse` bridge.
+- **`app/api/chat/route.ts`**: system prompt (Section 8.1), tool registry (Section 8.2), `assertTier`, redaction, T0–T2 server tool loop, T3 card resumption via Groq Chat Completions, number verifier on the final text, AI SDK v4 `createDataStreamResponse` bridge.
 - **`app/api/proposals/route.ts`** and **`app/api/proposals/[id]/decision/route.ts`**: create/sign/verify proposals.
 - **Done when:** a prompt like "can I buy RM 180 shoes?" calls the simulation first; at LOW risk no contract is proposed; at HIGH risk a `propose_quarantine`/`propose_escrow` call is emitted; schema violations (extra keys, NEEDS category lock, a `deepLinkUrl` key) are rejected.
 

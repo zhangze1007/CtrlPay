@@ -52,18 +52,18 @@ describe('AI SDK version pin (Section 2.2)', () => {
     expect(pkg.dependencies['@ai-sdk/react']).toMatch(/^~1\./);
   });
 
-  it('declares tool schemas with explicit `parameters` and no v5 `inputSchema`', () => {
+  it('declares OpenAI-compatible tool schemas with explicit `parameters`', () => {
     const route = readFileSync(join(ROOT, 'app/api/chat/route.ts'), 'utf8');
-    const client = readFileSync(join(ROOT, 'lib/gemini-interactions.ts'), 'utf8');
-    expect(route).toContain('functionDeclaration(');
+    const client = readFileSync(join(ROOT, 'lib/groq-client.ts'), 'utf8');
+    expect(route).toContain('groqToolDefinition(');
     expect(client).toContain('parameters');
     expect(route).not.toMatch(/\binputSchema\s*:/);
   });
 
-  it('defaults the live agent to the current Gemini 3.8 Flash model', () => {
-    const client = readFileSync(join(ROOT, 'lib/gemini-interactions.ts'), 'utf8');
-    expect(client).toContain("DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'");
-    expect(client).not.toMatch(/DEFAULT_GEMINI_MODEL\s*=\s*['"]gemini-2\./);
+  it('defaults the live agent to the current Groq production model', () => {
+    const client = readFileSync(join(ROOT, 'lib/groq-client.ts'), 'utf8');
+    expect(client).toContain("DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b'");
+    expect(client).toContain('llama-3.3-70b-versatile');
   });
 });
 

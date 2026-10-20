@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertTriangle, Lock, ShieldAlert, Wallet } from 'lucide-react';
+import { AlertTriangle, Lock, ShieldAlert, Sparkles, Wallet } from 'lucide-react';
 import { useCtrlPayStore, type PaymentIntent } from '@/lib/store';
 import { requestProposal, submitDecision } from '@/lib/api-client';
 import { approveProposal, passkeyAuthorizationRef } from '@/lib/tool-resolution';
@@ -21,6 +21,13 @@ interface Units {
   bubbleTea: number;
 }
 
+interface AiAdvice {
+  advice: string;
+  warnings: string[];
+  suggestions: string[];
+  severity: 'safe' | 'caution' | 'warning' | 'danger';
+}
+
 export function PaymentInterceptorModal() {
   const events = useCtrlPayStore((s) => s.events);
   const dismissEvent = useCtrlPayStore((s) => s.dismissEvent);
@@ -34,7 +41,75 @@ export function PaymentInterceptorModal() {
   const [error, setError] = React.useState<string | null>(null);
   const [signing, setSigning] = React.useState<string | null>(null);
 
+  // AI Advice state
+  const [aiAdvice, setAiAdvice] = React.useState<AiAdvice | null>(null);
+  const [aiLoading, setAiLoading] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string | null>(null);
+
   const found = [...events].reverse().find((e) => e.type === 'PAYMENT_INTERCEPT');
+
+  // Fetch AI advice when a payment intercept event appears
+  React.useEffect(() => {
+    if (!found) return;
+
+    const intent = found.payload.intent as PaymentIntent;
+    const result = found.payload.result as WhatIfResult;
+
+    setAiAdvice(null);
+    setAiError(null);
+    setAiLoading(true);
+
+    const controller = new AbortController();
+
+    fetch('/api/ai-analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'payment_advice',
+        payment: {
+          merchant: intent.merchant,
+          amount: intent.amount,
+          category: intent.category,
+          isNeed: intent.isNeed,
+          riskLevel: result.riskLevel,
+          shortfallProbability: result.shortfallProbability,
+          cfar95: result.cfar95,
+          projectedMonthEndBalance: result.projectedMonthEndBalance,
+          dailyAllowance: result.dynamicDailyAllowance ?? 35.5,
+        },
+      }),
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        const data = (await res.json()) as Partial<AiAdvice> & { message?: string };
+        if (!res.ok) {
+          throw new Error(data.message || 'AI advice is unavailable right now.');
+        }
+        if (
+          typeof data.advice !== 'string' ||
+          !Array.isArray(data.warnings) ||
+          !Array.isArray(data.suggestions) ||
+          !data.severity
+        ) {
+          throw new Error('AI advice returned an unexpected response.');
+        }
+        return data as AiAdvice;
+      })
+      .then((data) => {
+        setAiAdvice(data);
+        setAiLoading(false);
+      })
+      .catch((err: Error) => {
+        if (err.name !== 'AbortError') {
+          console.warn('[AI_ADVICE]', err);
+          setAiError('AI advice is temporarily unavailable — the deterministic checks above still apply.');
+          setAiLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [found?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!found) return null;
   const intercept = found; // narrowed, stable for use inside async handlers
 
@@ -97,6 +172,13 @@ export function PaymentInterceptorModal() {
       setBusy(false);
     }
   }
+
+  const severityColor: Record<string, string> = {
+    safe: 'bg-emerald-50 border-emerald-200/60 text-emerald-800',
+    caution: 'bg-amber-50 border-amber-200/60 text-amber-800',
+    warning: 'bg-orange-50 border-orange-200/60 text-orange-800',
+    danger: 'bg-red-50 border-red-200/60 text-red-800',
+  };
 
   return (
     <div
@@ -199,6 +281,51 @@ export function PaymentInterceptorModal() {
             result={result}
             variant="inline"
           />
+
+          {/* ─── AI-Powered Advice Section ─── */}
+          {(aiLoading || aiAdvice || aiError) && (
+            <div
+              className={`rounded-2xl border p-3.5 space-y-2 transition-all ${
+                aiAdvice ? (severityColor[aiAdvice.severity] || severityColor.safe) : 'bg-holst-50/70 border-holst-200/40'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="text-[11px] font-black uppercase tracking-wider">AI Copilot Advice</span>
+              </div>
+
+              {aiLoading ? (
+                <div className="flex items-center gap-2 text-[12px]">
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Analysing this payment for you...
+                </div>
+              ) : aiAdvice ? (
+                <>
+                  <p className="text-[12px] leading-relaxed font-medium">{aiAdvice.advice}</p>
+                  {aiAdvice.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      {aiAdvice.warnings.map((w, i) => (
+                        <p key={i} className="flex items-start gap-1.5 text-[11px] font-semibold">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          {w}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {aiAdvice.suggestions.length > 0 && (
+                    <div className="space-y-0.5 text-[11px]">
+                      {aiAdvice.suggestions.map((s, i) => (
+                        <p key={i} className="pl-1">💡 {s}</p>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-[9.5px] opacity-70">Advisory only · deterministic CFaR above is the source of truth</p>
+                </>
+              ) : aiError ? (
+                <p className="text-[11px] leading-relaxed opacity-80">{aiError}</p>
+              ) : null}
+            </div>
+          )}
 
           {(result.limitBreach.weekly || result.limitBreach.monthly) && (
             <p className="flex items-center gap-2 text-xs font-semibold text-[#B3253F]">
