@@ -102,6 +102,42 @@ describe('POST /api/ai-analyze', () => {
     expect(body.messages[1].content).toContain('RM 24.50');
   });
 
+  it('labels a positive projected balance so the model cannot call it negative', async () => {
+    const fetchMock = vi.fn(async () =>
+      completion(
+        JSON.stringify({
+          advice: 'This RM 180 want still leaves RM 120 at month end.',
+          warnings: ['Shortfall risk is 34%.'],
+          suggestions: ['Delay the purchase if you can.'],
+          severity: 'warning',
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const res = await POST(
+      request({
+        type: 'payment_advice',
+        payment: {
+          merchant: 'Shopee',
+          amount: 180,
+          category: 'Shopping',
+          isNeed: false,
+          riskLevel: 'HIGH',
+          shortfallProbability: 34,
+          cfar95: 180,
+          projectedMonthEndBalance: 120,
+          dailyAllowance: 21.5,
+        },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body.messages[1].content).toContain('RM 120.00 (POSITIVE)');
+  });
+
   it('rejects an invalid receipt before any provider call', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
