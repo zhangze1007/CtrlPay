@@ -169,7 +169,8 @@ export function QuickLogBackTapModal({
                   min="0.01"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
-                  className="w-full min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] font-bold text-white outline-none focus:border-[#F5B84D]"
+                  style={{ colorScheme: 'light' }}
+                  className="w-full min-w-0 rounded-xl border border-white/30 bg-white px-3 py-2 text-[13px] font-bold text-[#0B1E3F] caret-[#0B1E3F] outline-none placeholder:text-[#94A3B8] focus:border-[#F5B84D] focus:ring-2 focus:ring-[#F5B84D]/30"
                   required
                 />
               </div>
@@ -181,7 +182,8 @@ export function QuickLogBackTapModal({
                   type="text"
                   value={merchantOrTitle}
                   onChange={(e) => setMerchantOrTitle(e.target.value)}
-                  className="w-full min-w-0 rounded-xl border border-white/12 bg-white/8 px-3 py-2 text-[13px] text-white outline-none focus:border-[#F5B84D]"
+                  style={{ colorScheme: 'light' }}
+                  className="w-full min-w-0 rounded-xl border border-white/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#0B1E3F] caret-[#0B1E3F] outline-none placeholder:text-[#94A3B8] focus:border-[#F5B84D] focus:ring-2 focus:ring-[#F5B84D]/30"
                   placeholder="e.g. GrabFood / Campus Meal"
                   required
                 />
