@@ -115,12 +115,21 @@ export async function POST(req: Request) {
     convertToCoreMessages((body.messages ?? []) as never[]) as never,
   ) as never;
 
+  // Gemini 2.0 Flash was shut down on 1 June 2026. Keep the model
+  // environment-configurable so a valid key can switch without a code change.
+  // Gemini 3.x cannot be used here yet: its stateless tool-calling flow requires
+  // thought signatures, which AI SDK v4's Google provider does not preserve.
+  const modelId = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+
   const result = streamText({
-    model: google('gemini-2.0-flash'),
+    model: google(modelId),
     system: SYSTEM_PROMPT,
     messages,
     maxSteps: 5,
     temperature: 0.4,
+    onError: ({ error }) => {
+      console.error('[CHAT_STREAM_ERROR]', error);
+    },
     tools: {
       run_what_if_simulation: tool({
         description:
@@ -226,5 +235,13 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toDataStreamResponse({
+    getErrorMessage: (error) => {
+      // Never return provider credentials or a raw URL. A short, actionable
+      // message is enough to distinguish model/key/network failures in the UI.
+      const raw = error instanceof Error ? error.message : String(error);
+      const safe = raw.replace(/https?:\/\/\S+/g, '[provider-url]').slice(0, 240);
+      return `Agent error: ${safe}`;
+    },
+  });
 }
