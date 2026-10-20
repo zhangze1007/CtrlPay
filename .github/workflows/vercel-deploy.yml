@@ -40,14 +40,18 @@ jobs:
         continue-on-error: true
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GH_GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           set -euo pipefail
-          envs=$(curl -sS \
-            "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?teamId=${VERCEL_ORG_ID}&decrypt=true" \
-            -H "Authorization: Bearer ${VERCEL_TOKEN}")
-          key=$(echo "$envs" | jq -r '[.envs[] | select(.key | test("^GROQ"; "i")) | select(.value != null and .value != "")][0].value // empty')
+          key="${GH_GROQ_KEY:-}"
           if [ -z "$key" ]; then
-            echo "::warning::No non-empty GROQ* environment variable found in the Vercel project."
+            envs=$(curl -sS \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?teamId=${VERCEL_ORG_ID}&decrypt=true" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}")
+            key=$(echo "$envs" | jq -r '[.envs[] | select(.key | test("^GROQ"; "i")) | select(.key | test("MODEL|BASE|URL|ENDPOINT"; "i") | not) | select(.value != null and .value != "")][0].value // empty')
+          fi
+          if [ -z "$key" ]; then
+            echo "::warning::No non-empty Groq API key found in GitHub or Vercel secrets."
             exit 0
           fi
 

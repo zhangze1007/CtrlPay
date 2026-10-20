@@ -47,15 +47,27 @@ export function resolveGroqModel(): string {
  * Read the server-side Groq key. `GROQ_API_KEY` is the documented name; the
  * aliases keep older Vercel projects working without a redeploy of the app.
  */
+const GROQ_KEY_NAMES = new Set([
+  'GROQ',
+  'GROQ_KEY',
+  'GROQ_API',
+  'GROQ_API_KEY',
+  'GROQ_APIKEY',
+  'GROQ_API_TOKEN',
+  'GROQ_TOKEN',
+  'GROQ_SECRET',
+  'GROQ_API_SECRET',
+]);
+
 export function resolveGroqApiKey(): string | undefined {
-  return (
-    process.env.GROQ_API_KEY?.trim() ||
-    process.env.GROQ_API?.trim() ||
-    process.env.GROQ_API_TOKEN?.trim() ||
-    process.env.GROQ_APIKEY?.trim() ||
-    process.env.GROQ_KEY?.trim() ||
-    undefined
-  );
+  // Case-insensitive because Vercel env names are user-authored. The allowlist
+  // excludes GROQ_MODEL/BASE_URL so a non-secret setting can never be sent as a
+  // bearer token.
+  for (const [name, value] of Object.entries(process.env)) {
+    if (!GROQ_KEY_NAMES.has(name.toUpperCase())) continue;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
 }
 
 /* ------------------------------------------------------------------ *
