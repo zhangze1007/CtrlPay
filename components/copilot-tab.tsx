@@ -34,6 +34,7 @@ import { MultimodalBookkeeping } from '@/components/multimodal-bookkeeping';
 import { ConversationalCfarSimulator } from '@/components/chat/conversational-cfar-simulator';
 import { AgentExecutionChat } from '@/components/chat/agent-execution-chat';
 import { consumeDataStreamText } from '@/lib/ai-stream';
+import { toPlainChatText } from '@/lib/chat-format';
 import type { SpendCategory } from '@/lib/types';
 
 export interface CopilotTabProps {
@@ -91,7 +92,9 @@ function buildProposalPrompt(
 
 The user's message is: ${text}
 
-Reply directly to the user's message. Use a tool whenever you need a money figure; never invent one. Do not call propose_quarantine, propose_escrow, or propose_sweep in this chat — the user is asking a question, not approving a contract. Keep it warm and concise.`;
+Reply directly to the user's message. Use a tool whenever you need a money figure; never invent one. Do not call propose_quarantine, propose_escrow, or propose_sweep in this chat — the user is asking a question, not approving a contract. Keep it warm and concise.
+
+Formatting: answer like a normal chat message in plain prose. Do NOT use Markdown tables, headings, bold markers, pipe tables, or code blocks. Use 2-4 short paragraphs; if you need a list, use at most 3 plain lines beginning with "-". Do not dump every ledger field — mention only the numbers needed to answer.`;
 }
 
 function buildDeterministicProposalReply(
@@ -878,13 +881,13 @@ export function CopilotTab({
                 )}
                 <div
                   className={cn(
-                    'max-w-[85%] rounded-[20px] px-3.5 py-2.5 text-[12.5px] leading-relaxed shadow-xs',
+                    'max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2.5 text-[12.5px] leading-relaxed shadow-xs',
                     msg.role === 'user'
                       ? 'rounded-tr-sm bg-[#04222B] text-white font-medium'
                       : 'rounded-tl-sm bg-white text-slate-700 border border-gray-100'
                   )}
                 >
-                  {msg.text}
+                  {msg.role === 'assistant' ? toPlainChatText(msg.text) : msg.text}
                 </div>
               </motion.div>
             ))}

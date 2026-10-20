@@ -5,6 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { Bot, Loader2, Send, Sparkles, Wrench } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { syncServerAudit } from '@/lib/audit-sync';
+import { toPlainChatText } from '@/lib/chat-format';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -237,7 +238,7 @@ export function AgentChat({
                     if (part.type === 'text' && part.text) {
                       return (
                         <p key={i} className="whitespace-pre-wrap">
-                          {part.text}
+                          {toPlainChatText(part.text)}
                         </p>
                       );
                     }

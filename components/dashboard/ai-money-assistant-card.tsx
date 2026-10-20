@@ -45,15 +45,18 @@ export interface AiMoneyAssistantCardProps {
   className?: string;
 }
 
-const CACHE_PREFIX = 'ctrlpay_daily_insights_v1_';
+const CACHE_PREFIX = 'ctrlpay_daily_insights_v2_';
 
-/** First-paint card, byte-identical to the pre-AI handcrafted copy. */
+/**
+ * First-paint placeholder. It deliberately contains no financial claim: the
+ * engine-generated card replaces it as soon as the ledger snapshot is read.
+ */
 const DEFAULT_CARD: AiInsightCard = {
   id: 'fallback-1',
-  badge: 'CFaR 95% Safe',
+  badge: 'Engine sync',
   title: 'AI Money Assistant',
-  summary: 'Dining spend surged +18% this week. Calibrated 30-day projection to defend cash runway.',
-  highlightPill: 'Save ~RM 120/mo student discounts',
+  summary: 'Syncing with the deterministic engine. Figures appear only after the ledger snapshot is verified.',
+  highlightPill: '',
   ctaText: 'What-If CFaR',
   ctaAction: 'cfar',
 };

@@ -10,13 +10,13 @@ import {
   PiggyBank,
   Search,
   Smartphone,
-  Sparkles,
   Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivitySection, type ActivityItem } from '@/components/activity-section';
+import { AiMoneyAssistantCard } from '@/components/dashboard/ai-money-assistant-card';
 import { CurrencySwitcherPill } from '@/components/currency-switcher-pill';
-import { formatDisplayCurrency, localizeMYRText } from '@/lib/currency-ppp';
+import { formatDisplayCurrency } from '@/lib/currency-ppp';
 import { useCtrlPayStore } from '@/lib/store';
 
 export interface CampusCashDashboardProps {
@@ -68,6 +68,28 @@ export function CampusCashDashboard({
   // Compact formatter: whole numbers to prevent ellipses truncation in capsules
   const formatCapsuleCurrency = (rmAmount: number) =>
     formatDisplayCurrency(rmAmount, displayCurrency, { decimals: 0 });
+
+  // Route a live AI insight card to the relevant dashboard surface.
+  const handleAiCardAction = (action: string) => {
+    switch (action) {
+      case 'budget':
+        onOpenBudgetDetails();
+        break;
+      case 'transactions':
+        (onOpenAllTransactions ?? onOpenAnalytics)();
+        break;
+      case 'timeline':
+        onOpenTimeline();
+        break;
+      case 'notifications':
+        onOpenNotifications();
+        break;
+      case 'cfar':
+      default:
+        onOpenSimulator();
+        break;
+    }
+  };
 
   // Dynamic reactive categories computed from store category expenses & total
   const categories: ExpenseCategory[] = React.useMemo(() => {
@@ -336,72 +358,8 @@ export function CampusCashDashboard({
               </div>
             </div>
 
-            {/* AI Money Assistant Card with Layered Stack of Cards Behind It (Generous, Wide & Tall) */}
-            <div className="relative mt-4 pt-2 mb-1.5">
-              {/* Deepest Stacked Card Layer (peeking upward at top edge - delicate translucent) */}
-              <div className="absolute -top-2.5 inset-x-3.5 h-10 rounded-[26px] bg-white/40 backdrop-blur-xs border border-white/60 shadow-[0_2px_8px_rgba(0,0,0,0.02)] pointer-events-none" />
-
-              {/* Middle Stacked Card Layer (peeking upward at top edge - delicate translucent) */}
-              <div className="absolute -top-1.5 inset-x-2 h-10 rounded-[26px] bg-white/60 backdrop-blur-xs border border-white/70 shadow-[0_4px_12px_rgba(0,0,0,0.02)] pointer-events-none" />
-
-              {/* Front AI Money Assistant White Frosted Card */}
-              <div
-                onClick={onOpenSimulator}
-                className="relative rounded-[26px] bg-white/65 backdrop-blur-[26px] p-4 sm:p-5 shadow-[0_20px_44px_-8px_rgba(0,0,0,0.045)] border border-white/80 flex items-center justify-between overflow-hidden cursor-pointer group active:scale-[0.99] transition-all"
-              >
-                {/* Lavender/pink ambient glow accent in bottom right */}
-                <div className="absolute -bottom-4 -right-2 w-44 h-36 rounded-full bg-gradient-to-tl from-purple-300/30 via-pink-200/20 to-transparent pointer-events-none" />
-
-                <div className="flex-1 pr-3 z-10">
-                  {/* Top Header Row with status badge */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-100/90 border border-purple-200/60 px-2 py-0.5 text-[9.5px] font-extrabold text-purple-700 tracking-wide uppercase">
-                      <Sparkles className="h-2.5 w-2.5 text-purple-600" />
-                      AI Assistant
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-600">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      CFaR 95% Safe
-                    </span>
-                  </div>
-
-                  <h3 className="text-[16px] font-bold text-[#0F172A] tracking-normal">
-                    AI Money Assistant
-                  </h3>
-                  <p className="text-[12px] font-normal text-[#64748B] mt-1 leading-relaxed tracking-normal">
-                    Dining spend surged +18% this week. Calibrated 30-day projection to defend cash runway.
-                  </p>
-
-                  <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-50/90 border border-purple-100/90 px-2.5 py-1 text-[10px] font-bold text-purple-700 shadow-2xs">
-                      <Sparkles className="h-2.5 w-2.5 text-purple-600" />
-                      <span>{localizeMYRText('Save ~RM 120/mo student discounts', displayCurrency)}</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#0F172A] text-white px-2.5 py-1 text-[10px] font-bold shadow-xs group-hover:bg-[#1E1B4B] transition-colors">
-                      <span>What-If CFaR</span>
-                      <ArrowRight className="h-2.5 w-2.5 text-purple-300" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* 3D Iridescent Orb floating directly without an artificial white frame */}
-                <div className="relative shrink-0 w-[64px] h-[64px] flex items-center justify-center z-10">
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500/35 via-purple-500/30 to-sky-400/35 blur-md" />
-                  <div
-                    className="relative w-[58px] h-[58px] rounded-full overflow-hidden shadow-[0_12px_30px_rgba(168,85,247,0.32)] transition-transform duration-300 group-hover:scale-105"
-                    style={{
-                      background:
-                        'radial-gradient(circle at 32% 26%, #FFFFFF 0%, #FDF2F8 18%, #F472B6 42%, #C084FC 68%, #818CF8 85%, #3B82F6 100%)',
-                      boxShadow:
-                        'inset 0 3px 6px rgba(255, 255, 255, 0.98), inset -3px -5px 12px rgba(67, 56, 202, 0.4), 0 10px 24px rgba(236, 72, 153, 0.25)',
-                    }}
-                  >
-                    <div className="absolute top-1.5 left-2 w-4 h-2 rounded-full bg-white blur-[0.3px] -rotate-30 opacity-95" />
-                    <div className="absolute bottom-1 right-1 w-6 h-5 rounded-full bg-gradient-to-tr from-pink-600/50 to-purple-700/40 blur-[1.5px]" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Live AI Money Assistant — engine-grounded, swipeable daily cards */}
+            <AiMoneyAssistantCard onCtaAction={handleAiCardAction} />
           </div>
 
           {/* ----------------------------------------------------------- *
