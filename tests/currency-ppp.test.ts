@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   CURRENCY_CODES,
   CURRENCY_PPP_REGISTRY,
+  formatActivityAmount,
   formatCanteenMealsEquivalent,
   formatDisplayCurrency,
+  localizeMYRText,
 } from '@/lib/currency-ppp';
 import { useCtrlPayStore } from '@/lib/store';
 
@@ -23,6 +25,22 @@ describe('currency / PPP display layer', () => {
   it('optionally anchors the converted value back to the MYR base', () => {
     expect(formatDisplayCurrency(100, 'USD', { showBaseAnchor: true })).toBe('$ 23.00 (Base: RM 100.00)');
     expect(formatDisplayCurrency(100, 'MYR', { showBaseAnchor: true })).toBe('RM 100.00');
+  });
+
+  it('formats signed transaction rows from raw MYR in the selected display currency', () => {
+    expect(formatActivityAmount(30, 'MYR', 'out')).toBe('- RM 30.00 -');
+    expect(formatActivityAmount(30, 'HKD', 'out')).toBe('- HK$ 54.00 -');
+    expect(formatActivityAmount(77.77, 'USD', 'in')).toBe('+ $ 17.89 +');
+  });
+
+  it('localizes RM fragments in presentation copy only', () => {
+    expect(localizeMYRText('Saving RM 7.40 every month (RM 88.80/year)', 'HKD')).toBe(
+      'Saving HK$ 13.32 every month (HK$ 159.84/year)',
+    );
+    expect(localizeMYRText('+RM 1,286 - Today', 'HKD')).toBe('+HK$ 2,314.80 - Today');
+    expect(localizeMYRText('Saving RM 7.40 every month', 'MYR')).toBe(
+      'Saving RM 7.40 every month',
+    );
   });
 
   it('expresses purchasing power in campus canteen meals (baseline RM 9.00)', () => {

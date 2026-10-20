@@ -50,8 +50,13 @@ export function CurrencySwitcherPill({ className }: { className?: string }) {
         })}
       </div>
       <p className="px-1 text-[9.5px] font-medium leading-tight text-[#64748B]">
-        {active.regionLabel} · local canteen {active.symbol} {active.localCanteenMealCost.toFixed(2)}
-        /meal · base ledger MYR
+        <span className="block font-bold text-[#0B1E3F]/70">
+          Indicative FX/PPP · display only · base ledger MYR
+        </span>
+        <span className="block">
+          {active.regionLabel} · local canteen {active.symbol} {active.localCanteenMealCost.toFixed(2)}
+          /meal
+        </span>
       </p>
     </div>
   );

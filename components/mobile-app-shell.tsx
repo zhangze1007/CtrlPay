@@ -78,7 +78,8 @@ import {
   SUBSCRIPTIONS,
   USAGE_SIGNALS,
 } from '@/lib/mock-data';
-import { formatDisplayCurrency } from '@/lib/currency-ppp';
+import { formatActivityAmount, formatDisplayCurrency } from '@/lib/currency-ppp';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { SUBSCRIPTION_REGISTRY } from '@/lib/subscription-registry';
 import { analyzeZombies, ZOMBIE_RULES } from '@/lib/zombie-radar';
 import { upcomingFixedBills } from '@/lib/ledger';
@@ -166,14 +167,15 @@ function SplitAmount({
   tone?: 'dark' | 'light';
   className?: string;
 }) {
-  const [int, dec] = formatRM(value).replace('RM', '').trim().split('.');
+  const { profile, format } = useDisplayCurrency();
+  const [int, dec] = format(value).replace(profile.symbol, '').trim().split('.');
   return (
     <span className={cn('inline-flex items-start', tone === 'light' ? 'text-white' : 'text-holst-950', className)}>
       <span
         className={cn('ct-kicker mr-1 mt-1', tone === 'light' ? 'text-holst-200' : 'text-holst-800')}
         style={{ fontSize: Math.max(9, size * 0.26) }}
       >
-        RM
+        {profile.symbol}
       </span>
       <span className="ct-int" style={{ fontSize: size }}>
         {int}
@@ -1011,6 +1013,7 @@ function RadarTab({
   onOpenSheet: (s: SheetId) => void;
   onManageSubscription?: (subscriptionId: string) => void;
 }) {
+  const { format: formatDisplay, localize } = useDisplayCurrency();
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
   const zombieTags = useCtrlPayStore((s) => s.zombieTags);
   const answerZombie = useCtrlPayStore((s) => s.answerZombie);
@@ -1112,15 +1115,15 @@ function RadarTab({
           ]}
           arcLabels={
             isConcept
-              ? ['Invested', 'Profit', 'RM 1.5k/yr']
+              ? ['Invested', 'Profit', localize('RM 1.5k/yr')]
               : ['Active', 'Saved', 'Vault']
           }
           arcAmounts={
             isConcept
-              ? ['RM 120/mo', '', '']
-              : [`RM ${Math.round(activeAmt)}`, '', '']
+              ? [localize('RM 120/mo'), '', '']
+              : [formatDisplay(activeAmt, { decimals: 0 }), '', '']
           }
-          center={isConcept ? 'RM 186/mo' : `RM ${Math.round(totalMonthly)}`}
+          center={isConcept ? localize('RM 186/mo') : formatDisplay(totalMonthly, { decimals: 0 })}
           capsules={[
             { id: 'invested', icon: BarChart2, label: 'Column metrics' },
             { id: 'trend', icon: TrendingUp, label: 'Trend line' },
@@ -1147,7 +1150,7 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +4.73%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +RM 1,286 - Today
+                  {localize('+RM 1,286 - Today')}
                 </span>
               </>
             ) : (
@@ -1165,8 +1168,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : RM 96k' : 'Monthly burn : RM 39.90'}
-          footerRight={isConcept ? 'Profit : RM 16k' : 'Sweepable : +RM 39.90'}
+          footerLeft={localize(isConcept ? 'Total Invested : RM 96k' : 'Monthly burn : RM 39.90')}
+          footerRight={localize(isConcept ? 'Profit : RM 16k' : 'Sweepable : +RM 39.90')}
         />
 
         {/* Card 2: Withdraw / Student Arbitrage */}
@@ -1183,13 +1186,13 @@ function RadarTab({
                   <ArrowUpRight className="h-3 w-3" /> +2.12%
                 </span>
                 <span className="inline-flex items-center h-7 px-3 rounded-full border border-white/70 bg-white/25 text-[11px] font-bold text-[#04222B]">
-                  +RM 942.65 - Today
+                  {localize('+RM 942.65 - Today')}
                 </span>
               </>
             ) : (
               <>
                 <span className="inline-flex items-center gap-1 h-7 px-3 rounded-full bg-white/45 text-[11px] font-bold text-[#04222B]">
-                  <ArrowUpRight className="h-3 w-3" /> Save RM 7.40/mo
+                  <ArrowUpRight className="h-3 w-3" /> {localize('Save RM 7.40/mo')}
                 </span>
                 <button
                   type="button"
@@ -1201,8 +1204,8 @@ function RadarTab({
               </>
             )
           }
-          footerLeft={isConcept ? 'Total Invested : RM 18,632' : 'Full price : RM 15.90'}
-          footerRight={isConcept ? 'Profit : +RM 942.65' : 'Student : RM 8.50'}
+          footerLeft={localize(isConcept ? 'Total Invested : RM 18,632' : 'Full price : RM 15.90')}
+          footerRight={localize(isConcept ? 'Profit : +RM 942.65' : 'Student : RM 8.50')}
         />
       </div>
 
@@ -1477,6 +1480,7 @@ function VaultTab({ onOpenAudit }: { onOpenAudit: () => void }) {
  * ------------------------------------------------------------------ */
 
 function PaymentsSheet({ onClose }: { onClose: () => void }) {
+  const { format } = useDisplayCurrency();
   const simulate = useCtrlPayStore((s) => s.simulatePaymentIntent);
   return (
     <div className="space-y-2">
@@ -1495,7 +1499,7 @@ function PaymentsSheet({ onClose }: { onClose: () => void }) {
         >
           <span>
             <span className="block text-[12.5px] font-bold text-holst-950">
-              {ev.merchant} {formatRM(ev.amount)}
+              {ev.merchant} {format(ev.amount)}
             </span>
             <span className="block text-[10.5px] duo-muted">
               {ev.category.replaceAll('_', ' ')} · {ev.isNeed ? 'NEED' : 'WANT'}
@@ -1536,6 +1540,7 @@ function JudgeSandboxSheet({
 }
 
 function SummarySheet({ onSimulate }: { onSimulate: () => void }) {
+  const { format } = useDisplayCurrency();
   const allowance = useCtrlPayStore((s) => s.dynamicDailyAllowance());
   const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
   const events = useCtrlPayStore((s) => s.events);
@@ -1563,7 +1568,7 @@ function SummarySheet({ onSimulate }: { onSimulate: () => void }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Spent this month</p>
-          <p className="ct-int mt-1 text-[18px] text-holst-950">{formatRM(spentThisMonth)}</p>
+          <p className="ct-int mt-1 text-[18px] text-holst-950">{format(spentThisMonth)}</p>
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Student units</p>
@@ -1747,6 +1752,7 @@ function spendCategoryForQuickLog(
 }
 
 export function MobileAppShell({ copilot, initialTab = 'home', className }: MobileAppShellProps) {
+  const { currency, format } = useDisplayCurrency();
   const [tab, setTab] = React.useState<MobileTab>(initialTab);
   const [sheet, setSheet] = React.useState<SheetId>('none');
   const [segment, setSegment] = React.useState<AiSegment>('OCR');
@@ -1910,7 +1916,7 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
 
               {/* Bold Headline */}
               <h3 className="text-[19px] sm:text-[20px] font-black text-[#0F172A] leading-snug px-3">
-                Your Expense was successfully recorded with RM {expenseSuccessModal.amount.toFixed(2)}
+                Your Expense was successfully recorded with {format(expenseSuccessModal.amount)}
               </h3>
 
               {/* Subtitle / Details */}
@@ -1920,11 +1926,11 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
                 </p>
                 {expenseSuccessModal.isOverBudget ? (
                   <p className="text-amber-600 font-bold">
-                    ⚠️ Exceeded {expenseSuccessModal.category} cap by RM {expenseSuccessModal.overAmount?.toFixed(2)}. Daily runway adjusted to RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                    ⚠️ Exceeded {expenseSuccessModal.category} cap by {format(expenseSuccessModal.overAmount ?? 0)}. Daily runway adjusted to {format(expenseSuccessModal.dailyRunway)}/day
                   </p>
                 ) : (
                   <p className="text-gray-500">
-                    Your daily runway remains healthy at RM {expenseSuccessModal.dailyRunway.toFixed(2)}/day
+                    Your daily runway remains healthy at {format(expenseSuccessModal.dailyRunway)}/day
                   </p>
                 )}
               </div>
@@ -2314,10 +2320,16 @@ export function MobileAppShell({ copilot, initialTab = 'home', className }: Mobi
               {/* Receipt Hero */}
               <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                  TOTAL AMOUNT PAID
+                  {selectedTransaction.amount.trim().startsWith('+')
+                    ? 'TOTAL AMOUNT RECEIVED'
+                    : 'TOTAL AMOUNT PAID'}
                 </span>
                 <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
-                  {selectedTransaction.amount}
+                  {formatActivityAmount(
+                    selectedTransaction.rawAmount,
+                    currency,
+                    selectedTransaction.amount.trim().startsWith('+') ? 'in' : 'out',
+                  )}
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
                   <CheckCircle2 className="h-3 w-3 text-[#10B981]" />

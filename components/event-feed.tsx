@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Bell, Flame, ShieldCheck, Timer, X } from 'lucide-react';
 import { useCtrlPayStore, type SandboxEvent } from '@/lib/store';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { formatRM } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,6 +113,7 @@ function describe(e: SandboxEvent): { title: string; body: string; variant: 'inf
 }
 
 export function EventFeed({ bare = false }: { bare?: boolean } = {}) {
+  const { localize } = useDisplayCurrency();
   const events = useCtrlPayStore((s) => s.events);
   const dismissEvent = useCtrlPayStore((s) => s.dismissEvent);
 
@@ -132,7 +134,7 @@ export function EventFeed({ bare = false }: { bare?: boolean } = {}) {
                 <p className="text-xs font-bold">{d.title}</p>
                 <Badge variant={d.variant}>{e.type}</Badge>
               </div>
-              <p className="text-[11px] leading-snug duo-muted">{d.body}</p>
+              <p className="text-[11px] leading-snug duo-muted">{localize(d.body)}</p>
             </div>
           </div>
           <Button size="sm" variant="ghost" onClick={() => dismissEvent(e.id)} aria-label={`Dismiss ${e.type}`}>

@@ -321,7 +321,9 @@ export function CopilotTab({
               <h2 className="text-[16px] font-black tracking-tight text-[#0B1E3F]">
                 CtrlPay Copilot
               </h2>
-              <p className="text-[11px] font-medium text-[#7C3AED]">What-If CFaR Simulator</p>
+              <p className="text-[11px] font-medium text-[#7C3AED]">
+                What-If CFaR Simulator · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
+              </p>
             </div>
           </div>
 
@@ -376,7 +378,9 @@ export function CopilotTab({
               <h2 className="text-[16px] font-black tracking-tight text-[#0B1E3F]">
                 CtrlPay Copilot
               </h2>
-              <p className="text-[11px] font-medium text-slate-500">Autonomous Financial AI</p>
+              <p className="text-[11px] font-medium text-slate-500">
+                Autonomous Financial AI · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
+              </p>
             </div>
           </div>
 
@@ -794,7 +798,9 @@ export function CopilotTab({
               <h2 className="text-[16px] font-black tracking-tight text-[#0B1E3F]">
                 CtrlPay Copilot
               </h2>
-              <p className="text-[11px] font-medium text-[#7C3AED]">Agent Execution &amp; Tool Calling</p>
+              <p className="text-[11px] font-medium text-[#7C3AED]">
+                Agent Execution &amp; Tool Calling · <span className="font-bold text-[#0B1E3F]/60">Base ledger MYR</span>
+              </p>
             </div>
           </div>
 

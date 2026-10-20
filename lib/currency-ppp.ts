@@ -102,6 +102,33 @@ export function formatDisplayCurrency(
 }
 
 /**
+ * Display-only helper for transaction feeds. The stored activity keeps its
+ * human-readable MYR string for audit continuity; the UI renders this signed
+ * version from `rawAmount` so the selected display currency is honoured.
+ */
+export function formatActivityAmount(
+  amountMYR: number,
+  currency: CurrencyCode,
+  direction: 'in' | 'out',
+): string {
+  const value = formatDisplayCurrency(amountMYR, currency);
+  return direction === 'in' ? `+ ${value} +` : `- ${value} -`;
+}
+
+/**
+ * Localize MYR fragments inside presentation copy (mock receipt rows, feature
+ * blurbs, etc.). Deliberately NOT used for audit logs, signed proposals, engine
+ * output or chat text, which must remain base-ledger MYR.
+ */
+export function localizeMYRText(text: string, currency: CurrencyCode): string {
+  if (currency === 'MYR' || !text.includes('RM')) return text;
+  return text.replace(/RM\s*([\d,]+(?:\.\d+)?)/g, (match, value: string) => {
+    const amount = Number(value.replace(/,/g, ''));
+    return Number.isFinite(amount) ? formatDisplayCurrency(amount, currency) : match;
+  });
+}
+
+/**
  * Purchasing-power equivalent in campus canteen meals.
  * Baseline: 1 Malaysian university canteen meal ≈ RM 9.00.
  * The meal count is anchored to the MYR ledger, while the per-meal price

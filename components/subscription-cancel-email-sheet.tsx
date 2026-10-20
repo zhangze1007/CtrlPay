@@ -21,7 +21,8 @@ import { approveProposal, passkeyAuthorizationRef } from '@/lib/tool-resolution'
 import { PasskeySigningPulse } from '@/components/biometric-passkey-gate';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { cn, formatRM } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { cn } from '@/lib/utils';
 
 interface Props {
   subscriptionId: string;
@@ -46,6 +47,7 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
   const setStudentVerified = useCtrlPayStore((s) => s.setStudentVerified);
   const applyDecision = useCtrlPayStore((s) => s.applyDecision);
   const profile = useCtrlPayStore((s) => s.profile);
+  const { format } = useDisplayCurrency();
 
   const [otp, setOtp] = React.useState('');
   const [busy, setBusy] = React.useState(false);
@@ -126,12 +128,12 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
                 <GraduationCap className="h-5 w-5 text-[#10606F]" /> {entry.merchantName} · cancel / downgrade
               </h3>
               <p className="mt-0.5 text-[11px] text-[#04222B]/60">
-                Full price {formatRM(entry.fullPriceRM)}/mo
+                Full price {format(entry.fullPriceRM)}/mo
                 {entry.studentPriceRM !== null && (
-                  <> → student {formatRM(entry.studentPriceRM)}/mo</>
+                  <> → student {format(entry.studentPriceRM)}/mo</>
                 )}
                 {metrics.studentAnnualSavings !== null && (
-                  <> · saves {formatRM(metrics.studentAnnualSavings)}/yr</>
+                  <> · saves {format(metrics.studentAnnualSavings)}/yr</>
                 )}
               </p>
             </div>
@@ -146,7 +148,7 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
           </header>
 
           <div className="flex flex-wrap gap-1.5 pb-3">
-            <Badge variant="outline">{formatRM(metrics.annualizedCost)}/yr</Badge>
+            <Badge variant="outline">{format(metrics.annualizedCost)}/yr</Badge>
             <Badge variant="outline">≈ {metrics.opportunityCostMeals} mixed-rice meals/mo</Badge>
             <Badge variant="outline">≈ {metrics.opportunityCostBubbleTea} bubble tea/mo</Badge>
             {entry.requiresStudentEmailOTP && (
@@ -268,7 +270,7 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
                   </div>
                   <p className="mt-1.5 text-[9.5px] leading-relaxed text-[#04222B]/45">
                     Nothing moves into the Vault until the next billing date proves the charge stopped.
-                    Annual savings at stake: {formatRM(annualCancelSavings)}.
+                    Annual savings at stake: {format(annualCancelSavings)}.
                   </p>
                 </section>
               )}
@@ -277,7 +279,7 @@ export function SubscriptionCancelEmailSheet({ subscriptionId, open, onClose }: 
               {entry.studentPriceRM !== null && (
                 <section className="rounded-2xl border border-[#04222B]/10 bg-[#F4FBF8] p-3">
                   <p className="text-[12px] font-extrabold text-[#04222B]">
-                    Student downgrade · {formatRM(entry.fullPriceRM)} → {formatRM(entry.studentPriceRM)}/mo
+                    Student downgrade · {format(entry.fullPriceRM)} → {format(entry.studentPriceRM)}/mo
                   </p>
                   <p className="mt-1 text-[10.5px] text-[#04222B]/60">
                     Record the downgrade as a two-stage sweep. The Vault is credited only after the next

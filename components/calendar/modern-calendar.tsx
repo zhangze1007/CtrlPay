@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { GoalsAscent, useGoals } from '@/components/goals-ascent';
 import { useCtrlPayStore } from '@/lib/store';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 
 export interface ModernCalendarViewProps {
   onBack: () => void;
@@ -354,6 +355,7 @@ function AllTrailsLogo({ className }: { className?: string }) {
 }
 
 export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewProps) {
+  const { localize } = useDisplayCurrency();
   // Calendar dynamic month & year state
   const [currentYear, setCurrentYear] = React.useState<number>(2026);
   const [currentMonthIndex, setCurrentMonthIndex] = React.useState<number>(4); // 4 = May
@@ -424,16 +426,17 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
   // Merge live store activities (from OCR scan, simulation, manual entry) into calendar activities
   const allActivities = React.useMemo(() => {
     const liveItems: CalendarActivityItem[] = storeActivities
-      .filter((sa) => sa.id.startsWith('act-live-'))
+      .filter((sa) => sa.id.startsWith('act-live-') || sa.id.startsWith('act-backtap-'))
       .map((sa) => {
         const isFood = sa.category.toLowerCase().includes('food') || sa.category.toLowerCase().includes('dining');
         const isBook = sa.category.toLowerCase().includes('book') || sa.category.toLowerCase().includes('education');
+        const isIncome = sa.category === 'Income';
         return {
           id: sa.id,
           type: 'transaction' as const,
           title: sa.title,
           subtitle: sa.subtitle,
-          amount: `- RM ${sa.rawAmount.toFixed(2)}`,
+          amount: `${isIncome ? '+' : '-'} RM ${sa.rawAmount.toFixed(2)}`,
           tag: sa.category,
           time: '16 May · Just now',
           day: 16,
@@ -702,7 +705,7 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
                     </div>
                   </div>
 
-                  {/* Right: Amount in RM + Arrow indicator */}
+                  {/* Right: Display-currency amount + arrow indicator */}
                   <div className="flex items-center gap-1 shrink-0 ml-2">
                     <div className="text-right">
                       <span
@@ -715,7 +718,7 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
                             : 'text-[#04222B]'
                         )}
                       >
-                        {act.amount}
+                        {localize(act.amount)}
                       </span>
                       {act.type === 'goal' && act.progressPercent && (
                         <div className="w-16 h-1.5 rounded-full bg-gray-100 overflow-hidden mt-1 ml-auto">
@@ -920,14 +923,14 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
                   {selectedActivity.type === 'goal' ? 'Progress Target' : 'Transaction Total'}
                 </p>
                 <p className="font-sans text-[26px] font-black text-[#04222B] mt-0.5 tracking-tight">
-                  {selectedActivity.amount}
+                  {localize(selectedActivity.amount)}
                 </p>
 
                 {selectedActivity.type === 'goal' && selectedActivity.progressPercent && (
                   <div className="mt-3 space-y-1.5">
                     <div className="flex items-center justify-between text-[11px] font-bold text-[#04222B]">
-                      <span>{selectedActivity.savedAmount} saved</span>
-                      <span>Target: {selectedActivity.targetAmount}</span>
+                      <span>{localize(selectedActivity.savedAmount ?? '')} saved</span>
+                      <span>Target: {localize(selectedActivity.targetAmount ?? '')}</span>
                     </div>
                     <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
                       <div
@@ -936,7 +939,7 @@ export function ModernCalendarView({ onBack, onOpenSheet }: ModernCalendarViewPr
                       />
                     </div>
                     <p className="text-[10px] text-[#64748B] text-left pt-1">
-                      {selectedActivity.goalStatus}
+                      {selectedActivity.goalStatus ? localize(selectedActivity.goalStatus) : null}
                     </p>
                   </div>
                 )}

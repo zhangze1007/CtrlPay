@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Lock, LockOpen, Timer } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
-import { formatRM } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { RiskTailStrip } from '@/components/risk-tail-strip';
  * reward, so the "abandon the impulse buy" button is priced, not moralised.
  */
 export function QuarantineCards() {
+  const { format, localize } = useDisplayCurrency();
   const quarantines = useCtrlPayStore((s) => s.quarantines);
   const claim = useCtrlPayStore((s) => s.claimQuarantineReward);
   const release = useCtrlPayStore((s) => s.releaseQuarantine);
@@ -47,10 +48,10 @@ export function QuarantineCards() {
             <div key={q.proposalId} className="rounded-[22px] bg-holst-50/80 p-3.5 ring-1 ring-inset ring-holst-950/5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-bold text-holst-950">{q.targetItem}</p>
+                  <p className="truncate text-[13px] font-bold text-holst-950">{localize(q.targetItem)}</p>
                   <p className="text-[11px] duo-muted">
-                    reward {formatRM(q.premiumReward)}
-                    <span className="text-holst-800"> (from pool {formatRM(payable)})</span>
+                    reward {format(q.premiumReward)}
+                    <span className="text-holst-800"> (from pool {format(payable)})</span>
                   </p>
                 </div>
                 <Badge
@@ -70,8 +71,8 @@ export function QuarantineCards() {
 
               <div className="mt-2 flex items-end gap-1 text-holst-950">
                 <span className="ct-kicker self-center text-holst-800">Quarantined</span>
-                <span className="ct-int text-[26px]">{formatRM(q.itemPrice).split('.')[0]}</span>
-                <span className="ct-dec text-[22px]">.{formatRM(q.itemPrice).split('.')[1] ?? '00'}</span>
+                <span className="ct-int text-[26px]">{format(q.itemPrice).split('.')[0]}</span>
+                <span className="ct-dec text-[22px]">.{format(q.itemPrice).split('.')[1] ?? '00'}</span>
               </div>
 
               <RiskTailStrip amount={q.itemPrice} category="Shopping" variant="inline" className="mt-2" />
@@ -108,8 +109,8 @@ export function QuarantineCards() {
                 Escrow · {e.lockedCategories.join(', ').replaceAll('_', ' ')}
               </p>
               <p className="text-[11px] duo-muted">
-                -{formatRM(e.dailyBudgetReduction)}/day for {e.durationDays} days · total{' '}
-                {formatRM(e.dailyBudgetReduction * e.durationDays)}
+                -{format(e.dailyBudgetReduction)}/day for {e.durationDays} days · total{' '}
+                {format(e.dailyBudgetReduction * e.durationDays)}
               </p>
             </div>
             <Badge variant={e.status === 'ACTIVE' ? 'info' : 'success'}>{e.status}</Badge>
@@ -121,7 +122,7 @@ export function QuarantineCards() {
             <div className="min-w-0">
               <p className="truncate text-[13px] font-bold text-holst-950">Pending sweep · {s.subscriptionId}</p>
               <p className="text-[11px] duo-muted">
-                {formatRM(s.monthlySavings)}/month · verifies on{' '}
+                {format(s.monthlySavings)}/month · verifies on{' '}
                 {new Date(s.nextBillingDate).toISOString().slice(0, 10)}
               </p>
             </div>

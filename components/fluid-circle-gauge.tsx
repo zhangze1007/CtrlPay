@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { BarChart2, Clapperboard, Sparkles, TrendingUp, AlertTriangle } from 'lucide-react';
 
 export interface FluidCategory {
@@ -54,6 +55,7 @@ export function FluidCircleGauge({
   onSelect,
   className,
 }: FluidCircleGaugeProps) {
+  const { format, localize } = useDisplayCurrency();
   const activeCat = categories.find((c) => c.id === activeId) ?? categories[0];
   const uid = React.useId().replace(/[^a-zA-Z0-9]/g, '');
 
@@ -185,7 +187,7 @@ export function FluidCircleGauge({
           dominantBaseline="central"
         >
           <textPath href={`#${uid}-path-a`} startOffset="78%" textAnchor="middle">
-            RM 132/mo
+            {format(132, { decimals: 0 })}/mo
           </textPath>
         </text>
 
@@ -198,7 +200,7 @@ export function FluidCircleGauge({
           dominantBaseline="central"
         >
           <textPath href={`#${uid}-path-b`} startOffset="50%" textAnchor="middle">
-            RM 1.5k/yr
+            {localize('RM 1.5k/yr')}
           </textPath>
         </text>
 
@@ -301,7 +303,7 @@ export function FluidCircleGauge({
         </span>
         <div className="mt-0.5 flex items-baseline gap-0.5">
           <span className="text-[28px] sm:text-[32px] font-black tracking-[-0.04em] text-[#0B1E3F] leading-none drop-shadow-sm">
-            RM {activeCat?.amount.toFixed(0)}
+            {format(activeCat?.amount ?? 0, { decimals: 0 })}
           </span>
           <span className="text-[12px] font-extrabold text-[#0B1E3F]/75">/mo</span>
         </div>

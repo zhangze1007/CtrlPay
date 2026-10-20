@@ -4,9 +4,11 @@ import * as React from 'react';
 import Image from 'next/image';
 import { Camera, Check, ShieldCheck, Sparkles, User, CreditCard } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { Slider } from '@/components/ui/slider';
 
 export function ProfileSheet({ onClose }: { onClose: () => void }) {
+  const { format } = useDisplayCurrency();
   const profile = useCtrlPayStore((s) => s.profile);
   const setProfile = useCtrlPayStore((s) => s.setProfile);
   const userLimits = useCtrlPayStore((s) => s.userLimits);
@@ -114,18 +116,18 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
         <div className="mt-3">
           <p className="text-[11px] font-medium text-white/70">Total Available Balance</p>
           <p className="text-[26px] font-black tracking-tight text-white leading-tight">
-            RM 56,750.00
+            {format(56750)}
           </p>
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/15 pt-2.5 text-[11px]">
           <div>
             <p className="text-white/70 font-medium">Safe Allowance</p>
-            <p className="font-extrabold text-white text-[13px]">RM 89.40 / day</p>
+            <p className="font-extrabold text-white text-[13px]">{format(89.4)} / day</p>
           </div>
           <div>
             <p className="text-white/70 font-medium">Defense Vault</p>
-            <p className="font-extrabold text-white text-[13px]">RM 150.00 saved</p>
+            <p className="font-extrabold text-white text-[13px]">{format(150)} saved</p>
           </div>
         </div>
       </div>
@@ -135,14 +137,14 @@ export function ProfileSheet({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between">
           <p className="text-[12px] font-bold text-[#0B1E3F]">Monthly Budget Cap</p>
           <span className="text-[12.5px] font-extrabold text-[#1C7EC8]">
-            RM {userLimits.monthlyPayLimit.toLocaleString()}
+            {format(userLimits.monthlyPayLimit, { decimals: 0 })}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-[12px] font-bold text-[#0B1E3F]">AI Mandate Max Lock</p>
           <span className="text-[12.5px] font-extrabold text-[#1C7EC8]">
-            RM {aiMandate.maxLockAmountRM}
+            {format(aiMandate.maxLockAmountRM, { decimals: 0 })}
           </span>
         </div>
         <Slider

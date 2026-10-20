@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityItem, useCtrlPayStore } from '@/lib/store';
+import { formatActivityAmount } from '@/lib/currency-ppp';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 
 export interface AllTransactionsSlideViewProps {
   onClose: () => void;
@@ -333,12 +335,19 @@ export function AllTransactionsSlideView({
   onClose,
   onOpenItem,
 }: AllTransactionsSlideViewProps) {
+  const { currency } = useDisplayCurrency();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>('all');
   const [selectedTxn, setSelectedTxn] = React.useState<ActivityItem | null>(null);
   const [copiedTxn, setCopiedTxn] = React.useState(false);
 
   const activities = useCtrlPayStore((s) => s.activities);
+  const displayAmount = (item: ActivityItem) =>
+    formatActivityAmount(
+      item.rawAmount,
+      currency,
+      item.amount.trim().startsWith('+') ? 'in' : 'out',
+    );
   const filtered = (activities ?? EXTENDED_ACTIVITIES).filter((item) => {
     const matchesCategory =
       activeCategoryFilter === 'all' || item.categoryType === activeCategoryFilter;
@@ -488,7 +497,7 @@ export function AllTransactionsSlideView({
                     item.amount.startsWith('+') ? 'text-[#10B981]' : 'text-[#04222B]'
                   )}
                 >
-                  {item.amount}
+                  {displayAmount(item)}
                 </span>
                 <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
@@ -527,10 +536,10 @@ export function AllTransactionsSlideView({
             {/* Receipt Amount Hero */}
             <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                Total Amount Paid
+                {selectedTxn.amount.trim().startsWith('+') ? 'Total Amount Received' : 'Total Amount Paid'}
               </span>
               <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
-                {selectedTxn.amount}
+                {displayAmount(selectedTxn)}
               </div>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
                 <CheckCircle2 className="h-3 w-3 text-[#10B981]" />

@@ -4,7 +4,8 @@ import * as React from 'react';
 import { Clock3, Hourglass, ShieldAlert, TrendingDown } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { calculateBehavioralMetrics, DEMO_CONFIG } from '@/lib/quant-engine';
-import { cn, formatRM } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { cn } from '@/lib/utils';
 import type { WhatIfResult } from '@/lib/domain';
 import type { SpendCategory } from '@/lib/types';
 
@@ -34,6 +35,7 @@ export function RiskTailStrip({
   variant = 'grid',
   className,
 }: RiskTailStripProps) {
+  const { format } = useDisplayCurrency();
   const runWhatIf = useCtrlPayStore((s) => s.runWhatIf);
   const rewardPool = useCtrlPayStore((s) => s.rewardPool);
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
@@ -78,7 +80,7 @@ export function RiskTailStrip({
     return (
       <div className={cn('flex flex-wrap items-center gap-1.5 text-[11px]', className)}>
         <span className="rounded-full bg-holst-50 px-2 py-0.5 font-semibold text-holst-600">
-          ES95 {formatRM(engine.es95)}
+          ES95 {format(engine.es95)}
         </span>
         <span className={cn('rounded-full bg-holst-50/70 px-2 py-0.5 font-semibold', nsfTone)}>
           NSF dip {nsfRisk.toFixed(2)}%
@@ -92,7 +94,7 @@ export function RiskTailStrip({
         </span>
         {behavioral.riskElasticRewardRM > behavioral.baseRewardRM ? (
           <span className="rounded-full bg-holst-50 px-2 py-0.5 font-semibold text-holst-600">
-            Reward {formatRM(behavioral.baseRewardRM)} → {formatRM(behavioral.riskElasticRewardRM)}{' '}
+            Reward {format(behavioral.baseRewardRM)} → {format(behavioral.riskElasticRewardRM)}{' '}
             risk-elastic
           </span>
         ) : null}
@@ -104,7 +106,7 @@ export function RiskTailStrip({
     {
       icon: <TrendingDown className="h-3.5 w-3.5" />,
       label: 'ES95 tail risk',
-      value: formatRM(engine.es95),
+      value: format(engine.es95),
       tone: 'text-holst-600',
     },
     {
@@ -143,7 +145,7 @@ export function RiskTailStrip({
       <p className="text-[11px] leading-relaxed duo-muted">
         Basel III expected shortfall (Artzner et al., 1999) · intra-month path-minimum barrier ·
         Laibson (1997) present bias with a risk-elastic reward of{' '}
-        {formatRM(behavioral.baseRewardRM)} → {formatRM(behavioral.riskElasticRewardRM)}.
+        {format(behavioral.baseRewardRM)} → {format(behavioral.riskElasticRewardRM)}.
       </p>
     </div>
   );

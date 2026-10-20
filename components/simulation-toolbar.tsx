@@ -4,12 +4,12 @@ import * as React from 'react';
 import { CalendarClock, FastForward, Radar, SkipForward, Smartphone, Timer, Zap } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { PAYMENT_EVENTS } from '@/lib/mock-data';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import type { PermissionTier } from '@/lib/permissions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { formatRM } from '@/lib/utils';
 
 function formatClock(ms: number): string {
   return `${new Date(ms).toISOString().replace('T', ' ').slice(0, 16)} UTC`;
@@ -49,6 +49,7 @@ export function SimulationToolbar({
   onOpenQuickLog?: () => void;
   onOpenRadar?: () => void;
 }) {
+  const { format } = useDisplayCurrency();
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
   const advanceClock = useCtrlPayStore((s) => s.advanceClock);
   const jumpToMonthEnd = useCtrlPayStore((s) => s.jumpToMonthEnd);
@@ -124,7 +125,7 @@ export function SimulationToolbar({
                 }
               >
                 <Zap className="h-4 w-4" />
-                Simulate {ev.merchant} {formatRM(ev.amount)}
+                Simulate {ev.merchant} {format(ev.amount)}
                 {ev.merchant === 'Shopee' ? ' Impulse Buy' : ' Checkout'}
               </Button>
             ))}

@@ -20,6 +20,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { cn } from '@/lib/utils';
 
 interface PiggyDefenseVaultTabProps {
@@ -27,6 +28,7 @@ interface PiggyDefenseVaultTabProps {
 }
 
 export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps) {
+  const { format } = useDisplayCurrency();
   const defenseVault = useCtrlPayStore((s) => s.defenseVault);
   const rewardPool = useCtrlPayStore((s) => s.rewardPool);
 
@@ -52,9 +54,9 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
     setMascotMood(nextMood);
 
     const quotes = [
-      'Oink! RM 18.50 safe in vault! 🐷✨',
+      `Oink! ${format(18.5)} safe in vault! 🐷✨`,
       'Zero interest, 100% in your control! 🛡️',
-      'Spotify discount verified! +RM 7.40 🎉',
+      `Spotify discount verified! +${format(7.4)} 🎉`,
       'Protected by SHA-256 ledger! 🔐',
       'Keep saving and earn bonus rewards! 🎁',
     ];
@@ -210,7 +212,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
               <div className="text-right">
                 <span className="text-[13px] font-black text-[#34D399] flex items-center justify-end gap-0.5 drop-shadow-xs">
                   <span className="text-[14px]">↑</span>
-                  <span>+RM 6.20</span>
+                  <span>+{format(6.2)}</span>
                 </span>
                 <span className="text-[9.5px] font-medium text-[#A7F3D0]/80 block leading-tight">
                   vs. last month
@@ -224,7 +226,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
           <div className="flex items-end justify-between mt-3.5">
             <div>
               <div className="text-[34px] sm:text-[36px] font-black tracking-tight text-white leading-none drop-shadow-sm tabular-nums">
-                RM {displayVerified.toFixed(2)}
+                {format(displayVerified)}
               </div>
               <p className="text-[11.5px] font-medium text-[#A7F3D0]/90 mt-1.5 flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-[#34D399] shrink-0" />
@@ -302,7 +304,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
             </div>
 
             <div className="text-[20px] font-extrabold text-[#0F172A] mt-1 leading-none tabular-nums">
-              RM {displayPending.toFixed(2)}
+              {format(displayPending)}
             </div>
           </div>
 
@@ -331,7 +333,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
             </div>
 
             <div className="text-[20px] font-extrabold text-[#0F172A] mt-1 leading-none tabular-nums">
-              RM {displayReward.toFixed(2)}
+              {format(displayReward)}
             </div>
           </div>
 
@@ -503,7 +505,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
             </div>
 
             <div className="text-[13.5px] font-extrabold text-[#059669]">
-              + RM 7.40
+              + {format(7.4)}
             </div>
           </div>
 
@@ -529,7 +531,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
             </div>
 
             <div className="text-[13.5px] font-extrabold text-[#059669]">
-              + RM 6.80
+              + {format(6.8)}
             </div>
           </div>
         </div>
@@ -595,7 +597,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
                     <p>How CtrlPay verifies real money saved:</p>
                     <div className="space-y-1.5 text-[11px]">
                       <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <strong>1. PendingSweep:</strong> AI flags opportunities (e.g. Spotify student plan saves RM 7.40/mo).
+                        <strong>1. PendingSweep:</strong> AI flags opportunities (e.g. Spotify student plan saves {format(7.4)}/mo).
                       </div>
                       <div className="p-2 rounded-lg bg-gray-50 border border-gray-100">
                         <strong>2. Next Bill Check:</strong> Webhook / push notification confirms the lower bill occurred.
@@ -613,7 +615,7 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
                 {activeModal === 'verifiedSavings' && (
                   <>
                     <p>
-                      You have unlocked <strong>RM {displayVerified.toFixed(2)}</strong> in cumulative subscription reductions!
+                      You have unlocked <strong>{format(displayVerified)}</strong> in cumulative subscription reductions!
                     </p>
                     <div className="rounded-xl bg-teal-50 p-3 border border-teal-100">
                       <span className="font-bold text-teal-800">SHA-256 Verified</span>
@@ -626,13 +628,13 @@ export function PiggyDefenseVaultTab({ onOpenAudit }: PiggyDefenseVaultTabProps)
 
                 {activeModal === 'pendingVerification' && (
                   <p>
-                    Your <strong>RM {displayPending.toFixed(2)}</strong> iCloud storage downgrade is active. Once Apple charges the next lower tier on 8 Oct, this amount automatically turns into Verified Savings!
+                    Your <strong>{format(displayPending)}</strong> iCloud storage downgrade is active. Once Apple charges the next lower tier on 8 Oct, this amount automatically turns into Verified Savings!
                   </p>
                 )}
 
                 {activeModal === 'rewardPool' && (
                   <p>
-                    Every verified savings action contributes points to your <strong>Reward Pool (RM {displayReward.toFixed(2)})</strong>, redeemable for student campus partner perks.
+                    Every verified savings action contributes points to your <strong>Reward Pool ({format(displayReward)})</strong>, redeemable for student campus partner perks.
                   </p>
                 )}
               </div>

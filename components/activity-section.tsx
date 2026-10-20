@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCtrlPayStore } from '@/lib/store';
+import { formatActivityAmount } from '@/lib/currency-ppp';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import {
   type ActivityItem,
   INITIAL_ACTIVITIES,
@@ -106,8 +108,17 @@ export function ActivitySection({
   className,
   title = 'Latest Transaction',
 }: ActivitySectionProps) {
+  const { currency } = useDisplayCurrency();
   const activities = useCtrlPayStore((s) => s.activities);
   const [selectedItem, setSelectedItem] = React.useState<ActivityItem | null>(null);
+
+  const displayAmount = (item: ActivityItem) =>
+    formatActivityAmount(
+      item.rawAmount,
+      currency,
+      item.amount.trim().startsWith('+') ? 'in' : 'out',
+    );
+
   const [isViewMoreOpen, setIsViewMoreOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeCategoryFilter, setActiveCategoryFilter] = React.useState<string>('all');
@@ -350,10 +361,10 @@ export function ActivitySection({
               </div>
             </div>
 
-            {/* Right: Amount with flanking dashes: - RM 30.00 - */}
+            {/* Right: Amount with flanking dashes, mapped to display currency */}
             <div className="flex items-center gap-1 shrink-0 ml-2">
               <span className="font-sans text-[13px] font-extrabold text-[#04222B] tracking-tight tabular-nums">
-                {item.amount}
+                {displayAmount(item)}
               </span>
               <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
@@ -502,7 +513,7 @@ export function ActivitySection({
                           item.amount.startsWith('+') ? 'text-[#10B981]' : 'text-[#04222B]'
                         )}
                       >
-                        {item.amount}
+                        {displayAmount(item)}
                       </span>
                       <ChevronRight className="h-3.5 w-3.5 text-[#94A3B8] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
@@ -548,10 +559,10 @@ export function ActivitySection({
             {/* Receipt Amount Hero */}
             <div className="text-center py-4 bg-slate-50/70 rounded-2xl my-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
-                TOTAL AMOUNT PAID
+                {selectedItem.amount.trim().startsWith('+') ? 'TOTAL AMOUNT RECEIVED' : 'TOTAL AMOUNT PAID'}
               </span>
               <div className="text-[28px] font-black tracking-tight text-[#04222B] mt-0.5">
-                {selectedItem.amount}
+                {displayAmount(selectedItem)}
               </div>
               <span className="inline-flex items-center gap-1 rounded-full bg-[#E2F4F0] px-2.5 py-0.5 text-[10.5px] font-bold text-[#10606F] mt-1">
                 <CheckCircle2 className="h-3 w-3 text-[#10B981]" />

@@ -17,7 +17,9 @@ import {
 } from 'lucide-react';
 import { useCtrlPayStore } from '@/lib/store';
 import { ESCROW_RULES } from '@/lib/quant-engine';
-import { cn, formatRM } from '@/lib/utils';
+import { formatDisplayCurrency, type CurrencyCode } from '@/lib/currency-ppp';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
+import { cn } from '@/lib/utils';
 import { RiskTailStrip } from '@/components/risk-tail-strip';
 import { Slider } from '@/components/ui/slider';
 
@@ -105,8 +107,12 @@ export function useGoals(): AscentGoal[] {
   }, [defenseVault, rewardPool, quarantines, pendingSweeps]);
 }
 
-export function goalAmount(goal: AscentGoal, value: number): string {
-  return goal.unit === 'RM' ? formatRM(value) : `${Math.round(value)}`;
+export function goalAmount(
+  goal: AscentGoal,
+  value: number,
+  currency: CurrencyCode = 'MYR',
+): string {
+  return goal.unit === 'RM' ? formatDisplayCurrency(value, currency) : `${Math.round(value)}`;
 }
 
 export function goalProgress(goal: AscentGoal): number {
@@ -310,6 +316,7 @@ export function GoalsAscent({
   onOpenGoal: (goalId: string) => void;
   className?: string;
 }) {
+  const { currency, localize } = useDisplayCurrency();
   const pathRef = React.useRef<SVGPathElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -613,7 +620,7 @@ export function GoalsAscent({
                 onClick={() => onOpenGoal(goal.id)}
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                aria-label={`${goal.title} · ${goalAmount(goal, goal.current)} of ${goalAmount(goal, goal.target)}`}
+                aria-label={`${localize(goal.title)} · ${goalAmount(goal, goal.current, currency)} of ${goalAmount(goal, goal.target, currency)}`}
                 className={cn(
                   'group absolute z-20 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full transition-all duration-200 active:scale-95',
                   isHovered || isCurrent ? 'scale-115 ring-4' : 'hover:scale-110',
@@ -667,10 +674,10 @@ export function GoalsAscent({
                   className="rounded-xl bg-[#0B1E3F]/85 backdrop-blur-md px-2.5 py-1 text-white shadow-md border border-white/20 transition-all hover:bg-[#0B1E3F] text-inherit"
                 >
                   <p className="text-[11px] font-extrabold leading-tight text-white truncate">
-                    {goal.title}
+                    {localize(goal.title)}
                   </p>
                   <p className="text-[9.5px] font-bold text-[#38BDF8] mt-0.5">
-                    {isAchieved ? '✓ Reached' : `${goalAmount(goal, goal.current)} / ${goalAmount(goal, goal.target)}`}
+                    {isAchieved ? '✓ Reached' : `${goalAmount(goal, goal.current, currency)} / ${goalAmount(goal, goal.target, currency)}`}
                   </p>
                 </button>
               </div>
@@ -704,7 +711,7 @@ export function GoalsAscent({
         <div className="mt-1.5 flex items-center justify-between text-[9.5px] font-semibold text-holst-800">
           <span>0% Basecamp</span>
           <span className="font-extrabold text-[#04222B] truncate max-w-[160px] text-center">
-            {activeGoal.title}
+            {localize(activeGoal.title)}
           </span>
           <span>100% Summit</span>
         </div>
@@ -720,7 +727,7 @@ export function GoalsAscent({
             <p className="text-[12px] font-extrabold leading-tight">
               You are here · Milestone {activeMilestoneIdx + 1}
             </p>
-            <p className="truncate text-[10px] text-white/70">{activeGoal.title}</p>
+            <p className="truncate text-[10px] text-white/70">{localize(activeGoal.title)}</p>
           </div>
         </div>
 
@@ -742,6 +749,7 @@ export function GoalsAscent({
  * ------------------------------------------------------------------ */
 
 export function GoalZoom({ goal }: { goal: AscentGoal }) {
+  const { currency, format, localize } = useDisplayCurrency();
   const runWhatIf = useCtrlPayStore((s) => s.runWhatIf);
   const sandboxClock = useCtrlPayStore((s) => s.sandboxClock);
   const currentBalance = useCtrlPayStore((s) => s.currentBalance);
@@ -790,11 +798,11 @@ export function GoalZoom({ goal }: { goal: AscentGoal }) {
           <Icon className="relative z-10 h-6 w-6 text-holst-800" />
         </div>
         <div className="min-w-0">
-          <p className="text-[14px] font-extrabold tracking-[-0.02em] text-holst-950">{goal.title}</p>
+          <p className="text-[14px] font-extrabold tracking-[-0.02em] text-holst-950">{localize(goal.title)}</p>
           <p className="text-[10.5px] duo-muted">{goal.sub}</p>
           <p className="mt-1.5 inline-flex items-baseline gap-1">
-            <span className="ct-int text-[22px] text-holst-950">{goalAmount(goal, goal.current)}</span>
-            <span className="text-[11px] font-bold duo-muted">/ {goalAmount(goal, goal.target)}</span>
+            <span className="ct-int text-[22px] text-holst-950">{goalAmount(goal, goal.current, currency)}</span>
+            <span className="text-[11px] font-bold duo-muted">/ {goalAmount(goal, goal.target, currency)}</span>
           </p>
         </div>
       </div>
@@ -808,7 +816,7 @@ export function GoalZoom({ goal }: { goal: AscentGoal }) {
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Remaining</p>
-          <p className="duo-num mt-1 text-[15px] font-extrabold text-holst-950">{goalAmount(goal, remaining)}</p>
+          <p className="duo-num mt-1 text-[15px] font-extrabold text-holst-950">{goalAmount(goal, remaining, currency)}</p>
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">At this rate</p>
@@ -821,7 +829,7 @@ export function GoalZoom({ goal }: { goal: AscentGoal }) {
       <div className="rounded-2xl bg-holst-50/70 p-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11.5px] font-bold text-holst-950">What-if · set aside each month</p>
-          <span className="duo-num text-[13px] font-extrabold text-holst-800">{formatRM(monthly)}</span>
+          <span className="duo-num text-[13px] font-extrabold text-holst-800">{format(monthly)}</span>
         </div>
         <Slider
           className="mt-2.5"
@@ -842,11 +850,11 @@ export function GoalZoom({ goal }: { goal: AscentGoal }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">CFaR95 shortfall</p>
-          <p className="duo-num mt-1 text-[14px] font-extrabold text-holst-950">{formatRM(result.cfar95)}</p>
+          <p className="duo-num mt-1 text-[14px] font-extrabold text-holst-950">{format(result.cfar95)}</p>
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">ES95 expected tail</p>
-          <p className="duo-num mt-1 text-[14px] font-extrabold text-holst-600">{formatRM(result.es95)}</p>
+          <p className="duo-num mt-1 text-[14px] font-extrabold text-holst-600">{format(result.es95)}</p>
         </div>
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Shortfall chance</p>
@@ -857,7 +865,7 @@ export function GoalZoom({ goal }: { goal: AscentGoal }) {
         <div className="ct-metric">
           <p className="ct-kicker duo-muted">Projected month-end</p>
           <p className="duo-num mt-1 text-[14px] font-extrabold text-holst-950">
-            {formatRM(result.projectedMonthEndBalance)}
+            {format(result.projectedMonthEndBalance)}
           </p>
         </div>
       </div>

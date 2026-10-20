@@ -6,7 +6,7 @@ import { useCtrlPayStore } from '@/lib/store';
 import { SUBSCRIPTIONS } from '@/lib/mock-data';
 import { SUBSCRIPTION_REGISTRY } from '@/lib/subscription-registry';
 import { calculateAmortizedSubscriptions } from '@/lib/quant-engine';
-import { formatRM } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 
@@ -42,6 +42,7 @@ export function ZombieRadarPanel({
   compact?: boolean;
   onManageSubscription?: (subscriptionId: string) => void;
 }) {
+  const { format } = useDisplayCurrency();
   const zombieTags = useCtrlPayStore((s) => s.zombieTags);
   const amortize = useCtrlPayStore((s) => s.amortizeAnnualFees);
   const setAmortize = useCtrlPayStore((s) => s.setAmortize);
@@ -76,7 +77,7 @@ export function ZombieRadarPanel({
         <div>
           <p className="ct-kicker text-holst-200/80">Live mandate roster</p>
           <p className="duo-num mt-1 text-[15px] font-extrabold text-white">
-            {formatRM(monthlyTotal)}
+            {format(monthlyTotal)}
             <span className="ml-1 text-[11px] font-semibold text-holst-200/70">/ effective month</span>
           </p>
         </div>
@@ -97,9 +98,9 @@ export function ZombieRadarPanel({
               </p>
             </div>
             <div className="text-right">
-              <p className="duo-num text-[13px] font-extrabold text-white">{formatRM(r.amountRM)}</p>
+              <p className="duo-num text-[13px] font-extrabold text-white">{format(r.amountRM)}</p>
               {amortize && r.cycle === 'annual' ? (
-                <p className="text-[10px] font-semibold text-holst-400">→ {formatRM(r.effectiveRM)} /mo</p>
+                <p className="text-[10px] font-semibold text-holst-400">→ {format(r.effectiveRM)} /mo</p>
               ) : (
                 <p className="text-[10px] font-semibold text-holst-200/60">{r.cycle}</p>
               )}

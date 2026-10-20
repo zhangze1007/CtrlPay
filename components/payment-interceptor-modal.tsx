@@ -6,6 +6,7 @@ import { useCtrlPayStore, type PaymentIntent } from '@/lib/store';
 import { requestProposal, submitDecision } from '@/lib/api-client';
 import { approveProposal, passkeyAuthorizationRef } from '@/lib/tool-resolution';
 import { formatDisplayCurrency } from '@/lib/currency-ppp';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { PasskeySigningPulse } from '@/components/biometric-passkey-gate';
 import { formatRM } from '@/lib/utils';
 import type { WhatIfResult } from '@/lib/domain';
@@ -27,6 +28,7 @@ export function PaymentInterceptorModal() {
   const proceedPayment = useCtrlPayStore((s) => s.proceedPayment);
   const masterAutonomyEnabled = useCtrlPayStore((s) => s.masterAutonomyEnabled);
   const displayCurrency = useCtrlPayStore((s) => s.displayCurrency);
+  const { format: formatDisplay } = useDisplayCurrency();
 
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -131,7 +133,7 @@ export function PaymentInterceptorModal() {
               <Wallet className="h-4 w-4 text-holst-600" />
               <div>
                 <p className="text-sm font-bold">
-                  {intent.merchant} · {formatRM(intent.amount)}
+                  {intent.merchant} · {formatDisplay(intent.amount)}
                 </p>
                 <p className="text-[11px] duo-muted">{intent.category.replaceAll('_', ' ')}</p>
               </div>

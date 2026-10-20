@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCtrlPayStore } from '@/lib/store';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 
 export interface BudgetDetailsViewProps {
   onClose: () => void;
@@ -26,6 +27,8 @@ export function BudgetDetailsView({
   onOpenTimeline,
   onOpenSimulator,
 }: BudgetDetailsViewProps) {
+  const { format } = useDisplayCurrency();
+  const money0 = (value: number) => format(value, { decimals: 0 });
   const [affordTestAmount, setAffordTestAmount] = React.useState(85);
   const spentThisMonth = useCtrlPayStore((s) => s.spentThisMonth);
   const totalBudget = 850;
@@ -42,9 +45,9 @@ export function BudgetDetailsView({
           <p className="text-[12px] text-[#64748B]">
             Remaining:{' '}
             <strong className={remainingBudget < 50 ? 'text-[#EF4444]' : 'text-[#10B981]'}>
-              RM {remainingBudget.toFixed(2)}
+              {format(remainingBudget)}
             </strong>{' '}
-            of RM {totalBudget}
+            of {money0(totalBudget)}
           </p>
         </div>
 
@@ -94,7 +97,7 @@ export function BudgetDetailsView({
                 </div>
               </div>
               <span className="text-[14.5px] font-bold text-[#0F172A] duo-num">
-                RM 120
+                {money0(120)}
               </span>
             </div>
 
@@ -116,7 +119,7 @@ export function BudgetDetailsView({
                 </div>
               </div>
               <span className="text-[14.5px] font-bold text-[#0F172A] duo-num">
-                RM 600
+                {money0(600)}
               </span>
             </div>
 
@@ -138,7 +141,7 @@ export function BudgetDetailsView({
                 </div>
               </div>
               <span className="text-[14.5px] font-bold text-[#0F172A] duo-num">
-                RM 65
+                {money0(65)}
               </span>
             </div>
 
@@ -160,7 +163,7 @@ export function BudgetDetailsView({
                 </div>
               </div>
               <span className="text-[14.5px] font-bold text-[#0F172A] duo-num">
-                RM 45
+                {money0(45)}
               </span>
             </div>
           </div>
@@ -198,7 +201,7 @@ export function BudgetDetailsView({
                 <ArrowUpRight className="h-4 w-4 text-[#15803D]" />
               </div>
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-bold text-[#166534]">RM 320 / RM 1,200</span>
+                <span className="font-bold text-[#166534]">{money0(320)} / {money0(1200)}</span>
                 <span className="font-extrabold text-[#166534]">27%</span>
               </div>
               <div className="h-2 w-full rounded-full bg-[#B2E1C9] overflow-hidden">
@@ -220,7 +223,7 @@ export function BudgetDetailsView({
                 <ArrowUpRight className="h-4 w-4 text-[#475569]" />
               </div>
               <div className="flex items-center justify-between text-[12px]">
-                <span className="font-bold text-[#475569]">RM 150 / RM 500</span>
+                <span className="font-bold text-[#475569]">{money0(150)} / {money0(500)}</span>
                 <span className="font-extrabold text-[#475569]">30%</span>
               </div>
               <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
@@ -259,7 +262,7 @@ export function BudgetDetailsView({
                       : 'bg-gray-100 text-[#64748B] hover:bg-gray-200'
                   )}
                 >
-                  RM {val}
+                  {money0(val)}
                 </button>
               ))}
             </div>
@@ -268,7 +271,7 @@ export function BudgetDetailsView({
             <div className="rounded-2xl bg-[#F0FDF4] p-3.5 border border-[#BBF7D0]">
               <div className="flex items-center justify-between">
                 <span className="text-[12px] font-medium text-[#166534]">
-                  After testing RM {affordTestAmount}.00 purchase:
+                  After testing {format(affordTestAmount)} purchase:
                 </span>
                 <span className="text-[10px] font-black text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
                   SAFE TO SPEND
@@ -276,7 +279,7 @@ export function BudgetDetailsView({
               </div>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-[20px] font-extrabold text-[#15803D]">
-                  RM {(240 - affordTestAmount).toFixed(2)}
+                  {format(240 - affordTestAmount)}
                 </span>
                 <span className="text-[11.5px] text-[#166534]">remaining in flexible budget</span>
               </div>

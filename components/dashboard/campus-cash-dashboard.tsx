@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ActivitySection, type ActivityItem } from '@/components/activity-section';
 import { CurrencySwitcherPill } from '@/components/currency-switcher-pill';
-import { formatDisplayCurrency } from '@/lib/currency-ppp';
+import { formatDisplayCurrency, localizeMYRText } from '@/lib/currency-ppp';
 import { useCtrlPayStore } from '@/lib/store';
 
 export interface CampusCashDashboardProps {
@@ -375,7 +375,7 @@ export function CampusCashDashboard({
                   <div className="mt-2.5 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 rounded-full bg-purple-50/90 border border-purple-100/90 px-2.5 py-1 text-[10px] font-bold text-purple-700 shadow-2xs">
                       <Sparkles className="h-2.5 w-2.5 text-purple-600" />
-                      <span>Save ~RM 120/mo student discounts</span>
+                      <span>{localizeMYRText('Save ~RM 120/mo student discounts', displayCurrency)}</span>
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#0F172A] text-white px-2.5 py-1 text-[10px] font-bold shadow-xs group-hover:bg-[#1E1B4B] transition-colors">
                       <span>What-If CFaR</span>

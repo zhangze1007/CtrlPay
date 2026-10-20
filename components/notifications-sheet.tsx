@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Bell, CheckCheck, ShieldCheck, Sparkles, AlertCircle, ArrowDownLeft, ArrowUpRight, Bot, ArrowRight } from 'lucide-react';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 
 interface NotificationItem {
   id: string;
@@ -70,6 +71,7 @@ export interface NotificationsSheetProps {
 }
 
 export function NotificationsSheet({ onClose, onSelectProposal, aiNotification }: NotificationsSheetProps) {
+  const { format, localize } = useDisplayCurrency();
   const [items, setItems] = React.useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
 
   const markAllAsRead = () => {
@@ -106,7 +108,7 @@ export function NotificationsSheet({ onClose, onSelectProposal, aiNotification }
                   <span className="h-2 w-2 rounded-full bg-[#10B981] animate-pulse" />
                 </div>
                 <p className="text-[11.5px] text-gray-300 mt-1 leading-relaxed">
-                  RM {aiNotification.amount.toFixed(2)} recorded for{' '}
+                  {format(aiNotification.amount)} recorded for{' '}
                   <span className="font-bold text-white">{aiNotification.merchant}</span>. Tap to review
                   interactive budget proposal &amp; visual charts.
                 </p>
@@ -211,7 +213,7 @@ export function NotificationsSheet({ onClose, onSelectProposal, aiNotification }
                       item.isPositive ? 'text-[#10B981]' : 'text-[#0B1E3F]'
                     }`}
                   >
-                    {item.amount}
+                    {localize(item.amount)}
                   </span>
                 )}
               </div>

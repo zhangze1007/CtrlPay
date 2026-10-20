@@ -18,6 +18,7 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDisplayCurrency } from '@/lib/use-display-currency';
 import { BrandLogo, type BrandId } from '@/components/brand-logos';
 
 export interface CollectionCardData {
@@ -177,6 +178,7 @@ export function CollectionSubscriptionCards({
 }: {
   onVerifyStudent?: () => void;
 }) {
+  const { format, localize } = useDisplayCurrency();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [selectedItem, setSelectedItem] = React.useState<CollectionCardData | null>(null);
 
@@ -245,7 +247,7 @@ export function CollectionSubscriptionCards({
                   {item.progressPercent}%
                 </span>
                 <p className="text-[10px] font-bold opacity-75 leading-none">
-                  RM {item.amount.toFixed(2)}/mo
+                  {format(item.amount)}/mo
                 </p>
               </div>
             </div>
@@ -297,7 +299,7 @@ export function CollectionSubscriptionCards({
                     {selectedItem.title}
                   </h3>
                   <p className="text-[12px] font-bold text-[#64748B]">
-                    RM {selectedItem.amount.toFixed(2)} / month · {selectedItem.category}
+                    {format(selectedItem.amount)} / month · {selectedItem.category}
                   </p>
                 </div>
               </div>
@@ -343,7 +345,7 @@ export function CollectionSubscriptionCards({
                 </span>
               </div>
               <p className="text-[14px] font-bold text-[#0B1E3F]">
-                {selectedItem.billingCycle}
+                {localize(selectedItem.billingCycle)}
               </p>
             </div>
 
@@ -356,7 +358,7 @@ export function CollectionSubscriptionCards({
                 {selectedItem.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <span className="h-1.5 w-1.5 rounded-full bg-[#10B981]" />
-                    <span>{f}</span>
+                    <span>{localize(f)}</span>
                   </li>
                 ))}
               </ul>
@@ -370,7 +372,7 @@ export function CollectionSubscriptionCards({
                     Student Arbitrage Active
                   </p>
                   <p className="text-[10.5px] font-semibold text-emerald-700">
-                    Saving RM 7.40 every month (RM 88.80/year)
+                    {localize('Saving RM 7.40 every month (RM 88.80/year)')}
                   </p>
                 </div>
                 <button
