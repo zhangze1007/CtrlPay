@@ -99,9 +99,9 @@ export function ReceiptAiFlowModal({
   const [ocrError, setOcrError] = React.useState<string | null>(null);
 
   // Extracted data for Screen 3 (User requested: line items removed completely)
-  const [merchantName, setMerchantName] = React.useState('Starbucks');
-  const [receiptTotal, setReceiptTotal] = React.useState<string>('24.50');
-  const [receiptCategory, setReceiptCategory] = React.useState('Dining & Food');
+  const [merchantName, setMerchantName] = React.useState('Luxe Watch Gallery');
+  const [receiptTotal, setReceiptTotal] = React.useState<string>('899.00');
+  const [receiptCategory, setReceiptCategory] = React.useState('Shopping');
   const [receiptDate, setReceiptDate] = React.useState('2026-10-23');
   const [referenceCode, setReferenceCode] = React.useState('#APL - 987657');
   const [confidence, setConfidence] = React.useState(96);
@@ -224,19 +224,19 @@ export function ReceiptAiFlowModal({
         ctx.fillStyle = '#04222B';
         ctx.font = 'bold 32px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('STARBUCKS COFFEE', 300, 100);
+        ctx.fillText('LUXE WATCH GALLERY', 300, 100);
         ctx.font = '20px monospace';
-        ctx.fillText('TAX INVOICE #APL-987657', 300, 140);
-        ctx.fillText('CARAMEL MACCHIATO & CROISSANT', 300, 240);
+        ctx.fillText('TAX INVOICE #APL-887421', 300, 140);
+        ctx.fillText('DESIGNER SMARTWATCH', 300, 240);
         ctx.fillText('--------------------------------', 300, 310);
         ctx.font = 'bold 28px monospace';
-        ctx.fillText('TOTAL AMOUNT:        RM 24.50', 300, 360);
+        ctx.fillText('TOTAL AMOUNT:        RM 899.00', 300, 360);
         ctx.font = '18px monospace';
         ctx.fillText('THANK YOU! COME AGAIN', 300, 440);
 
         canvas.toBlob((blob) => {
           if (blob) {
-            const simulatedFile = new File([blob], 'starbucks_receipt.jpg', { type: 'image/jpeg' });
+            const simulatedFile = new File([blob], 'luxe_watch_receipt.jpg', { type: 'image/jpeg' });
             processFileWithOcr(simulatedFile);
           }
         }, 'image/jpeg');
@@ -342,9 +342,9 @@ export function ReceiptAiFlowModal({
         setScanProgress(p);
       });
 
-      const detectedMerchant = extracted.merchant || 'Starbucks';
-      const detectedAmount = extracted.amount > 0 ? extracted.amount.toFixed(2) : '24.50';
-      const detectedCategory = extracted.category || 'Dining & Food';
+      const detectedMerchant = extracted.merchant || 'Luxe Watch Gallery';
+      const detectedAmount = extracted.amount > 0 ? extracted.amount.toFixed(2) : '899.00';
+      const detectedCategory = extracted.category || 'Shopping';
       const detectedDate = extracted.date || new Date().toISOString().slice(0, 10);
       const randomRef = `#APL - ${Math.floor(100000 + Math.random() * 900000)}`;
 
@@ -368,9 +368,9 @@ export function ReceiptAiFlowModal({
     } catch (err: any) {
       console.warn('[Real OCR Note]', err);
       setIsScanning(false);
-      setMerchantName('Starbucks');
-      setReceiptTotal('24.50');
-      setReceiptCategory('Dining & Food');
+      setMerchantName('Luxe Watch Gallery');
+      setReceiptTotal('899.00');
+      setReceiptCategory('Shopping');
       setReceiptDate(new Date().toISOString().slice(0, 10));
       setReferenceCode(`#APL - ${Math.floor(100000 + Math.random() * 900000)}`);
       setAiError('OCR could not confidently read this receipt, so the AI check was skipped. Please review the details.');
@@ -584,8 +584,8 @@ export function ReceiptAiFlowModal({
               title="Click receipt or shutter to scan"
             >
               <div className="text-center space-y-1">
-                <div className="text-[13px] font-black tracking-tight text-slate-900">STARBUCKS COFFEE</div>
-                <div className="text-[8px] text-slate-500">Address: Mid Valley Megamall, KL</div>
+                <div className="text-[13px] font-black tracking-tight text-slate-900">LUXE WATCH GALLERY</div>
+                <div className="text-[8px] text-slate-500">Address: Pavilion Kuala Lumpur</div>
                 <div className="text-[8px] text-slate-500">Tel: 03-2282 8888</div>
                 <div className="text-[8px] text-slate-400">********************************</div>
                 <div className="text-[10px] font-black text-slate-900">CASH RECEIPT</div>
@@ -600,7 +600,7 @@ export function ReceiptAiFlowModal({
               <div className="pt-1 border-t border-dashed border-slate-300 space-y-1">
                 <div className="flex justify-between text-[11px] font-black text-slate-900">
                   <span>Total</span>
-                  <span>24.50</span>
+                  <span>899.00</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
                   <span>Cash</span>
@@ -696,8 +696,8 @@ export function ReceiptAiFlowModal({
               ) : (
                 <div className="space-y-2 select-none">
                   <div className="text-center space-y-1">
-                    <div className="text-[13px] font-black tracking-tight text-slate-900">STARBUCKS</div>
-                    <div className="text-[8px] text-slate-500">Address: Mid Valley Megamall, KL</div>
+                    <div className="text-[13px] font-black tracking-tight text-slate-900">LUXE WATCH GALLERY</div>
+                    <div className="text-[8px] text-slate-500">Address: Pavilion Kuala Lumpur</div>
                     <div className="text-[8px] text-slate-400">********************************</div>
                     <div className="text-[10px] font-black text-slate-900">CASH RECEIPT</div>
                   </div>
@@ -708,7 +708,7 @@ export function ReceiptAiFlowModal({
                   <div className="pt-1 border-t border-dashed border-slate-300">
                     <div className="flex justify-between text-[11px] font-black text-slate-900">
                       <span>Total</span>
-                      <span>24.50</span>
+                      <span>899.00</span>
                     </div>
                   </div>
                   <div className="text-center text-[8px] text-slate-400 pt-2">THANK YOU!</div>
@@ -801,7 +801,7 @@ export function ReceiptAiFlowModal({
                 </div>
                 <div className="border-t border-dashed border-slate-300 pt-0.5 flex justify-between font-bold text-slate-900">
                   <span>TOTAL</span>
-                  <span>RM {receiptTotal || '24.50'}</span>
+                  <span>RM {receiptTotal || '899.00'}</span>
                 </div>
                 {/* Mini Barcode */}
                 <div className="pt-0.5 text-center tracking-widest text-[8px] text-slate-700 leading-none">
@@ -898,7 +898,7 @@ export function ReceiptAiFlowModal({
                 </div>
                 <div>
                   <h3 className="text-[16px] font-black text-[#04222B] leading-tight">
-                    {merchantName || 'Starbucks'}
+                    {merchantName || 'Luxe Watch Gallery'}
                   </h3>
                   <span className="text-[11px] font-bold text-slate-500">Merchant</span>
                 </div>
@@ -946,7 +946,7 @@ export function ReceiptAiFlowModal({
               <div className="flex items-center justify-between text-[12.5px] text-slate-500">
                 <span className="font-medium">Subtotal</span>
                 <span className="text-[#04222B] font-bold">
-                  RM {receiptTotal ? parseFloat(receiptTotal).toFixed(2) : '24.50'}
+                  RM {receiptTotal ? parseFloat(receiptTotal).toFixed(2) : '899.00'}
                 </span>
               </div>
 
@@ -967,7 +967,7 @@ export function ReceiptAiFlowModal({
                 </div>
                 <div className="text-right">
                   <span className="text-[22px] font-black text-[#10606F] tracking-tight">
-                    RM {receiptTotal ? parseFloat(receiptTotal).toFixed(2) : '24.50'}
+                    RM {receiptTotal ? parseFloat(receiptTotal).toFixed(2) : '899.00'}
                   </span>
                 </div>
               </div>

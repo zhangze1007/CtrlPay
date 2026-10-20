@@ -286,7 +286,10 @@ export function categorizeTransaction(
     combined.includes('lazada') ||
     combined.includes('uniqlo') ||
     combined.includes('zara') ||
-    combined.includes('padini')
+    combined.includes('padini') ||
+    combined.includes('watch') ||
+    combined.includes('jewel') ||
+    combined.includes('luxury')
   ) {
     return {
       category: 'Shopping',
